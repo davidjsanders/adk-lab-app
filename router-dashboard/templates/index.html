@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ dashboard_name }}</title>
+    <!-- Google Material Fonts & Material Symbols -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Google+Sans:wght@400;500;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+    
+    <!-- Dashboard Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?version=5.0">
+    <script>
+        window.POLLING_INTERVAL_MS = parseInt("{{ polling_interval_ms }}", 10) || 1500;
+    </script>
+</head>
+<body class="material-theme">
+    <!-- Top App Bar Header -->
+    <header class="md-top-app-bar" role="banner">
+        <div class="app-bar-left">
+            <button class="icon-button" id="btn-toggle-sidebar" title="Toggle Navigation Drawer" aria-label="Toggle navigation drawer menu" aria-expanded="false" aria-controls="nav-drawer">
+                <span class="material-symbols-outlined" aria-hidden="true">menu</span>
+            </button>
+            <div class="brand-title">
+                <span class="material-symbols-outlined brand-icon" aria-hidden="true">router</span>
+                <span>{{ dashboard_name }}</span>
+            </div>
+        </div>
+
+        <div class="app-bar-right">
+            <div class="md-chip" id="badge-total-nodes" aria-label="Active Fleet Node Count" title="Total registered router nodes">
+                <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 18px; color: var(--md-sys-color-primary);">lan</span>
+                <span id="badge-nodes-count">0</span>
+            </div>
+            <button class="icon-button md-button-filled" id="btn-open-add-modal" title="Register or Deploy Router Node" aria-label="Register or deploy a new router node" aria-haspopup="dialog" style="width: 44px; height: 44px;">
+                <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 22px;">domain_add</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Navigation Drawer Sidebar (Left) -->
+    <aside class="md-nav-drawer" id="nav-drawer" role="navigation" aria-label="Fleet Manager Navigation Menu">
+        <div class="drawer-header">
+            <div class="drawer-title-group">
+                <span class="material-symbols-outlined drawer-brand-icon" aria-hidden="true">hub</span>
+                <h3>Fleet Manager</h3>
+            </div>
+            <button class="icon-button" id="btn-close-sidebar" title="Close Navigation Drawer" aria-label="Close navigation drawer">
+                <span class="material-symbols-outlined" aria-hidden="true">chevron_left</span>
+            </button>
+        </div>
+        <nav class="drawer-nav">
+            <a href="#" class="drawer-item active" aria-label="Fleet Dashboard Overview">
+                <span class="material-symbols-outlined" aria-hidden="true">grid_view</span>
+                <span>Fleet Dashboard</span>
+            </a>
+            <a href="#" class="drawer-item" id="nav-open-console" aria-label="Open Command Console panel">
+                <span class="material-symbols-outlined" aria-hidden="true">terminal</span>
+                <span>Command Console</span>
+            </a>
+            <a href="#" class="drawer-item" id="nav-refresh-fleet" aria-label="Refresh and sync Cloud Run services">
+                <span class="material-symbols-outlined" aria-hidden="true">sync</span>
+                <span>Sync Cloud Run</span>
+            </a>
+            <div class="drawer-divider" role="separator"></div>
+            <a href="#" class="drawer-item" id="nav-trigger-register" aria-label="Deploy new emulated router node">
+                <span class="material-symbols-outlined" aria-hidden="true">add_circle</span>
+                <span>Deploy New Node</span>
+            </a>
+        </nav>
+    </aside>
+    <div class="md-drawer-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+
+    <!-- Main Content Split Layout -->
+    <div class="app-container">
+        <main class="main-content-layout" role="main">
+            <!-- Multi-Router Hardware Grid Visualizer Section -->
+            <section class="fleet-section" aria-labelledby="fleet-heading">
+                <div class="section-header">
+                    <div>
+                        <h2 id="fleet-heading">REGISTERED ROUTER FLEET</h2>
+                        <p class="sub-text">Click any router card to select it or enable Multi-Select mode to trigger batch commands</p>
+                    </div>
+                    <button class="md-button-outlined" id="btn-toggle-select-mode" aria-label="Toggle multi-router selection mode" title="Select multiple router nodes to dispatch batch commands">
+                        <span class="material-symbols-outlined" id="icon-select-mode" aria-hidden="true">checklist</span>
+                        <span id="label-select-mode-text">Select Routers</span>
+                    </button>
+                </div>
+                
+                <div class="router-grid" id="router-grid" role="region" aria-label="Registered Router Fleet Cards Grid">
+                    <!-- Dynamic router cards rendered via app.js -->
+                </div>
+            </section>
+
+            <!-- Docked Collapsible Command Console Sidebar (Right) -->
+            <aside class="console-sidebar-dock" id="console-drawer" role="region" aria-label="Interactive Command Console Controls">
+                <!-- Collapsed Rail Bar View (Centered Icon Vertically) -->
+                <div class="rail-collapsed-view" id="rail-collapsed-trigger" title="Open Command Console" aria-label="Expand Command Console sidebar" role="button" tabindex="0">
+                    <div class="rail-centered-icon">
+                        <span class="material-symbols-outlined" aria-hidden="true">terminal</span>
+                    </div>
+                </div>
+
+                <!-- Expanded Content Panel View -->
+                <div class="sidebar-expanded-content">
+                    <div class="side-sheet-header">
+                        <div class="selected-target-info">
+                            <div class="drawer-title-row">
+                                <span class="material-symbols-outlined" aria-hidden="true">terminal</span>
+                                <h2>COMMAND CONSOLE</h2>
+                            </div>
+                            <h3 id="label-selected-name" class="highlight-text">No Router Selected</h3>
+                            <span class="target-sub" id="label-selected-meta">Select a router card to dispatch commands</span>
+                        </div>
+                        <button class="icon-button" id="btn-close-console-drawer" title="Collapse Command Console sidebar" aria-label="Collapse Command Console sidebar">
+                            <span class="material-symbols-outlined" aria-hidden="true">chevron_right</span>
+                        </button>
+                    </div>
+
+                    <div class="side-sheet-body">
+                        <!-- Action Bar -->
+                        <div class="console-action-bar">
+                            <button class="md-button-tonal btn-snmp" id="btn-run-snmp" disabled title="Execute SNMP Walk MIB query against selected router" aria-label="Execute SNMP Walk MIB query against selected router">
+                                <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                                <span>SNMP Walk MIB</span>
+                            </button>
+                            <button class="md-button-filled btn-redeploy" id="cmd-redeploy" disabled title="Redeploy Cloud Run container service" aria-label="Redeploy Cloud Run container service">
+                                <span class="material-symbols-outlined" aria-hidden="true">cloud_sync</span>
+                                <span>Redeploy Cloud Run</span>
+                            </button>
+                        </div>
+
+                        <!-- Operational Trigger Buttons Grid -->
+                        <div class="quick-actions-grid" role="group" aria-label="Hardware Control Commands">
+                            <button class="md-card-btn btn-success" id="cmd-power-up" disabled title="Power Up hardware router chassis" aria-label="Power Up hardware router chassis">
+                                <span class="material-symbols-outlined" aria-hidden="true">power_settings_new</span>
+                                <span>Power Up</span>
+                            </button>
+                            <button class="md-card-btn btn-danger" id="cmd-power-down" disabled title="Power Down hardware router chassis" aria-label="Power Down hardware router chassis">
+                                <span class="material-symbols-outlined" aria-hidden="true">stop_circle</span>
+                                <span>Power Down</span>
+                            </button>
+                            <button class="md-card-btn btn-warning" id="cmd-reboot" disabled title="Execute hardware boot sequence and reset" aria-label="Execute hardware boot sequence and reset">
+                                <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+                                <span>Reboot / Reset</span>
+                            </button>
+                            <button class="md-card-btn btn-secondary" id="cmd-bgp-reset" disabled title="Restart BGP peer session connection" aria-label="Restart BGP peer session connection">
+                                <span class="material-symbols-outlined" aria-hidden="true">sync_alt</span>
+                                <span>BGP Reset</span>
+                            </button>
+                            <button class="md-card-btn btn-info" id="cmd-traffic" disabled title="Simulate packet transmission traffic burst" aria-label="Simulate packet transmission traffic burst">
+                                <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
+                                <span>Traffic Burst</span>
+                            </button>
+                        </div>
+
+                        <!-- Manual LED Override Section -->
+                        <div class="manual-led-card" role="group" aria-label="Manual LED Override Controls">
+                            <h3><span class="material-symbols-outlined" aria-hidden="true">tune</span> MANUAL LED OVERRIDE</h3>
+                            <div class="led-inputs-group">
+                                <div class="form-field">
+                                    <label for="select-led-target">Target LED:</label>
+                                    <select id="select-led-target" class="md-select" disabled aria-label="Select target LED indicator to override">
+                                        <option value="power">POWER LED</option>
+                                        <option value="online">ONLINE LED</option>
+                                        <option value="upstream">UPSTREAM LED</option>
+                                        <option value="lan1">LAN 1 LED</option>
+                                        <option value="lan2">LAN 2 LED</option>
+                                        <option value="lan3">LAN 3 LED</option>
+                                        <option value="lan4">LAN 4 LED</option>
+                                        <option value="send">SEND LED</option>
+                                        <option value="receive">RECEIVE LED</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-field">
+                                    <label for="select-led-color">State / Color:</label>
+                                    <select id="select-led-color" class="md-select" disabled aria-label="Select state or color for LED override">
+                                        <option value="green">GREEN (Solid)</option>
+                                        <option value="amber">AMBER (Warning)</option>
+                                        <option value="red">RED (Fault)</option>
+                                        <option value="flash">FLASH (Normal)</option>
+                                        <option value="flash_fast">FLASH FAST (Burst)</option>
+                                        <option value="off">OFF</option>
+                                    </select>
+                                </div>
+
+                                <button class="md-button-filled" id="btn-apply-led" disabled title="Apply chosen LED state override" aria-label="Apply chosen LED state override">Set LED</button>
+                            </div>
+                        </div>
+
+                        <!-- Terminal Output Execution Monitor -->
+                        <div class="terminal-card" role="region" aria-label="Command Execution Terminal Log Output">
+                            <div class="term-header">
+                                <span class="term-title">
+                                    <span class="material-symbols-outlined" aria-hidden="true">wysiwyg</span> EXECUTION LOGS
+                                </span>
+                                <button class="btn-clear" id="btn-clear-terminal" title="Clear terminal log console" aria-label="Clear terminal log console">Clear</button>
+                            </div>
+                            <div class="terminal-box" id="terminal-output" role="log" aria-live="polite">
+                                <div class="terminal-line"><span class="term-time">[System]</span> Select a router node to view live execution logs and dispatch control requests.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <!-- Backdrop for mobile/tablet side sheet overlay -->
+    <div class="md-console-backdrop" id="console-backdrop" aria-hidden="true"></div>
+
+    <!-- Material Modal for Registering a New Router Node -->
+    <div class="modal-overlay hidden" id="modal-add-router" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="md-modal-card">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <span class="material-symbols-outlined" aria-hidden="true">add_box</span>
+                    <h3 id="modal-title">Register Router Node</h3>
+                </div>
+                <button class="icon-button" id="btn-close-modal" title="Close registration dialog" aria-label="Close registration dialog">
+                    <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="form-add-router">
+                    <div class="md-text-field">
+                        <label for="input-router-id">Router ID (e.g. RTR-US-WEST-01):</label>
+                        <input type="text" id="input-router-id" class="md-input" placeholder="RTR-US-WEST-01" required aria-required="true" aria-label="Unique Router String ID">
+                    </div>
+                    <div class="md-text-field">
+                        <label for="input-router-name">Display Name:</label>
+                        <input type="text" id="input-router-name" class="md-input" placeholder="West Coast POP Router" required aria-required="true" aria-label="Display Name">
+                    </div>
+                    <div class="md-checkbox-field">
+                        <label class="md-checkbox-label">
+                            <input type="checkbox" id="check-deploy-cloudrun" class="md-checkbox" checked aria-label="Deploy new container instance to Google Cloud Run">
+                            <span>Deploy new Cloud Run instance (using pre-built image)</span>
+                        </label>
+                    </div>
+                    <div class="md-text-field">
+                        <label for="input-router-url">Endpoint URL (Optional if deploying to Cloud Run):</label>
+                        <input type="text" id="input-router-url" class="md-input" placeholder="http://localhost:18001 (or auto-assigned by Cloud Run)" aria-label="Endpoint URL">
+                    </div>
+                    <div class="md-text-field">
+                        <label for="input-router-purpose">Operational Purpose:</label>
+                        <input type="text" id="input-router-purpose" class="md-input" placeholder="Edge Core BGP Gateway" aria-label="Operational Purpose Description">
+                    </div>
+                    <div class="md-text-field">
+                        <label for="input-router-loc">Location Description:</label>
+                        <input type="text" id="input-router-loc" class="md-input" placeholder="Seattle Datacenter, Rack 04" aria-label="Location Description">
+                    </div>
+                    <div class="md-text-field">
+                        <label for="input-router-mfg">Manufacturer Name:</label>
+                        <input type="text" id="input-router-mfg" class="md-input" placeholder="Cisco Systems" aria-label="Manufacturer Name">
+                    </div>
+                    <div class="md-text-field">
+                        <label for="input-router-model">Model Number / Hardware ID:</label>
+                        <input type="text" id="input-router-model" class="md-input" placeholder="Nexus 9300-EX" aria-label="Model Number">
+                    </div>
+                    <div class="md-text-field">
+                        <label for="input-router-pass">Control Password (Header Auth):</label>
+                        <input type="password" id="input-router-pass" class="md-input" placeholder="Optional (Auto-generates Secret Manager UUID if empty)" aria-label="Control Password Secret Payload">
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="md-button-outlined" id="btn-cancel-modal" aria-label="Cancel registration">Cancel</button>
+                        <button type="submit" class="md-button-filled" id="btn-submit-router" aria-label="Submit router registration or deployment">Register / Deploy Router</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Material Modal for Editing an Existing Router Node -->
+    <div class="modal-overlay hidden" id="modal-edit-router" role="dialog" aria-modal="true" aria-labelledby="modal-edit-title">
+        <div class="md-modal-card">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <span class="material-symbols-outlined" aria-hidden="true">edit</span>
+                    <h3 id="modal-edit-title">Edit Router Settings</h3>
+                </div>
+                <button class="icon-button" id="btn-close-edit-modal" title="Close edit dialog" aria-label="Close edit dialog">
+                    <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="form-edit-router">
+                    <input type="hidden" id="edit-router-id">
+                    <div class="md-text-field">
+                        <label for="edit-router-name">Display Name:</label>
+                        <input type="text" id="edit-router-name" class="md-input" required aria-required="true" aria-label="Display Name">
+                    </div>
+                    <div class="md-text-field">
+                        <label for="edit-router-loc">Location Description:</label>
+                        <input type="text" id="edit-router-loc" class="md-input" required aria-required="true" aria-label="Location Description">
+                    </div>
+                    <div class="md-text-field">
+                        <label for="edit-router-purpose">Operational Purpose:</label>
+                        <input type="text" id="edit-router-purpose" class="md-input" required aria-required="true" aria-label="Operational Purpose Description">
+                    </div>
+                    <div class="md-text-field">
+                        <label for="edit-router-mfg">Manufacturer Name:</label>
+                        <input type="text" id="edit-router-mfg" class="md-input" placeholder="Cisco Systems" aria-label="Manufacturer Name">
+                    </div>
+                    <div class="md-text-field">
+                        <label for="edit-router-model">Model Number / Hardware ID:</label>
+                        <input type="text" id="edit-router-model" class="md-input" placeholder="Nexus 9300-EX" aria-label="Model Number">
+                    </div>
+                    <div class="md-text-field">
+                        <label for="edit-router-pass">Control Password (Optional update):</label>
+                        <input type="password" id="edit-router-pass" class="md-input" placeholder="Leave blank to keep existing password" aria-label="Control Password Update">
+                    </div>
+                    <div class="md-checkbox-field">
+                        <label class="md-checkbox-label">
+                            <input type="checkbox" id="check-edit-redeploy" class="md-checkbox" checked aria-label="Redeploy container instance to Google Cloud Run after saving">
+                            <span>Redeploy to Cloud Run after saving settings</span>
+                        </label>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="md-button-outlined" id="btn-cancel-edit-modal" aria-label="Cancel editing">Cancel</button>
+                        <button type="submit" class="md-button-filled" id="btn-submit-edit-router" aria-label="Save router settings and optional redeploy">Save Settings</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Javascript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}?version=5.0"></script>
+</body>
+</html>

@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Router Emulator - {{ router_id }}</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Main Stylesheet with version tag for cache handling -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?version=1.0">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top App Header -->
+        <header class="top-header">
+            <div class="brand-title">
+                <svg class="router-icon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="14" width="20" height="8" rx="2"/>
+                    <line x1="6" y1="18" x2="6.01" y2="18"/>
+                    <line x1="10" y1="18" x2="10.01" y2="18"/>
+                    <line x1="14" y1="18" x2="14.01" y2="18"/>
+                    <path d="M17 10a5 5 0 0 0-10 0"/>
+                    <path d="M19 7a8.5 8.5 0 0 0-14 0"/>
+                </svg>
+                <span>ROUTER EMULATOR</span>
+            </div>
+            <div class="meta-badges">
+                <span class="badge badge-id" id="badge-router-id">{{ router_id }}</span>
+                <span class="badge badge-location" id="badge-location">{{ router_location }}</span>
+                <span class="badge badge-status" id="badge-sys-status">ONLINE</span>
+                <a href="/compact" target="_blank" class="badge btn-view-toggle" title="Open Compact Router LED View">&#10064; LED View</a>
+            </div>
+        </header>
+
+        <!-- Main Layout -->
+        <main class="main-content">
+            <!-- Hardware Router Box Container -->
+            <section class="chassis-card">
+                <div class="chassis-header">
+                    <div class="rack-ear left-ear"></div>
+                    <div class="chassis-title">
+                        <span class="mfr-name">{{ manufacturer_id }}</span>
+                        <span class="fw-ver">FW: {{ firmware_version }}</span>
+                    </div>
+                    <div class="rack-ear right-ear"></div>
+                </div>
+
+                <div class="chassis-bezel">
+                    <!-- OLED Screen Display -->
+                    <div class="lcd-display">
+                        <div class="lcd-row">
+                            <span class="lcd-label">DEVICE:</span>
+                            <span class="lcd-val" id="lcd-dev-id">{{ router_id }}</span>
+                        </div>
+                        <div class="lcd-row">
+                            <span class="lcd-label">PURPOSE:</span>
+                            <span class="lcd-val" id="lcd-purpose">{{ router_purpose }}</span>
+                        </div>
+                        <div class="lcd-row">
+                            <span class="lcd-label">UPTIME:</span>
+                            <span class="lcd-val" id="lcd-uptime">0s</span>
+                            <span class="lcd-label">STATE:</span>
+                            <span class="lcd-val highlights" id="lcd-state">OPERATIONAL</span>
+                        </div>
+                        <div class="lcd-row">
+                            <span class="lcd-label">SNMP:</span>
+                            <span class="lcd-val text-dim" id="lcd-snmp">UDP Port 1161 (v1/v2c)</span>
+                        </div>
+                    </div>
+
+                    <!-- LED Status Panel -->
+                    <div class="led-panel">
+                        <div class="led-group">
+                            <div class="led-indicator led-green" id="led-power"></div>
+                            <span class="led-label">PWR</span>
+                        </div>
+                        <div class="led-group">
+                            <div class="led-indicator led-green" id="led-online"></div>
+                            <span class="led-label">ONLINE</span>
+                        </div>
+                        <div class="led-group">
+                            <div class="led-indicator led-green" id="led-upstream"></div>
+                            <span class="led-label">UPSTREAM</span>
+                        </div>
+
+                        <div class="led-divider"></div>
+
+                        <!-- LAN LEDs -->
+                        <div class="lan-ports-group">
+                            <div class="led-group">
+                                <div class="led-indicator led-green" id="led-lan1"></div>
+                                <span class="led-label">LAN 1</span>
+                            </div>
+                            <div class="led-group">
+                                <div class="led-indicator led-green" id="led-lan2"></div>
+                                <span class="led-label">LAN 2</span>
+                            </div>
+                            <div class="led-group">
+                                <div class="led-indicator led-off" id="led-lan3"></div>
+                                <span class="led-label">LAN 3</span>
+                            </div>
+                            <div class="led-group">
+                                <div class="led-indicator led-off" id="led-lan4"></div>
+                                <span class="led-label">LAN 4</span>
+                            </div>
+                        </div>
+
+                        <div class="led-divider"></div>
+
+                        <!-- Traffic LEDs -->
+                        <div class="led-group">
+                            <div class="led-indicator led-flash" id="led-send"></div>
+                            <span class="led-label">SEND (TX)</span>
+                        </div>
+                        <div class="led-group">
+                            <div class="led-indicator led-flash" id="led-receive"></div>
+                            <span class="led-label">RECV (RX)</span>
+                        </div>
+                    </div>
+
+                    <!-- Bezel Controls -->
+                    <div class="bezel-controls">
+                        <button class="bezel-btn btn-power" id="btn-bezel-power" title="Hardware Power Toggle">PWR</button>
+                        <button class="bezel-btn btn-reset" id="btn-bezel-reset" title="Hardware Reset Switch">RST</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Control & Terminal Dashboard Grid -->
+            <div class="dashboard-grid">
+                <!-- Control Command Interface Card -->
+                <section class="card control-card">
+                    <div class="card-header">
+                        <h2>COMMAND CONTROL INTERFACE</h2>
+                        <span class="auth-status-indicator" id="auth-indicator">Header Required</span>
+                    </div>
+                    <div class="card-body">
+                        <!-- Header Auth Field -->
+                        <div class="form-group">
+                            <label for="input-auth-pass">Header Authorization Pass (<code>{{ control_header }}</code>):</label>
+                            <input type="password" id="input-auth-pass" class="form-input" placeholder="Enter control password..." value="RouterSecretPass123!">
+                        </div>
+
+                        <!-- Quick Operational Command Buttons -->
+                        <div class="quick-actions">
+                            <button class="action-btn btn-success" id="cmd-power-up">
+                                <span class="icon">&#9654;</span> Power Up
+                            </button>
+                            <button class="action-btn btn-danger" id="cmd-power-down">
+                                <span class="icon">&#9632;</span> Power Down
+                            </button>
+                            <button class="action-btn btn-warning" id="cmd-reboot">
+                                <span class="icon">&#8635;</span> Boot Sequence / Reset
+                            </button>
+                            <button class="action-btn btn-secondary" id="cmd-bgp-reset">
+                                <span class="icon">&#9889;</span> BGP Reset
+                            </button>
+                            <button class="action-btn btn-info" id="cmd-traffic">
+                                <span class="icon">&#8646;</span> Simulate Traffic Burst
+                            </button>
+                        </div>
+
+                        <!-- Manual LED Control -->
+                        <div class="sub-section">
+                            <h3>MANUAL LED OVERRIDE</h3>
+                            <div class="led-control-row">
+                                <select id="select-led-target" class="form-select">
+                                    <option value="power">POWER LED</option>
+                                    <option value="online">ONLINE LED</option>
+                                    <option value="upstream">UPSTREAM LED</option>
+                                    <option value="lan1">LAN 1 LED</option>
+                                    <option value="lan2">LAN 2 LED</option>
+                                    <option value="lan3">LAN 3 LED</option>
+                                    <option value="lan4">LAN 4 LED</option>
+                                    <option value="send">SEND LED</option>
+                                    <option value="receive">RECEIVE LED</option>
+                                </select>
+                                <select id="select-led-color" class="form-select">
+                                    <option value="green">GREEN (Solid)</option>
+                                    <option value="amber">AMBER (Warning)</option>
+                                    <option value="red">RED (Fault)</option>
+                                    <option value="flash">FLASH (Normal)</option>
+                                    <option value="flash_fast">FLASH FAST (Burst)</option>
+                                    <option value="off">OFF</option>
+                                </select>
+                                <button class="action-btn btn-primary" id="btn-apply-led">Apply LED</button>
+                            </div>
+                        </div>
+
+                        <!-- Custom REST Command Builder -->
+                        <div class="sub-section">
+                            <h3>CUSTOM REST API EXECUTOR</h3>
+                            <div class="api-builder">
+                                <div class="code-box">
+                                    <pre><code>POST /api/command HTTP/1.1
+Host: &lt;this-router-host&gt;
+<span id="label-control-header">{{ control_header }}</span>: <span id="label-pass-preview">••••••••</span>
+Content-Type: application/json
+
+<span id="label-json-payload">{ "command": "bgp_reset" }</span></code></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Console Output & Telemetry Monitor -->
+                <section class="card terminal-card">
+                    <div class="card-header">
+                        <h2>SYSTEM LOG & TELEMETRY MONITOR</h2>
+                        <button class="btn-clear" id="btn-clear-logs">Clear View</button>
+                    </div>
+                    <div class="card-body">
+                        <div class="terminal-window" id="terminal-logs">
+                            <!-- Logs dynamically populated via JS textContent -->
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Multi-Router Deployment Info Footer -->
+            <section class="card docs-card">
+                <div class="card-header">
+                    <h2>MULTI-ROUTER DEPLOYMENT GUIDE</h2>
+                </div>
+                <div class="card-body">
+                    <p>To simulate multiple router nodes, deploy this container multiple times with custom metadata environment variables:</p>
+                    <div class="code-snippet">
+                        <pre><code># Deploy Router 1 (US-East Edge)
+gcloud run deploy router-us-east-01 --image=$REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/router-emulator:latest \
+  --set-env-vars="ROUTER_ID=RTR-US-EAST-01,ROUTER_LOCATION=New York DC,CONTROL_PASSWORD=PassEast123" --no-allow-unauthenticated
+
+# Deploy Router 2 (EU-West Core)
+gcloud run deploy router-eu-west-01 --image=$REGION-docker.pkg.dev/$PROJECT_ID/cloud-run-source-deploy/router-emulator:latest \
+  --set-env-vars="ROUTER_ID=RTR-EU-WEST-01,ROUTER_LOCATION=London DC,CONTROL_PASSWORD=PassWest456" --no-allow-unauthenticated</code></pre>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Application Script with version tag -->
+    <script src="{{ url_for('static', filename='js/app.js') }}?version=1.0"></script>
+</body>
+</html>

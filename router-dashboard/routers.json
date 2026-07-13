@@ -1,0 +1,44 @@
+[
+  {
+    "id": "RTR-CAN-EAST-01",
+    "name": "Canada East Gateway Router",
+    "url": "https://router-emulator-rtr-can-east-01-cta6n7hkya-uc.a.run.app",
+    "location": "Montréal, QC",
+    "purpose": "Central Hub BGP Border Gateway",
+    "manufacturer": "Cisco Systems",
+    "model": "8201-32FH",
+    "last_updated": "",
+    "control_header": "X-Control-Password",
+    "source": "CLOUDRUN",
+    "secret_id": "router-secret-rtr-can-east-01",
+    "control_password": "860c149c-76aa-48de-9db2-b1dd918e27f1"
+  },
+  {
+    "id": "CAN-NN2-CENTRAL-01",
+    "name": "Canada Northeast 2 Router 1",
+    "url": "https://router-emulator-can-nn2-central-01-cta6n7hkya-uc.a.run.app",
+    "location": "Toronto, ON",
+    "purpose": "East Hub BGP Border Gateway",
+    "manufacturer": "Cisco Systems",
+    "model": "C8500-12X4QC",
+    "last_updated": "",
+    "control_header": "X-Control-Password",
+    "source": "CLOUDRUN",
+    "secret_id": "router-secret-can-nn2-central-01",
+    "control_password": "b2e1035a-a46d-477b-9139-3bf6e3e58565"
+  },
+  {
+    "id": "RTR-CAN-EAST-02",
+    "name": "Canada Northeast 2 Router 2",
+    "url": "https://router-emulator-rtr-can-east-02-cta6n7hkya-uc.a.run.app",
+    "location": "Toronto, ON",
+    "purpose": "Backup East Hub BGP Border Gateway",
+    "manufacturer": "Cisco Systems",
+    "model": "Nexus 9300-EX",
+    "last_updated": "",
+    "control_header": "X-Control-Password",
+    "source": "CLOUDRUN",
+    "secret_id": "router-secret-rtr-can-east-02",
+    "control_password": "c7573762-500f-4794-a975-0fd4f4ce76c4"
+  }
+]

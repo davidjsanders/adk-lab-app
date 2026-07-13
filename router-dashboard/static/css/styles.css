@@ -1,0 +1,1033 @@
+/* Material Design 3 Router Fleet Operations Dashboard Stylesheet */
+
+:root {
+    /* M3 Color Tokens (Dark Theme) */
+    --md-sys-color-background: #0f131a;
+    --md-sys-color-surface: #171c26;
+    --md-sys-color-surface-container: #1e2433;
+    --md-sys-color-surface-variant: #283042;
+    --md-sys-color-outline: #3b475e;
+    --md-sys-color-outline-variant: #2a3447;
+    
+    --md-sys-color-primary: #8ab4f8;
+    --md-sys-color-on-primary: #002d6e;
+    --md-sys-color-primary-container: #004494;
+    --md-sys-color-on-primary-container: #d9e2ff;
+    
+    --md-sys-color-secondary: #c2c7e0;
+    --md-sys-color-secondary-container: #414659;
+
+    --md-sys-color-tertiary: #c084fc;
+    --md-sys-color-tertiary-container: #581c87;
+    
+    --md-sys-color-error: #f2b8b5;
+    --md-sys-color-error-container: #8c1d18;
+
+    --md-sys-color-success: #81c784;
+    --md-sys-color-warning: #ffb74d;
+
+    --md-sys-color-on-surface: #e2e8f0;
+    --md-sys-color-on-surface-variant: #94a3b8;
+
+    /* Elevation Shadows */
+    --md-elevation-1: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.6);
+    --md-elevation-2: 0 4px 8px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.6);
+    --md-elevation-3: 0 8px 16px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.7);
+    --md-elevation-4: 0 16px 24px rgba(0, 0, 0, 0.7), 0 6px 12px rgba(0, 0, 0, 0.8);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body.material-theme {
+    background-color: var(--md-sys-color-background);
+    color: var(--md-sys-color-on-surface);
+    font-family: 'Roboto', 'Google Sans', -apple-system, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* Material Symbols Utilities */
+.material-symbols-outlined {
+    font-size: 20px;
+    vertical-align: middle;
+}
+
+/* App Header (M3 Top App Bar) */
+.md-top-app-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: 64px;
+    background: var(--md-sys-color-surface);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 24px;
+    box-shadow: var(--md-elevation-1);
+}
+
+.app-bar-left, .app-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.brand-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Google Sans', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--md-sys-color-primary);
+}
+
+.brand-icon {
+    font-size: 26px;
+    color: var(--md-sys-color-primary);
+}
+
+/* Icon Button */
+.icon-button {
+    background: transparent;
+    border: none;
+    color: var(--md-sys-color-on-surface-variant);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.icon-button:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--md-sys-color-on-surface);
+}
+
+/* Chips & Badges */
+.md-chip {
+    padding: 6px 14px;
+    background: var(--md-sys-color-surface-container);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--md-sys-color-primary);
+}
+
+/* M3 Buttons */
+.md-button-filled, .md-fab-button {
+    background: var(--md-sys-color-primary);
+    color: var(--md-sys-color-on-primary);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-family: 'Google Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.88rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: var(--md-elevation-1);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.md-button-filled:hover, .md-fab-button:hover {
+    box-shadow: var(--md-elevation-2);
+    filter: brightness(1.1);
+}
+
+.md-button-filled:disabled, .md-fab-button:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+    box-shadow: none;
+    filter: none;
+}
+
+.md-button-outlined {
+    background: transparent;
+    color: var(--md-sys-color-primary);
+    border: 1px solid var(--md-sys-color-outline);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-family: 'Google Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color 0.2s ease;
+}
+
+.md-button-outlined:hover {
+    background: rgba(138, 180, 248, 0.08);
+    border-color: var(--md-sys-color-primary);
+}
+
+.md-button-tonal {
+    background: var(--md-sys-color-tertiary-container);
+    color: var(--md-sys-color-tertiary);
+    border: 1px solid rgba(192, 132, 252, 0.3);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.md-button-tonal:hover:not(:disabled) {
+    filter: brightness(1.15);
+}
+
+/* Left Navigation Drawer (Sidebar) */
+.md-nav-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--md-sys-color-surface-container);
+    border-right: 1px solid var(--md-sys-color-outline-variant);
+    z-index: 300;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--md-elevation-3);
+    display: flex;
+    flex-direction: column;
+}
+
+.md-nav-drawer.open {
+    transform: translateX(0);
+}
+
+.drawer-header {
+    height: 64px;
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.drawer-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--md-sys-color-primary);
+}
+
+.drawer-nav {
+    padding: 16px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.drawer-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    border-radius: 28px;
+    color: var(--md-sys-color-on-surface-variant);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.drawer-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--md-sys-color-on-surface);
+}
+
+.drawer-item.active {
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+}
+
+.drawer-divider {
+    height: 1px;
+    background: var(--md-sys-color-outline-variant);
+    margin: 12px 0;
+}
+
+.md-drawer-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+    z-index: 250;
+    display: none;
+}
+
+.md-drawer-backdrop.active {
+    display: block;
+}
+
+/* App Container & Split Layout */
+.app-container {
+    width: 100%;
+    max-width: 1650px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.main-content-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    position: relative;
+}
+
+/* Fleet Section Layout */
+.fleet-section {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding-right: 68px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.section-header h2 {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--md-sys-color-on-surface);
+}
+
+.sub-text {
+    font-size: 0.85rem;
+    color: var(--md-sys-color-on-surface-variant);
+    margin-top: 2px;
+}
+
+/* Card Selection Checkbox & Multi-Select Active State */
+.card-select-checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+}
+
+.card-select-checkbox {
+    width: 20px;
+    height: 20px;
+    accent-color: var(--md-sys-color-primary);
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.md-button-tonal.active {
+    background-color: var(--md-sys-color-primary) !important;
+    color: var(--md-sys-color-on-primary) !important;
+}
+
+/* Router Grid Layout */
+.router-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 20px;
+}
+
+/* Router Card Styling (Material Card) */
+.router-card {
+    background: var(--md-sys-color-surface);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: 16px;
+    overflow: hidden;
+    cursor: pointer;
+    box-shadow: var(--md-elevation-1);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+}
+
+.router-card:hover {
+    border-color: var(--md-sys-color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--md-elevation-2);
+}
+
+.router-card.selected {
+    border: 2px solid var(--md-sys-color-primary);
+    box-shadow: 0 0 16px rgba(138, 180, 248, 0.35);
+}
+
+.card-top {
+    padding: 14px 18px;
+    background: var(--md-sys-color-surface-container);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.router-name {
+    font-family: 'Google Sans', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--md-sys-color-on-surface);
+}
+
+.router-meta {
+    font-size: 0.78rem;
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.card-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-card-launch {
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    border: none;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-card-launch:hover {
+    filter: brightness(1.15);
+}
+
+/* Card Chassis Hardware Visualizer */
+.card-chassis-bezel {
+    background: linear-gradient(180deg, #1c2230 0%, #111520 100%);
+    padding: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+/* LCD Display */
+.card-lcd-display {
+    background: #06101c;
+    border: 1.5px solid #0284c7;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.75rem;
+    color: #38bdf8;
+    box-shadow: inset 0 0 10px rgba(2, 132, 199, 0.3);
+    flex: 1;
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.lcd-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.lcd-label {
+    color: #64748b;
+    font-size: 0.7rem;
+}
+
+.lcd-val {
+    color: #e0f2fe;
+}
+
+.lcd-val.highlights {
+    color: #4ade80;
+    font-weight: 600;
+}
+
+.lcd-val.status-offline {
+    color: #f87171;
+    font-weight: 600;
+}
+
+/* LED Panel Indicator */
+.card-led-panel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #090d16;
+    padding: 10px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.card-led-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.led-indicator {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: #1e293b;
+    border: 1px solid #334155;
+    transition: all 0.2s ease;
+}
+
+.led-indicator.led-green {
+    background: #22c55e;
+    border-color: #86efac;
+    box-shadow: 0 0 10px #22c55e, 0 0 18px rgba(34, 197, 94, 0.6);
+}
+
+.led-indicator.led-amber {
+    background: #f59e0b;
+    border-color: #fde68a;
+    box-shadow: 0 0 10px #f59e0b, 0 0 18px rgba(245, 158, 11, 0.6);
+}
+
+.led-indicator.led-red {
+    background: #ef4444;
+    border-color: #fca5a5;
+    box-shadow: 0 0 10px #ef4444, 0 0 18px rgba(239, 68, 68, 0.6);
+}
+
+.led-indicator.led-flash {
+    animation: card-blink 0.8s infinite alternate;
+}
+
+.led-indicator.led-flash-fast {
+    animation: card-blink 0.25s infinite alternate;
+}
+
+@keyframes card-blink {
+    0% { opacity: 0.2; box-shadow: none; }
+    100% { opacity: 1; box-shadow: 0 0 10px #22c55e; }
+}
+
+.led-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.led-divider {
+    width: 1px;
+    height: 28px;
+    background: var(--md-sys-color-outline-variant);
+}
+
+.card-bezel-controls {
+    display: flex;
+    gap: 6px;
+}
+
+.card-bezel-btn {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--md-sys-color-outline);
+    background: var(--md-sys-color-surface-container);
+    color: var(--md-sys-color-on-surface);
+    font-weight: 700;
+    font-size: 0.72rem;
+    cursor: pointer;
+}
+
+.card-bezel-btn:hover {
+    background: var(--md-sys-color-surface-variant);
+    border-color: var(--md-sys-color-primary);
+}
+
+
+/* Docked Right Command Console Rail & Sidebar (Pinned to Right Edge of Screen) */
+.console-sidebar-dock {
+    position: fixed;
+    right: 16px;
+    top: 84px;
+    width: 56px;
+    height: calc(100vh - 108px);
+    background: var(--md-sys-color-surface);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: 20px;
+    box-shadow: var(--md-elevation-2);
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 200;
+}
+
+/* Collapsed Rail View (Icon Vertically Centered Always) */
+.rail-collapsed-view {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    background: transparent;
+    transition: background-color 0.2s ease;
+}
+
+.rail-collapsed-view:hover {
+    background: var(--md-sys-color-surface-variant);
+}
+
+.rail-centered-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--md-sys-color-primary-container);
+    color: var(--md-sys-color-on-primary-container);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--md-elevation-1);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.rail-collapsed-view:hover .rail-centered-icon {
+    transform: scale(1.12);
+    box-shadow: var(--md-elevation-2);
+    filter: brightness(1.15);
+}
+
+.rail-centered-icon span {
+    font-size: 24px;
+}
+
+/* Expanded Docked Sidebar State (Desktop) */
+.console-sidebar-dock.open {
+    width: 460px;
+    flex: 0 0 460px;
+    box-shadow: var(--md-elevation-3);
+    border-color: var(--md-sys-color-primary);
+}
+
+.sidebar-expanded-content {
+    display: none;
+    opacity: 0;
+    transition: opacity 0.25s ease-in-out;
+    flex-direction: column;
+    height: 100%;
+    width: 460px;
+}
+
+.console-sidebar-dock.open .rail-collapsed-view {
+    display: none;
+}
+
+.console-sidebar-dock.open .sidebar-expanded-content {
+    display: flex;
+    opacity: 1;
+}
+
+.side-sheet-header {
+    padding: 18px 20px;
+    background: var(--md-sys-color-surface-container);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.drawer-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--md-sys-color-primary);
+    margin-bottom: 6px;
+}
+
+.drawer-title-row h2 {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.highlight-text {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--md-sys-color-on-surface);
+}
+
+.target-sub {
+    font-size: 0.8rem;
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.side-sheet-body {
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+}
+
+.console-action-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Quick Trigger Action Buttons Grid */
+.quick-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+}
+
+.md-card-btn {
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--md-sys-color-outline-variant);
+    font-weight: 600;
+    font-size: 0.82rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.md-card-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.md-card-btn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    filter: brightness(1.15);
+}
+
+.btn-success { background: #166534; color: #ffffff; border-color: #22c55e; }
+.btn-danger { background: #991b1b; color: #ffffff; border-color: #ef4444; }
+.btn-warning { background: #9a3412; color: #ffffff; border-color: #f97316; }
+.btn-secondary { background: #334155; color: #ffffff; border-color: #64748b; }
+.btn-info { background: #075985; color: #ffffff; border-color: #38bdf8; }
+
+/* Manual LED Override Card */
+.manual-led-card {
+    background: var(--md-sys-color-surface-container);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.manual-led-card h3 {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--md-sys-color-on-surface-variant);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.led-inputs-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-field label {
+    font-size: 0.78rem;
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.md-select, .md-input {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--md-sys-color-surface-variant);
+    border: 1px solid var(--md-sys-color-outline);
+    border-radius: 8px;
+    color: var(--md-sys-color-on-surface);
+    font-family: inherit;
+    font-size: 0.88rem;
+    outline: none;
+}
+
+.md-select:focus, .md-input:focus {
+    border-color: var(--md-sys-color-primary);
+    box-shadow: 0 0 0 2px rgba(138, 180, 248, 0.2);
+}
+
+.md-select:disabled, .md-input:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+}
+
+/* Terminal Log Display Card */
+.terminal-card {
+    background: #080b12;
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.term-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.term-title {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--md-sys-color-on-surface-variant);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-clear {
+    background: transparent;
+    border: 1px solid var(--md-sys-color-outline);
+    color: var(--md-sys-color-on-surface-variant);
+    padding: 3px 8px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 0.72rem;
+}
+
+.btn-clear:hover {
+    color: var(--md-sys-color-on-surface);
+    border-color: var(--md-sys-color-primary);
+}
+
+.terminal-box {
+    height: 220px;
+    overflow-y: auto;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.78rem;
+    color: #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.terminal-line {
+    word-break: break-all;
+    white-space: pre-wrap;
+}
+
+.term-time {
+    color: var(--md-sys-color-primary);
+    margin-right: 6px;
+}
+
+/* Material Design Dialog / Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 500;
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+.md-modal-card {
+    background: var(--md-sys-color-surface);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: var(--md-elevation-4);
+    overflow: hidden;
+}
+
+.modal-header {
+    padding: 18px 24px;
+    background: var(--md-sys-color-surface-container);
+    border-bottom: 1px solid var(--md-sys-color-outline-variant);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--md-sys-color-primary);
+}
+
+.modal-title-group h3 {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 1.1rem;
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+#form-add-router {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.md-text-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.md-text-field label {
+    font-size: 0.85rem;
+    color: var(--md-sys-color-on-surface-variant);
+}
+
+.md-checkbox-field {
+    margin: 4px 0;
+}
+
+.md-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    color: var(--md-sys-color-primary);
+    font-weight: 500;
+    font-size: 0.88rem;
+}
+
+.md-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--md-sys-color-primary);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+/* RESPONSIVE LAYOUT BREAKPOINTS (iPhone, iPad, Desktops) */
+@media (max-width: 1100px) {
+    .app-container {
+        padding: 16px;
+    }
+    
+    .router-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Fixed overlay drawer when expanded on Mobile / Tablet */
+    .console-sidebar-dock.open {
+        position: fixed;
+        top: 0;
+        right: 0;
+        width: min(460px, 90vw);
+        height: 100vh;
+        z-index: 400;
+        border-radius: 0;
+        border-left: 1px solid var(--md-sys-color-primary);
+    }
+
+    .sidebar-expanded-content {
+        width: 100%;
+    }
+
+    .md-console-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(3px);
+        z-index: 350;
+        display: none;
+    }
+
+    .md-console-backdrop.active {
+        display: block;
+    }
+}
+
+@media (max-width: 600px) {
+    .md-top-app-bar {
+        padding: 0 12px;
+    }
+    .brand-title span:last-child {
+        font-size: 1rem;
+    }
+    .md-chip {
+        display: none;
+    }
+    .app-container {
+        padding: 12px 8px 12px 12px;
+    }
+    .console-sidebar-dock {
+        width: 48px;
+        flex: 0 0 48px;
+        border-radius: 12px;
+    }
+    .rail-centered-icon {
+        width: 36px;
+        height: 36px;
+    }
+    .rail-centered-icon span {
+        font-size: 20px;
+    }
+}

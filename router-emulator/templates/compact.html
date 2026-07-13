@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ router_id }} - Compact View</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Main Stylesheet with version tag for cache handling -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?version=1.0">
+</head>
+<body class="compact-body">
+    <div class="compact-container">
+        <!-- Compact Hardware Router Box Chassis -->
+        <section class="chassis-card compact-chassis">
+            <div class="chassis-header">
+                <div class="rack-ear left-ear"></div>
+                <div class="chassis-title">
+                    <span class="mfr-name">{{ manufacturer_id }}</span>
+                    <span class="fw-ver">FW: {{ firmware_version }}</span>
+                </div>
+                <div class="rack-ear right-ear"></div>
+            </div>
+
+            <div class="chassis-bezel">
+                <!-- OLED Screen Display -->
+                <div class="lcd-display">
+                    <div class="lcd-row">
+                        <span class="lcd-label">DEVICE:</span>
+                        <span class="lcd-val" id="lcd-dev-id">{{ router_id }}</span>
+                    </div>
+                    <div class="lcd-row">
+                        <span class="lcd-label">PURPOSE:</span>
+                        <span class="lcd-val" id="lcd-purpose">{{ router_purpose }}</span>
+                    </div>
+                    <div class="lcd-row">
+                        <span class="lcd-label">UPTIME:</span>
+                        <span class="lcd-val" id="lcd-uptime">0s</span>
+                        <span class="lcd-label">STATE:</span>
+                        <span class="lcd-val highlights" id="lcd-state">OPERATIONAL</span>
+                    </div>
+                    <div class="lcd-row">
+                        <span class="lcd-label">SNMP:</span>
+                        <span class="lcd-val text-dim" id="lcd-snmp">UDP Port 1161 (v1/v2c)</span>
+                    </div>
+                </div>
+
+                <!-- LED Status Panel -->
+                <div class="led-panel">
+                    <div class="led-group">
+                        <div class="led-indicator led-green" id="led-power"></div>
+                        <span class="led-label">PWR</span>
+                    </div>
+                    <div class="led-group">
+                        <div class="led-indicator led-green" id="led-online"></div>
+                        <span class="led-label">ONLINE</span>
+                    </div>
+                    <div class="led-group">
+                        <div class="led-indicator led-green" id="led-upstream"></div>
+                        <span class="led-label">UPSTREAM</span>
+                    </div>
+
+                    <div class="led-divider"></div>
+
+                    <!-- LAN LEDs -->
+                    <div class="lan-ports-group">
+                        <div class="led-group">
+                            <div class="led-indicator led-green" id="led-lan1"></div>
+                            <span class="led-label">LAN 1</span>
+                        </div>
+                        <div class="led-group">
+                            <div class="led-indicator led-green" id="led-lan2"></div>
+                            <span class="led-label">LAN 2</span>
+                        </div>
+                        <div class="led-group">
+                            <div class="led-indicator led-off" id="led-lan3"></div>
+                            <span class="led-label">LAN 3</span>
+                        </div>
+                        <div class="led-group">
+                            <div class="led-indicator led-off" id="led-lan4"></div>
+                            <span class="led-label">LAN 4</span>
+                        </div>
+                    </div>
+
+                    <div class="led-divider"></div>
+
+                    <!-- Traffic LEDs -->
+                    <div class="led-group">
+                        <div class="led-indicator led-flash" id="led-send"></div>
+                        <span class="led-label">SEND (TX)</span>
+                    </div>
+                    <div class="led-group">
+                        <div class="led-indicator led-flash" id="led-receive"></div>
+                        <span class="led-label">RECV (RX)</span>
+                    </div>
+                </div>
+
+                <!-- Bezel Controls -->
+                <div class="bezel-controls">
+                    <button class="bezel-btn btn-power" id="btn-bezel-power" title="Hardware Power Toggle">PWR</button>
+                    <button class="bezel-btn btn-reset" id="btn-bezel-reset" title="Hardware Reset Switch">RST</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Application Script with version tag -->
+    <script src="{{ url_for('static', filename='js/app.js') }}?version=1.0"></script>
+</body>
+</html>
