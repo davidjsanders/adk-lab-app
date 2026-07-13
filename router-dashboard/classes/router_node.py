@@ -32,6 +32,8 @@ class RouterNode:
         manufacturer: str = "Cisco Systems",
         model: str = "Nexus 9300-EX",
         last_updated: str = "",
+        last_deployed: str = "",
+        revision: str = "",
         secret_id: Optional[str] = None,
         control_header: str = "X-Control-Password",
         control_password: str = "",
@@ -48,6 +50,8 @@ class RouterNode:
             manufacturer: Equipment manufacturer string (e.g. Cisco Systems, Juniper).
             model: Hardware model identifier string (e.g. Nexus 9300-EX).
             last_updated: Last telemetry update timestamp string.
+            last_deployed: Date and time of last Cloud Run container deployment.
+            revision: Active Cloud Run container revision name string.
             secret_id: Secret Manager secret identifier.
             control_header: Custom HTTP header key for control auth.
             control_password: Fallback control authorization password string.
@@ -69,6 +73,8 @@ class RouterNode:
         self.manufacturer: str = manufacturer.strip() if manufacturer else "Cisco Systems"
         self.model: str = model.strip() if model else "Nexus 9300-EX"
         self.last_updated: str = last_updated.strip()
+        self.last_deployed: str = last_deployed.strip()
+        self.revision: str = revision.strip()
         self.secret_id: Optional[str] = secret_id.strip() if secret_id else None
         self.control_header: str = control_header.strip() if control_header else "X-Control-Password"
         self.control_password: str = control_password.strip()
@@ -89,6 +95,8 @@ class RouterNode:
             "manufacturer": self.manufacturer,
             "model": self.model,
             "last_updated": self.last_updated,
+            "last_deployed": self.last_deployed,
+            "revision": self.revision,
             "control_header": self.control_header,
             "source": self.source,
         }
@@ -119,6 +127,8 @@ class RouterNode:
         manufacturer = data.get("manufacturer", "Cisco Systems")
         model = data.get("model", "Nexus 9300-EX")
         last_updated = data.get("last_updated", "")
+        last_deployed = data.get("last_deployed", "")
+        revision = data.get("revision", "")
         secret_id = data.get("secret_id")
         control_header = data.get("control_header", "X-Control-Password")
         control_password = data.get("control_password", "")
@@ -133,6 +143,8 @@ class RouterNode:
             manufacturer=manufacturer,
             model=model,
             last_updated=last_updated,
+            last_deployed=last_deployed,
+            revision=revision,
             secret_id=secret_id,
             control_header=control_header,
             control_password=control_password,

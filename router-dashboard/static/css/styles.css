@@ -701,47 +701,127 @@ body.material-theme {
     flex: 1;
 }
 
-.console-action-bar {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-/* Quick Trigger Action Buttons Grid */
-.quick-actions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-    gap: 10px;
-}
-
-.md-card-btn {
-    padding: 10px 12px;
-    border-radius: 12px;
+/* Material 3 Command Actions Card & Icon Grid */
+.m3-console-actions-card {
+    background: var(--md-sys-color-surface-container);
     border: 1px solid var(--md-sys-color-outline-variant);
-    font-weight: 600;
-    font-size: 0.82rem;
-    cursor: pointer;
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.m3-actions-header h3 {
+    font-family: 'Google Sans', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--md-sys-color-primary);
+    letter-spacing: 0.5px;
     display: flex;
     align-items: center;
     gap: 6px;
+    margin: 0;
+}
+
+/* Action Inspection Hover Preview Badge (Fixed 2-Line Height under buttons) */
+.action-preview-card {
+    background: var(--md-sys-color-surface);
+    border: 1px solid var(--md-sys-color-outline-variant);
+    border-radius: 10px;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+    overflow: hidden;
     transition: all 0.2s ease;
 }
 
-.md-card-btn:disabled {
-    opacity: 0.35;
+.action-preview-card span.material-symbols-outlined {
+    font-size: 18px;
+    color: var(--md-sys-color-primary);
+    flex-shrink: 0;
+}
+
+.action-preview-text {
+    font-size: 0.74rem;
+    font-weight: 500;
+    color: var(--md-sys-color-on-surface-variant);
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Material 3 Single-Line 8-Button Icon Grid */
+.m3-icon-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+}
+
+.m3-icon-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--md-elevation-1);
+    position: relative;
+}
+
+.m3-icon-btn span {
+    font-size: 18px;
+}
+
+.m3-icon-btn:disabled {
+    opacity: 0.3;
     cursor: not-allowed;
+    box-shadow: none;
+    transform: none !important;
 }
 
-.md-card-btn:hover:not(:disabled) {
-    transform: translateY(-1px);
-    filter: brightness(1.15);
+.m3-icon-btn:hover:not(:disabled) {
+    transform: scale(1.08);
+    box-shadow: var(--md-elevation-2);
+    filter: brightness(1.2);
 }
 
-.btn-success { background: #166534; color: #ffffff; border-color: #22c55e; }
-.btn-danger { background: #991b1b; color: #ffffff; border-color: #ef4444; }
-.btn-warning { background: #9a3412; color: #ffffff; border-color: #f97316; }
-.btn-secondary { background: #334155; color: #ffffff; border-color: #64748b; }
-.btn-info { background: #075985; color: #ffffff; border-color: #38bdf8; }
+.m3-icon-btn:active:not(:disabled) {
+    transform: scale(0.96);
+}
+
+/* M3 Color Variations per Action Token */
+.m3-btn-power-up { background: #143823; color: #4ade80; border-color: #22c55e; }
+.m3-btn-power-down { background: #3c1919; color: #f87171; border-color: #ef4444; }
+.m3-btn-reboot { background: #3a2510; color: #fb923c; border-color: #f97316; }
+.m3-btn-bgp { background: #1e293b; color: #94a3b8; border-color: #64748b; }
+.m3-btn-traffic { background: #0c3349; color: #38bdf8; border-color: #0284c7; }
+.m3-btn-fail { background: #451a1a; color: #f87171; border-color: #dc2626; }
+.m3-btn-snmp { background: #2e1047; color: #c084fc; border-color: #9333ea; }
+.m3-btn-redeploy { background: #1e1b4b; color: #818cf8; border-color: #4f46e5; }
+
+.m3-btn-fail.active {
+    animation: pulse-border 1.5s infinite alternate;
+    background: #7f1d1d;
+    color: #ffffff;
+    border-color: #ef4444;
+}
+
+@keyframes pulse-border {
+    from { box-shadow: 0 0 4px #ef4444; }
+    to { box-shadow: 0 0 12px #ef4444; }
+}
 
 /* Manual LED Override Card */
 .manual-led-card {

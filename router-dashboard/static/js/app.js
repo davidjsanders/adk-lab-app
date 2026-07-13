@@ -31,6 +31,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnBgpReset = document.getElementById("cmd-bgp-reset");
     const btnTraffic = document.getElementById("cmd-traffic");
     const btnRedeploy = document.getElementById("cmd-redeploy");
+    const btnFailMode = document.getElementById("cmd-fail-mode");
+    const labelFailModeText = document.getElementById("label-fail-mode-text");
     
     const selectLedTarget = document.getElementById("select-led-target");
     const selectLedColor = document.getElementById("select-led-color");
@@ -119,12 +121,26 @@ document.addEventListener("DOMContentLoaded", () => {
         const isMulti = isMultiSelectMode && selectedRouterIds.size > 0;
         const hasSelection = isMulti || selectedRouter !== null;
         
-        [btnPowerUp, btnPowerDown, btnReboot, btnBgpReset, btnTraffic, selectLedTarget, selectLedColor, btnApplyLed].forEach(el => {
+        [btnPowerUp, btnPowerDown, btnReboot, btnBgpReset, btnTraffic, btnFailMode, selectLedTarget, selectLedColor, btnApplyLed].forEach(el => {
             if (el) el.disabled = !hasSelection;
         });
 
         if (btnRunSnmp) btnRunSnmp.disabled = isMulti || !selectedRouter;
         if (btnRedeploy) btnRedeploy.disabled = !hasSelection;
+
+        if (selectedRouter && btnFailMode) {
+            if (selectedRouter.fail_mode) {
+                btnFailMode.classList.add("active");
+                btnFailMode.setAttribute("data-action-label", "Disable Fail Mode");
+                btnFailMode.setAttribute("data-action-desc", "Turns off automated 5-minute BGP fault injection");
+                btnFailMode.title = "Disable Fail Mode: Stop automated BGP fault injection";
+            } else {
+                btnFailMode.classList.remove("active");
+                btnFailMode.setAttribute("data-action-label", "Enable Fail Mode");
+                btnFailMode.setAttribute("data-action-desc", "Injects automated BGP fault every 5 minutes");
+                btnFailMode.title = "Enable Fail Mode: Inject automated BGP fault every 5 minutes";
+            }
+        }
 
         if (isMulti) {
             const idList = Array.from(selectedRouterIds);
@@ -259,6 +275,38 @@ document.addEventListener("DOMContentLoaded", () => {
     const badgeNodesCount = document.getElementById("badge-nodes-count");
 
     /**
+     * Formats an ISO 8601 deployment timestamp into a clean localized date and time string
+     */
+    function formatDeployedTime(isoStr) {
+        if (!isoStr) return "N/A (Local)";
+        try {
+            const d = new Date(isoStr);
+            if (isNaN(d.getTime())) return isoStr;
+            return d.toLocaleString(undefined, {
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        } catch {
+            return isoStr;
+        }
+    }
+
+    /**
+     * Formats a Cloud Run revision string into a compact identifier (e.g. 00010-fpg)
+     */
+    function formatRevision(rev) {
+        if (!rev) return "N/A";
+        const parts = rev.split("-");
+        if (parts.length >= 2) {
+            return parts.slice(-2).join("-");
+        }
+        return rev;
+    }
+
+    /**
      * Constructs a single LED indicator group component safely
      */
     function createLedGroup(id, labelText) {
@@ -341,6 +389,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         selectedRouterIds.add(router.id);
                         card.classList.add("selected");
                         card.setAttribute("aria-selected", "true");
+                        openConsoleDrawer();
                     } else {
                         selectedRouterIds.delete(router.id);
                         card.classList.remove("selected");
@@ -483,9 +532,34 @@ document.addEventListener("DOMContentLoaded", () => {
             r3.appendChild(l5);
             r3.appendChild(v5);
 
+            const r4 = document.createElement("div");
+            r4.className = "lcd-row";
+            const l6 = document.createElement("span");
+            l6.className = "lcd-label";
+            l6.textContent = "DEPLOYED:";
+            const v6 = document.createElement("span");
+            v6.className = "lcd-val highlights";
+            v6.id = `lcd-deployed-${router.id}`;
+            v6.textContent = formatDeployedTime(router.last_deployed);
+
+            const l7 = document.createElement("span");
+            l7.className = "lcd-label";
+            l7.textContent = "REV:";
+            const v7 = document.createElement("span");
+            v7.className = "lcd-val highlights";
+            v7.id = `lcd-revision-${router.id}`;
+            v7.textContent = formatRevision(router.revision);
+            v7.title = router.revision || "No active Cloud Run revision tag";
+
+            r4.appendChild(l6);
+            r4.appendChild(v6);
+            r4.appendChild(l7);
+            r4.appendChild(v7);
+
             lcd.appendChild(r1);
             lcd.appendChild(r2);
             lcd.appendChild(r3);
+            lcd.appendChild(r4);
 
             // LED Panel Component
             const ledPanel = document.createElement("div");
@@ -593,9 +667,24 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!Array.isArray(routerList) || routerList.length === 0) return;
 
         routerList.forEach(async (router) => {
+            const turnOffLeds = () => {
+                ["power", "online", "upstream", "lan1", "lan2", "lan3", "lan4", "send", "receive"].forEach(ledKey => {
+                    const ledElem = document.getElementById(`led-${ledKey}-${router.id}`);
+                    setLedElementState(ledElem, "off", router.id);
+                });
+            };
+
             try {
                 const res = await fetch(`/api/proxy/status?router_id=${encodeURIComponent(router.id)}`);
-                if (!res.ok) return;
+                if (!res.ok) {
+                    const stateElem = document.getElementById(`lcd-state-${router.id}`);
+                    if (stateElem) {
+                        stateElem.textContent = "OFFLINE";
+                        stateElem.className = "lcd-val status-offline";
+                    }
+                    turnOffLeds();
+                    return;
+                }
                 const data = await res.json();
 
                 const uptimeElem = document.getElementById(`lcd-uptime-${router.id}`);
@@ -610,11 +699,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (uptimeElem) uptimeElem.textContent = `${data.telemetry.uptime_seconds || 0}s`;
                     if (stateElem) {
                         stateElem.textContent = data.telemetry.status || "UNKNOWN";
-                        if (data.telemetry.status === "OFFLINE") {
+                        if (data.telemetry.status === "OFFLINE" || data.telemetry.status === "BGP_FAULT") {
                             stateElem.className = "lcd-val status-offline";
                         } else {
                             stateElem.className = "lcd-val highlights";
                         }
+                    }
+                    if (selectedRouter && router.id === selectedRouter.id) {
+                        selectedRouter.fail_mode = !!data.telemetry.fail_mode;
+                        updateConsoleControlsState();
                     }
                 }
 
@@ -630,6 +723,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     stateElem.textContent = "OFFLINE";
                     stateElem.className = "lcd-val status-offline";
                 }
+                turnOffLeds();
             }
         });
     }
@@ -657,6 +751,46 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /**
+     * Surgically updates ONLY the target router card's LCD deployment metadata without re-rendering the grid
+     */
+    async function refreshSingleRouterMetadata(routerId) {
+        if (!routerId) return;
+        try {
+            const res = await fetch("/api/routers");
+            if (!res.ok) return;
+            const data = await res.json();
+            const routers = data.routers || [];
+            const target = routers.find(r => r.id === routerId);
+            if (!target) return;
+
+            const idx = routerList.findIndex(r => r.id === routerId);
+            const prevRev = idx !== -1 ? routerList[idx].revision : "";
+
+            // Sync target in global routerList without re-rendering DOM grid
+            if (idx !== -1) {
+                routerList[idx] = target;
+            }
+
+            const depElem = document.getElementById(`lcd-deployed-${routerId}`);
+            if (depElem) {
+                depElem.textContent = formatDeployedTime(target.last_deployed);
+            }
+
+            const revElem = document.getElementById(`lcd-revision-${routerId}`);
+            if (revElem) {
+                revElem.textContent = formatRevision(target.revision);
+                revElem.title = target.revision || "No active Cloud Run revision tag";
+            }
+
+            if (prevRev && target.revision && prevRev !== target.revision) {
+                appendTerminalLog(`Cloud Run deployment ready for '${routerId}'. New active revision: ${target.revision}`, "SUCCESS", routerId);
+            }
+        } catch (err) {
+            console.warn(`Error refreshing metadata for router ${routerId}:`, err);
+        }
+    }
+
+    /**
      * Dispatches command directly to specified router
      */
     async function dispatchDirectCommand(targetRouter, command, parameters = {}) {
@@ -677,7 +811,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!res.ok) {
                 appendTerminalLog(`Command Failed [${res.status}]: ${data.message || data.error}`, "ERROR");
             } else {
-                appendTerminalLog(`Result: ${data.message || data.status}`, "SUCCESS");
+                const msg = data.message || data.status || "Command executed successfully";
+                const isInitiated = msg.toLowerCase().includes("initiated") || msg.toLowerCase().includes("in progress");
+                appendTerminalLog(`Result: ${msg}`, isInitiated ? "INFO" : "SUCCESS");
                 pollAllRouterTelemetry();
             }
         } catch (err) {
@@ -949,9 +1085,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const data = await res.json();
                 if (res.ok) {
-                    appendTerminalLog(`Successfully updated router '${rId}' settings${isRedeploying ? " and redeployed to Cloud Run" : ""}.`, "SUCCESS", rId);
                     modalEditRouter.classList.add("hidden");
-                    fetchRouters();
+                    if (isRedeploying) {
+                        appendTerminalLog(`Router '${rId}' configuration updated. Cloud Run deployment in progress...`, "INFO", rId);
+                        [4000, 8000, 12000, 16000, 20000, 25000].forEach(delay => {
+                            setTimeout(() => refreshSingleRouterMetadata(rId), delay);
+                        });
+                    } else {
+                        appendTerminalLog(`Successfully updated router '${rId}' settings.`, "SUCCESS", rId);
+                        fetchRouters();
+                    }
                 } else {
                     appendTerminalLog(`Failed updating settings for '${rId}': ${data.message || data.error}`, "ERROR", rId);
                     alert(`Failed updating settings: ${data.message || data.error}`);
@@ -973,8 +1116,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 btnToggleSelectMode.className = "md-button-tonal active";
                 if (iconSelectMode) iconSelectMode.textContent = "close";
                 if (labelSelectModeText) labelSelectModeText.textContent = "Done";
-                if (selectedRouter) selectedRouterIds.add(selectedRouter.id);
-                openConsoleDrawer();
             } else {
                 btnToggleSelectMode.className = "md-button-outlined";
                 if (iconSelectMode) iconSelectMode.textContent = "checklist";
@@ -992,6 +1133,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (btnReboot) btnReboot.addEventListener("click", () => dispatchProxyCommand("reset"));
     if (btnBgpReset) btnBgpReset.addEventListener("click", () => dispatchProxyCommand("bgp_reset"));
     if (btnTraffic) btnTraffic.addEventListener("click", () => dispatchProxyCommand("send_info"));
+    if (btnFailMode) {
+        btnFailMode.addEventListener("click", () => {
+            const currentMode = selectedRouter ? !!selectedRouter.fail_mode : false;
+            const newMode = !currentMode;
+            dispatchProxyCommand("set_fail_mode", { enabled: newMode });
+            if (selectedRouter) {
+                selectedRouter.fail_mode = newMode;
+                updateConsoleControlsState();
+            }
+        });
+    }
     if (btnRedeploy) btnRedeploy.addEventListener("click", () => redeployRouterNode(selectedRouter));
 
     if (btnApplyLed) {
@@ -1011,6 +1163,32 @@ document.addEventListener("DOMContentLoaded", () => {
             renderTerminalForActiveSelection();
         });
     }
+
+    // Material 3 Icon Button Hover & Focus Action Preview Badge Logic
+    const actionPreviewIcon = document.getElementById("action-preview-icon");
+    const actionPreviewText = document.getElementById("action-preview-text");
+
+    document.querySelectorAll(".m3-icon-btn").forEach(btn => {
+        const updatePreview = () => {
+            const label = btn.getAttribute("data-action-label") || "Action";
+            const desc = btn.getAttribute("data-action-desc") || "";
+            const iconElem = btn.querySelector("span.material-symbols-outlined");
+            const iconName = iconElem ? iconElem.textContent : "touch_app";
+
+            if (actionPreviewIcon) actionPreviewIcon.textContent = iconName;
+            if (actionPreviewText) actionPreviewText.innerHTML = `<strong>${label}</strong> — ${desc}`;
+        };
+
+        const resetPreview = () => {
+            if (actionPreviewIcon) actionPreviewIcon.textContent = "touch_app";
+            if (actionPreviewText) actionPreviewText.textContent = "Hover or focus an icon to inspect action";
+        };
+
+        btn.addEventListener("mouseenter", updatePreview);
+        btn.addEventListener("focus", updatePreview);
+        btn.addEventListener("mouseleave", resetPreview);
+        btn.addEventListener("blur", resetPreview);
+    });
 
     // Initial load and periodic telemetry refresh
     fetchRouters();

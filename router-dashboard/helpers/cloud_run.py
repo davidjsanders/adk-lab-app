@@ -11,6 +11,7 @@ import re
 import google.auth
 import google.auth.transport.requests
 import requests
+from typing import Any, Dict, List, Optional, Tuple
 
 from helpers.secret_manager import get_secret_id_for_router, store_router_secret
 
@@ -96,6 +97,16 @@ def discover_cloud_run_routers(project_id: str = "", region: str = "us-central1"
             location = env_vars.get("ROUTER_LOCATION", "GCP Cloud Run")
             purpose = env_vars.get("ROUTER_PURPOSE", "Emulated Router Node")
             secret_id = env_vars.get("CONTROL_SECRET_ID", get_secret_id_for_router(raw_router_id))
+            revision = status.get("latestReadyRevisionName") or status.get("latestCreatedRevisionName", "")
+
+            # Extract deployment timestamp (Ready / RoutesReady condition transition time or metadata creationTimestamp)
+            last_deployed = ""
+            for cond in status.get("conditions", []):
+                if cond.get("type") in ("Ready", "RoutesReady", "ConfigurationsReady") and cond.get("lastTransitionTime"):
+                    last_deployed = cond["lastTransitionTime"]
+                    break
+            if not last_deployed:
+                last_deployed = metadata.get("creationTimestamp", "")
 
             discovered.append({
                 "id": raw_router_id,
@@ -104,6 +115,8 @@ def discover_cloud_run_routers(project_id: str = "", region: str = "us-central1"
                 "location": location,
                 "purpose": purpose,
                 "secret_id": secret_id,
+                "revision": revision,
+                "last_deployed": last_deployed,
                 "control_header": env_vars.get("CONTROL_HEADER", "X-Control-Password"),
                 "source": "CLOUDRUN",
             })
@@ -161,6 +174,8 @@ def deploy_router_to_cloud_run(
             "Content-Type": "application/json",
         }
 
+        import time
+
         service_body = {
             "apiVersion": "serving.knative.dev/v1",
             "kind": "Service",
@@ -170,6 +185,12 @@ def deploy_router_to_cloud_run(
             },
             "spec": {
                 "template": {
+                    "metadata": {
+                        "annotations": {
+                            "client.knative.dev/user-image": image,
+                            "deployment.cloud.run/redeployed-at": str(time.time()),
+                        }
+                    },
                     "spec": {
                         "containers": [
                             {

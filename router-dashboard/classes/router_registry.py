@@ -95,10 +95,14 @@ class RouterRegistry:
         for cr_data in cloud_run_raw:
             cr_id = cr_data["id"]
             if cr_id in merged_map:
-                # Update URL and metadata from active Cloud Run service if available
+                # Update URL, last_deployed, revision, and metadata from active Cloud Run service if available
                 existing = merged_map[cr_id]
                 existing.url = cr_data["url"]
                 existing.source = "CLOUDRUN"
+                if cr_data.get("last_deployed"):
+                    existing.last_deployed = cr_data["last_deployed"]
+                if cr_data.get("revision"):
+                    existing.revision = cr_data["revision"]
             else:
                 merged_map[cr_id] = RouterNode.from_dict(cr_data)
 

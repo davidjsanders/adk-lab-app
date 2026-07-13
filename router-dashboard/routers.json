@@ -8,6 +8,8 @@
     "manufacturer": "Cisco Systems",
     "model": "8201-32FH",
     "last_updated": "",
+    "last_deployed": "2026-07-13T19:50:06.592613Z",
+    "revision": "router-emulator-rtr-can-east-01-00014-lc8",
     "control_header": "X-Control-Password",
     "source": "CLOUDRUN",
     "secret_id": "router-secret-rtr-can-east-01"
@@ -21,6 +23,8 @@
     "manufacturer": "Cisco Systems",
     "model": "C8500-12X4QC",
     "last_updated": "",
+    "last_deployed": "2026-07-13T19:37:15.463004Z",
+    "revision": "",
     "control_header": "X-Control-Password",
     "source": "CLOUDRUN",
     "secret_id": "router-secret-can-nn2-central-01"
@@ -34,6 +38,8 @@
     "manufacturer": "Cisco Systems",
     "model": "Nexus 9300-EX",
     "last_updated": "",
+    "last_deployed": "2026-07-13T19:37:14.997815Z",
+    "revision": "",
     "control_header": "X-Control-Password",
     "source": "CLOUDRUN",
     "secret_id": "router-secret-rtr-can-east-02"

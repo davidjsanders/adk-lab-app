@@ -120,40 +120,68 @@
                     </div>
 
                     <div class="side-sheet-body">
-                        <!-- Action Bar -->
-                        <div class="console-action-bar">
-                            <button class="md-button-tonal btn-snmp" id="btn-run-snmp" disabled title="Execute SNMP Walk MIB query against selected router" aria-label="Execute SNMP Walk MIB query against selected router">
-                                <span class="material-symbols-outlined" aria-hidden="true">search</span>
-                                <span>SNMP Walk MIB</span>
-                            </button>
-                            <button class="md-button-filled btn-redeploy" id="cmd-redeploy" disabled title="Redeploy Cloud Run container service" aria-label="Redeploy Cloud Run container service">
-                                <span class="material-symbols-outlined" aria-hidden="true">cloud_sync</span>
-                                <span>Redeploy Cloud Run</span>
-                            </button>
-                        </div>
+                        <!-- Material 3 Icon-Only Command Toolbar Card -->
+                        <div class="m3-console-actions-card">
+                            <div class="m3-actions-header">
+                                <h3><span class="material-symbols-outlined" aria-hidden="true">tune</span> CONTROL ACTIONS</h3>
+                            </div>
 
-                        <!-- Operational Trigger Buttons Grid -->
-                        <div class="quick-actions-grid" role="group" aria-label="Hardware Control Commands">
-                            <button class="md-card-btn btn-success" id="cmd-power-up" disabled title="Power Up hardware router chassis" aria-label="Power Up hardware router chassis">
-                                <span class="material-symbols-outlined" aria-hidden="true">power_settings_new</span>
-                                <span>Power Up</span>
-                            </button>
-                            <button class="md-card-btn btn-danger" id="cmd-power-down" disabled title="Power Down hardware router chassis" aria-label="Power Down hardware router chassis">
-                                <span class="material-symbols-outlined" aria-hidden="true">stop_circle</span>
-                                <span>Power Down</span>
-                            </button>
-                            <button class="md-card-btn btn-warning" id="cmd-reboot" disabled title="Execute hardware boot sequence and reset" aria-label="Execute hardware boot sequence and reset">
-                                <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
-                                <span>Reboot / Reset</span>
-                            </button>
-                            <button class="md-card-btn btn-secondary" id="cmd-bgp-reset" disabled title="Restart BGP peer session connection" aria-label="Restart BGP peer session connection">
-                                <span class="material-symbols-outlined" aria-hidden="true">sync_alt</span>
-                                <span>BGP Reset</span>
-                            </button>
-                            <button class="md-card-btn btn-info" id="cmd-traffic" disabled title="Simulate packet transmission traffic burst" aria-label="Simulate packet transmission traffic burst">
-                                <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
-                                <span>Traffic Burst</span>
-                            </button>
+                            <!-- Single-Line 8-Button Icon Grid -->
+                            <div class="m3-icon-grid" role="group" aria-label="Router Operational Commands">
+                                <button class="m3-icon-btn m3-btn-power-up" id="cmd-power-up" disabled
+                                        data-action-label="Power Up" data-action-desc="Boot & power on hardware chassis"
+                                        title="Power Up: Boot hardware router chassis" aria-label="Power Up hardware router chassis">
+                                    <span class="material-symbols-outlined" aria-hidden="true">power_settings_new</span>
+                                </button>
+
+                                <button class="m3-icon-btn m3-btn-power-down" id="cmd-power-down" disabled
+                                        data-action-label="Power Down" data-action-desc="Gracefully shut down router chassis"
+                                        title="Power Down: Gracefully shut down hardware router chassis" aria-label="Power Down hardware router chassis">
+                                    <span class="material-symbols-outlined" aria-hidden="true">stop_circle</span>
+                                </button>
+
+                                <button class="m3-icon-btn m3-btn-reboot" id="cmd-reboot" disabled
+                                        data-action-label="Reboot / Reset" data-action-desc="Trigger POST hardware boot sequence"
+                                        title="Reboot / Reset: Trigger POST hardware boot sequence" aria-label="Reboot hardware chassis">
+                                    <span class="material-symbols-outlined" aria-hidden="true">restart_alt</span>
+                                </button>
+
+                                <button class="m3-icon-btn m3-btn-bgp" id="cmd-bgp-reset" disabled
+                                        data-action-label="Reset BGP Session" data-action-desc="Restores BGP peering session & turns Fail Mode OFF"
+                                        title="Reset BGP Session: Re-establish peering session" aria-label="Restart BGP peer session connection">
+                                    <span class="material-symbols-outlined" aria-hidden="true">sync_alt</span>
+                                </button>
+
+                                <button class="m3-icon-btn m3-btn-traffic" id="cmd-traffic" disabled
+                                        data-action-label="Simulate Traffic Burst" data-action-desc="Transmit simulated data packets across interfaces"
+                                        title="Traffic Burst: Simulate packet transmission" aria-label="Simulate packet transmission traffic burst">
+                                    <span class="material-symbols-outlined" aria-hidden="true">bolt</span>
+                                </button>
+
+                                <button class="m3-icon-btn m3-btn-fail" id="cmd-fail-mode" disabled
+                                        data-action-label="Enable Fail Mode" data-action-desc="Injects automated BGP fault every 5 minutes"
+                                        title="Toggle Fail Mode: Injects automated BGP fault every 5 minutes" aria-label="Toggle automatic 5-minute BGP fault injection mode">
+                                    <span class="material-symbols-outlined" aria-hidden="true">warning</span>
+                                </button>
+
+                                <button class="m3-icon-btn m3-btn-snmp" id="btn-run-snmp" disabled
+                                        data-action-label="SNMP Walk MIB" data-action-desc="Query router MIB OIDs and operational telemetry"
+                                        title="SNMP Walk MIB: Query hardware metrics" aria-label="Execute SNMP Walk MIB query">
+                                    <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                                </button>
+
+                                <button class="m3-icon-btn m3-btn-redeploy" id="cmd-redeploy" disabled
+                                        data-action-label="Redeploy Cloud Run" data-action-desc="Build and roll out latest container service revision"
+                                        title="Redeploy Cloud Run: Roll out latest container revision" aria-label="Redeploy Cloud Run container service">
+                                    <span class="material-symbols-outlined" aria-hidden="true">cloud_sync</span>
+                                </button>
+                            </div>
+
+                            <!-- Live Action Hover Inspection Badge (Fixed 2-Line Height under buttons) -->
+                            <div class="action-preview-card" id="action-preview-card" aria-live="polite">
+                                <span class="material-symbols-outlined" id="action-preview-icon" aria-hidden="true">touch_app</span>
+                                <span class="action-preview-text" id="action-preview-text">Hover or focus an icon to inspect action</span>
+                            </div>
                         </div>
 
                         <!-- Manual LED Override Section -->

@@ -86,7 +86,32 @@ class RouterState:
         self.boot_start_time: float = 0.0
         self.boot_duration: float = 6.0
 
+        # Fail Mode & Automated Fault Injection Configuration
+        self.fail_mode: bool = False
+        self.last_fail_time: float = 0.0
+        self.fail_interval: float = float(os.getenv("FAIL_MODE_INTERVAL_SECONDS", "300.0"))
+
         self.add_log(f"Router {self.router_id} system initialized and online.")
+
+    def check_fail_mode(self) -> None:
+        """Evaluates active fail mode state and injects BGP failures every 5 minutes when active."""
+        if self.fail_mode and self.status == "OPERATIONAL":
+            now = time.time()
+            if self.last_fail_time == 0.0:
+                self.last_fail_time = now
+            elif now - self.last_fail_time >= self.fail_interval:
+                self.last_fail_time = now
+                self.status = "BGP_FAULT"
+                self.leds.update({
+                    "upstream": "red",
+                    "online": "amber",
+                    "send": "off",
+                    "receive": "off",
+                })
+                self.add_log(
+                    "CRITICAL FAULT: Injected automatic BGP peering session collapse (AS 65001 peer down).",
+                    "ERROR"
+                )
 
     def check_boot_sequence(self) -> None:
         """Evaluates active POST boot sequence and transitions to OPERATIONAL after boot duration."""
@@ -161,6 +186,7 @@ class RouterState:
         """
         self.check_boot_sequence()
         self.check_inactivity()
+        self.check_fail_mode()
         current_leds = self.leds.copy()
         if self.status == "OPERATIONAL" and self.last_command != "SET_LED":
             # Introduce dynamic traffic flicker dynamics unique to this router node ID and timestamp
@@ -185,6 +211,7 @@ class RouterState:
                 "uptime_seconds": self.uptime_seconds,
                 "status": self.status,
                 "booting": self.booting,
+                "fail_mode": self.fail_mode,
                 "last_command": self.last_command,
                 "last_command_time": self.last_command_time,
             },
@@ -198,7 +225,7 @@ class RouterState:
         """Executes an operational control command against the router chassis state.
 
         Args:
-            command: Command keyword string (e.g. power_up, power_down, reset, bgp_reset, set_led).
+            command: Command keyword string (e.g. power_up, power_down, reset, bgp_reset, set_fail_mode, set_led).
             params: Parameters dictionary (e.g. {"led": "power", "color": "green"}).
             remote_addr: IP address string of the requesting client controller.
 
@@ -260,16 +287,33 @@ class RouterState:
             return {"status": "SUCCESS", "message": "Boot sequence initiated (6s POST sequence)", "state": self.to_telemetry_dict()}, 200
 
         elif cmd_clean in ("bgp_reset", "bgp_restart"):
+            self.fail_mode = False  # Turn fail mode off when user resets BGP!
+            self.status = "OPERATIONAL"
             self.leds.update({
-                "upstream": "red",
-                "online": "amber",
+                "power": "green",
+                "online": "green",
+                "upstream": "green",
+                "send": "flash",
+                "receive": "flash",
             })
-            self.add_log(f"Command executed: BGP RESET session restart triggered by controller ({remote_addr})", "WARN")
+            self.add_log(f"Command executed: BGP RESET by controller ({remote_addr}). Session restored & Fail Mode set to OFF.")
             return {
                 "status": "SUCCESS",
-                "message": "BGP peer reset initiated. Upstream peering re-negotiating.",
+                "message": "BGP peer session re-established. Fail mode turned OFF.",
                 "state": self.to_telemetry_dict(),
             }, 200
+
+        elif cmd_clean in ("set_fail_mode", "fail_mode", "toggle_fail"):
+            enabled = bool(params.get("enabled", True))
+            self.fail_mode = enabled
+            if enabled:
+                self.last_fail_time = time.time()
+                self.add_log(f"Command executed: FAIL MODE ENABLED by controller ({remote_addr}) - 5min fault injection active.", "WARN")
+                msg = "Fail Mode ENABLED - Automated 5-min BGP fault injection active"
+            else:
+                self.add_log(f"Command executed: FAIL MODE DISABLED by controller ({remote_addr})")
+                msg = "Fail Mode DISABLED"
+            return {"status": "SUCCESS", "message": msg, "state": self.to_telemetry_dict()}, 200
 
         elif cmd_clean in ("send_info", "simulate_traffic", "traffic_burst"):
             self.leds.update({

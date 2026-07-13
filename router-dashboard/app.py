@@ -343,7 +343,7 @@ def proxy_redeploy() -> Tuple[Response, int]:
             registry.register_router(target_node)
             results[r_id] = {
                 "status": "SUCCESS",
-                "message": f"Router node '{r_id}' redeployed successfully to Cloud Run",
+                "message": f"Cloud Run deployment initiated for router node '{r_id}'",
                 "url": res_val,
             }
 

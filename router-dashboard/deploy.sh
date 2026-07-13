@@ -48,6 +48,7 @@ ROLES=(
     "roles/iam.serviceAccountUser"
     "roles/secretmanager.secretAccessor"
     "roles/iam.serviceAccountTokenCreator"
+    "roles/artifactregistry.reader"
 )
 
 for role in "${ROLES[@]}"; do
