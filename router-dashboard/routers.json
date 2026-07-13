@@ -10,8 +10,7 @@
     "last_updated": "",
     "control_header": "X-Control-Password",
     "source": "CLOUDRUN",
-    "secret_id": "router-secret-rtr-can-east-01",
-    "control_password": "860c149c-76aa-48de-9db2-b1dd918e27f1"
+    "secret_id": "router-secret-rtr-can-east-01"
   },
   {
     "id": "CAN-NN2-CENTRAL-01",
@@ -24,8 +23,7 @@
     "last_updated": "",
     "control_header": "X-Control-Password",
     "source": "CLOUDRUN",
-    "secret_id": "router-secret-can-nn2-central-01",
-    "control_password": "b2e1035a-a46d-477b-9139-3bf6e3e58565"
+    "secret_id": "router-secret-can-nn2-central-01"
   },
   {
     "id": "RTR-CAN-EAST-02",
@@ -38,7 +36,6 @@
     "last_updated": "",
     "control_header": "X-Control-Password",
     "source": "CLOUDRUN",
-    "secret_id": "router-secret-rtr-can-east-02",
-    "control_password": "c7573762-500f-4794-a975-0fd4f4ce76c4"
+    "secret_id": "router-secret-rtr-can-east-02"
   }
 ]
