@@ -1334,6 +1334,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify(payload)
                 });
 
+                const contentType = res.headers.get("content-type") || "";
+                if (!contentType.includes("application/json")) {
+                    const rawText = await res.text();
+                    const errDetail = `HTTP ${res.status} ${res.statusText}`;
+                    appendTerminalLog(`Error updating router '${rId}' settings: non-JSON response (${errDetail})`, "ERROR", rId);
+                    alert(`Failed updating settings for '${rId}': ${errDetail}`);
+                    return;
+                }
+
                 const data = await res.json();
                 if (res.ok) {
                     modalEditRouter.classList.add("hidden");

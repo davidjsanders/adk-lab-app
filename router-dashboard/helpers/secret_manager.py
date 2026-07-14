@@ -14,7 +14,7 @@ try:
 except ImportError:
     HAS_SECRET_MANAGER = False
 
-from helpers.logger import setup_json_logging
+from .logger import setup_json_logging
 
 logger = setup_json_logging("router-dashboard.secret_manager")
 

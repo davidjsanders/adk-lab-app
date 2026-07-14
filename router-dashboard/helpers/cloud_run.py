@@ -13,8 +13,13 @@ import google.auth.transport.requests
 import requests
 from typing import Any, Dict, List, Optional, Tuple
 
-from helpers.logger import setup_json_logging
-from helpers.secret_manager import get_secret_id_for_router, store_router_secret
+try:
+    from google.cloud import secretmanager
+except ImportError:
+    secretmanager = None
+
+from .logger import setup_json_logging
+from .secret_manager import get_secret_id_for_router, store_router_secret
 
 logger = setup_json_logging("router-dashboard.cloud_run")
 
@@ -95,6 +100,7 @@ def discover_cloud_run_routers(project_id: str = "", region: str = "us-central1"
             if not raw_router_id:
                 raw_router_id = name.replace("router-emulator-", "").upper()
 
+            display_name = env_vars.get("ROUTER_NAME") or env_vars.get("NAME") or f"Cloud Run {raw_router_id}"
             location = env_vars.get("ROUTER_LOCATION", "GCP Cloud Run")
             purpose = env_vars.get("ROUTER_PURPOSE", "Emulated Router Node")
             secret_id = env_vars.get("CONTROL_SECRET_ID", get_secret_id_for_router(raw_router_id))
@@ -111,7 +117,7 @@ def discover_cloud_run_routers(project_id: str = "", region: str = "us-central1"
 
             discovered.append({
                 "id": raw_router_id,
-                "name": f"Cloud Run {raw_router_id}",
+                "name": display_name,
                 "url": url,
                 "location": location,
                 "purpose": purpose,
@@ -131,22 +137,24 @@ def discover_cloud_run_routers(project_id: str = "", region: str = "us-central1"
 
 def deploy_router_to_cloud_run(
     router_id: str,
-    location: str,
-    purpose: str,
+    name: str = "",
+    location: str = "",
+    purpose: str = "",
     control_password: str = "",
     control_header: str = "X-Control-Password",
-) -> Tuple[bool, str]:
+) -> Tuple[bool, str, str]:
     """Deploys a pre-built container image to Google Cloud Run for an emulated router instance.
 
     Args:
         router_id: Unique string identifier for the router node.
+        name: Human-readable display name string.
         location: Operational datacenter location description.
         purpose: Hardware role purpose description.
         control_password: Pre-configured control authorization secret payload (generated if empty).
         control_header: Custom authorization header name string (default: 'X-Control-Password').
 
     Returns:
-        Tuple of (success_boolean, service_url_or_error_message).
+        Tuple of (success_boolean, service_url_or_error_message, revision_name).
     """
     project = os.getenv("GCP_PROJECT", "agentspace-argolis-demo")
     region = os.getenv("GCP_REGION", "us-central1")
@@ -157,13 +165,14 @@ def deploy_router_to_cloud_run(
 
     # Auto-generate control password if not supplied
     if not control_password:
-        from helpers.secret_manager import generate_control_uuid
+        from .secret_manager import generate_control_uuid
         control_password = generate_control_uuid()
 
     # Ensure secret is stored in Secret Manager before binding to Cloud Run
     sec_created, sec_msg = store_router_secret(project, secret_id, control_password)
     if not sec_created:
-        logger.warning(f"Secret Manager provisioning warning for '{secret_id}': {sec_msg}")
+        logger.error(f"Secret Manager provisioning failed for '{secret_id}': {sec_msg}")
+        return False, f"Secret Manager payload storage failed for '{secret_id}': {sec_msg}", ""
 
     try:
         credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
@@ -204,6 +213,7 @@ def deploy_router_to_cloud_run(
                                 },
                                 "env": [
                                     {"name": "ROUTER_ID", "value": router_id},
+                                    {"name": "ROUTER_NAME", "value": name or router_id},
                                     {"name": "ROUTER_LOCATION", "value": location},
                                     {"name": "ROUTER_PURPOSE", "value": purpose},
                                     {"name": "CONTROL_SECRET_ID", "value": secret_id},
@@ -297,6 +307,7 @@ def delete_cloud_run_router(router_id: str, project_id: str = "", region: str = 
 
         # 2. Delete Secret Manager Secret if present
         try:
+            from google.cloud import secretmanager
             sec_client = secretmanager.SecretManagerServiceClient()
             sec_name = sec_client.secret_path(project, secret_id)
             sec_client.delete_secret(request={"name": sec_name})

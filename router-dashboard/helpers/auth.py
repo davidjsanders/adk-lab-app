@@ -15,7 +15,7 @@ import google.auth
 import google.auth.transport.requests
 from google.oauth2 import id_token
 
-from helpers.logger import setup_json_logging
+from .logger import setup_json_logging
 
 logger = setup_json_logging("router-dashboard.auth")
 

@@ -18,8 +18,12 @@ from helpers import (
     ColorType,
     LedType,
     LogLevel,
+    dispatch_clone_router,
     dispatch_command,
+    dispatch_delete_router,
     dispatch_fetch_logs,
+    dispatch_redeploy_routers,
+    dispatch_register_router,
     dispatch_set_led,
     dispatch_snmp_walk,
     fetch_fleet_data,
@@ -245,6 +249,115 @@ def run_snmp_walk(router_id: str, oid: str = ".1.3.6.1") -> Dict[str, Any]:
         RuntimeError: If SNMP walk query fails.
     """
     return dispatch_snmp_walk(router_id, oid)
+
+
+@mcp.tool()
+def clone_router(
+    source_router_id: str,
+    new_router_id: str,
+    new_name: Optional[str] = None,
+    location: Optional[str] = None,
+    purpose: Optional[str] = None,
+    deploy_cloud_run: Optional[bool] = None,
+) -> Dict[str, Any]:
+    """Clones an existing router configuration with customized parameter overrides and registers/deploys it.
+
+    Args:
+        source_router_id: Existing router node string ID to copy hardware specifications from (e.g. 'RTR-CAN-EAST-01').
+        new_router_id: Unique string ID for the new cloned router instance (e.g. 'RTR-CAN-EAST-03').
+        new_name: Optional custom display name (defaults to 'Copy of <source.name>').
+        location: Optional physical datacenter or cloud location description.
+        purpose: Optional operational gateway role description.
+        deploy_cloud_run: Optional boolean flag to deploy a new GCP Cloud Run service (defaults to source setting).
+
+    Returns:
+        Dictionary containing operational status and registration metadata.
+
+    Raises:
+        RuntimeError: If source lookup or cloning operation fails.
+    """
+    return dispatch_clone_router(
+        source_router_id=source_router_id,
+        new_router_id=new_router_id,
+        new_name=new_name,
+        location=location,
+        purpose=purpose,
+        deploy_cloud_run=deploy_cloud_run,
+    )
+
+
+@mcp.tool()
+def register_or_deploy_router(
+    router_id: str,
+    name: str,
+    location: str,
+    purpose: str = "Edge Core Router",
+    deploy_cloud_run: bool = True,
+    url: Optional[str] = None,
+    control_password: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Registers a new router node or provisions a brand new Cloud Run container service.
+
+    Args:
+        router_id: Unique string ID of new router node (e.g. 'RTR-US-WEST-01').
+        name: Human-readable display name (e.g. 'Seattle BGP Border Gateway').
+        location: Location string description (e.g. 'Seattle Datacenter, Rack 04').
+        purpose: Operational role description.
+        deploy_cloud_run: If True, deploys a container instance to Google Cloud Run (default: True).
+        url: Optional endpoint URL (required if deploy_cloud_run is False).
+        control_password: Optional control authorization secret (auto-generates UUID in Secret Manager if empty).
+
+    Returns:
+        Dictionary containing status and assigned endpoint URL.
+
+    Raises:
+        RuntimeError: If registration or deployment dispatch fails.
+    """
+    payload = {
+        "id": router_id.strip(),
+        "name": name.strip(),
+        "location": location.strip(),
+        "purpose": purpose.strip(),
+        "deploy_cloud_run": deploy_cloud_run,
+        "deploy_cloudrun": deploy_cloud_run,
+        "url": url.strip() if url else "",
+        "control_password": control_password.strip() if control_password else "",
+        "control_header": "X-Control-Password",
+    }
+    return dispatch_register_router(payload)
+
+
+@mcp.tool()
+def delete_router_node(router_id: str) -> Dict[str, Any]:
+    """Tears down a router node (deletes its Cloud Run container service, Secret Manager key, and registry entry).
+
+    Args:
+        router_id: Unique string ID of target router node (e.g. 'RTR-CAN-ATLANTIC-02').
+
+    Returns:
+        Dictionary containing teardown result and status message.
+
+    Raises:
+        RuntimeError: If teardown request fails.
+    """
+    return dispatch_delete_router(router_id)
+
+
+@mcp.tool()
+def redeploy_router_node(router_ids: Union[List[str], str]) -> Dict[str, Any]:
+    """Triggers an immediate container redeployment on Cloud Run for target router node(s).
+
+    Args:
+        router_ids: Single string ID or list of string IDs of target Cloud Run router nodes.
+
+    Returns:
+        Dictionary containing operational status and redeployment summary results per node.
+
+    Raises:
+        RuntimeError: If redeployment dispatch fails.
+    """
+    ids_list = [router_ids] if isinstance(router_ids, str) else router_ids
+    return dispatch_redeploy_routers(ids_list)
 
 
 if __name__ == "__main__":

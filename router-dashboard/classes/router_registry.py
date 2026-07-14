@@ -73,7 +73,11 @@ class RouterRegistry:
             True if saving succeeded, False otherwise.
         """
         try:
-            data = [node.to_dict() for node in routers]
+            # Only persist MANUAL/LOCAL static entries; Cloud Run services are dynamically discovered live from GCP!
+            data = [
+                node.to_dict() for node in routers
+                if node.source != "CLOUDRUN" and "a.run.app" not in node.url
+            ]
             with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
             return True
@@ -102,13 +106,24 @@ class RouterRegistry:
         merged_map: Dict[str, RouterNode] = {node.id: node for node in local_nodes}
         has_updates = False
 
+        cloud_run_ids = {cr_data["id"] for cr_data in cloud_run_raw}
+
+        # 1. Update or insert active Cloud Run services into merged_map
         for cr_data in cloud_run_raw:
             cr_id = cr_data["id"]
             if cr_id in merged_map:
-                # Update URL, last_deployed, revision, and metadata from active Cloud Run service if available
                 existing = merged_map[cr_id]
                 existing.url = cr_data["url"]
                 existing.source = "CLOUDRUN"
+                if cr_data.get("name") and existing.name != cr_data["name"]:
+                    existing.name = cr_data["name"]
+                    has_updates = True
+                if cr_data.get("location") and existing.location != cr_data["location"]:
+                    existing.location = cr_data["location"]
+                    has_updates = True
+                if cr_data.get("purpose") and existing.purpose != cr_data["purpose"]:
+                    existing.purpose = cr_data["purpose"]
+                    has_updates = True
                 if cr_data.get("last_deployed") and existing.last_deployed != cr_data["last_deployed"]:
                     existing.last_deployed = cr_data["last_deployed"]
                     has_updates = True
@@ -118,6 +133,16 @@ class RouterRegistry:
             else:
                 merged_map[cr_id] = RouterNode.from_dict(cr_data)
                 has_updates = True
+
+        # 2. Purge stale Cloud Run node entries from merged_map if their Cloud Run service was deleted from GCP
+        stale_ids = [
+            r_id for r_id, node in merged_map.items()
+            if (node.source == "CLOUDRUN" or "a.run.app" in node.url) and r_id not in cloud_run_ids
+        ]
+        for s_id in stale_ids:
+            logger.info(f"Pruning deleted Cloud Run router node '{s_id}' from registry.")
+            del merged_map[s_id]
+            has_updates = True
 
         all_nodes = list(merged_map.values())
         all_nodes.sort(key=lambda n: n.id)

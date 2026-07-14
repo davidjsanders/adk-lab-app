@@ -142,6 +142,7 @@ def add_router() -> Tuple[Response, int]:
         new_revision = ""
         success, res_val, new_revision = deploy_router_to_cloud_run(
             router_id=router_id,
+            name=name,
             location=location,
             purpose=purpose,
             control_password=control_password,
@@ -223,8 +224,9 @@ def update_router(router_id: str) -> Tuple[Response, int]:
 
     if redeploy:
         logger.info(f"Redeploying router '{router_id}' after settings update...")
-        success, res_val = deploy_router_to_cloud_run(
+        success, res_val, *_ = deploy_router_to_cloud_run(
             router_id=node.id,
+            name=node.name,
             location=node.location,
             purpose=node.purpose,
             control_password=node.control_password,
@@ -426,8 +428,9 @@ def proxy_redeploy() -> Tuple[Response, int]:
             continue
 
         logger.info(f"Triggering Cloud Run redeployment for router '{r_id}'...")
-        success, res_val = deploy_router_to_cloud_run(
+        success, res_val, *_ = deploy_router_to_cloud_run(
             router_id=target_node.id,
+            name=target_node.name,
             location=target_node.location,
             purpose=target_node.purpose,
             control_password=target_node.control_password,
