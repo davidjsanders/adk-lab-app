@@ -4,6 +4,17 @@
  */
 
 document.addEventListener("DOMContentLoaded", () => {
+    // Utility functions
+    function escapeHtml(str) {
+        if (!str) return "";
+        return String(str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     // DOM Elements
     const routerGrid = document.getElementById("router-grid");
     const badgeTotalNodes = document.getElementById("badge-total-nodes");
@@ -115,6 +126,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     /**
+     * Determines whether a given router node instance is a local development emulator
+     */
+    function isLocalRouter(router) {
+        if (!router) return false;
+        return router.source === "MANUAL" || 
+            (router.url && (router.url.includes("127.0.0.1") || router.url.includes("localhost"))) || 
+            (router.id && router.id.startsWith("RTR-LOCAL"));
+    }
+
+    /**
      * Updates control console button state based on router selection or multi-select collection
      */
     function updateConsoleControlsState() {
@@ -126,7 +147,15 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         if (btnRunSnmp) btnRunSnmp.disabled = isMulti || !selectedRouter;
-        if (btnRedeploy) btnRedeploy.disabled = !hasSelection;
+        if (btnRedeploy) {
+            const isLocalSel = selectedRouter ? isLocalRouter(selectedRouter) : false;
+            btnRedeploy.disabled = !hasSelection || isLocalSel;
+            if (isLocalSel) {
+                btnRedeploy.title = "Cloud Run redeploy is disabled for local emulated routers";
+            } else {
+                btnRedeploy.title = "Redeploy Cloud Run container service";
+            }
+        }
 
         if (selectedRouter && btnFailMode) {
             if (selectedRouter.fail_mode) {
@@ -429,16 +458,35 @@ document.addEventListener("DOMContentLoaded", () => {
                 toggleRouterNodeSelection(router);
             });
 
+            const cardLogsBtn = document.createElement("button");
+            cardLogsBtn.className = "btn-card-launch";
+            cardLogsBtn.style.background = "#334155";
+            cardLogsBtn.title = `View Dedicated Event Logs Window for ${router.name}`;
+            cardLogsBtn.setAttribute("aria-label", `View Dedicated Event Logs Window for ${router.name}`);
+            cardLogsBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 14px;" aria-hidden="true">feed</span> Logs`;
+            cardLogsBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                openLogsModal(router.id);
+            });
+
+            const isLocalCard = isLocalRouter(router);
             const redeployBtn = document.createElement("button");
             redeployBtn.className = "btn-card-launch";
-            redeployBtn.style.background = "#0284c7";
-            redeployBtn.title = `Redeploy ${router.name} instance to Cloud Run`;
+            redeployBtn.style.background = isLocalCard ? "#475569" : "#0284c7";
             redeployBtn.setAttribute("aria-label", `Redeploy ${router.name} instance to Cloud Run`);
             redeployBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 14px;" aria-hidden="true">cloud_sync</span>`;
-            redeployBtn.addEventListener("click", (e) => {
-                e.stopPropagation();
-                redeployRouterNode(router);
-            });
+            if (isLocalCard) {
+                redeployBtn.disabled = true;
+                redeployBtn.style.opacity = "0.35";
+                redeployBtn.style.cursor = "not-allowed";
+                redeployBtn.title = `Cloud Run redeploy is disabled for local node (${router.id})`;
+            } else {
+                redeployBtn.title = `Redeploy ${router.name} instance to Cloud Run`;
+                redeployBtn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    redeployRouterNode(router);
+                });
+            }
             const editBtn = document.createElement("button");
             editBtn.className = "icon-button";
             editBtn.style.cssText = "width: 28px; height: 28px; color: var(--md-sys-color-primary);";
@@ -661,70 +709,161 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /**
-     * Polls status telemetry for all registered router cards dynamically
+     * Updates card LCD and LED UI indicators for a single router node from telemetry payload
+     */
+    function updateRouterNodeUI(routerId, data) {
+        const uptimeElem = document.getElementById(`lcd-uptime-${routerId}`);
+        const stateElem = document.getElementById(`lcd-state-${routerId}`);
+        const updatedElem = document.getElementById(`lcd-updated-${routerId}`);
+
+        const turnOffLeds = () => {
+            ["power", "online", "upstream", "lan1", "lan2", "lan3", "lan4", "send", "receive"].forEach(ledKey => {
+                const ledElem = document.getElementById(`led-${ledKey}-${routerId}`);
+                setLedElementState(ledElem, "off", routerId);
+            });
+        };
+
+        if (!data || data.error || data.telemetry?.status === "OFFLINE") {
+            if (stateElem) {
+                stateElem.textContent = "OFFLINE";
+                stateElem.className = "lcd-val status-offline";
+            }
+            turnOffLeds();
+            return;
+        }
+
+        if (updatedElem) {
+            updatedElem.textContent = new Date().toLocaleTimeString();
+        }
+
+        if (data.telemetry) {
+            if (uptimeElem) uptimeElem.textContent = `${data.telemetry.uptime_seconds || 0}s`;
+            if (stateElem) {
+                stateElem.textContent = data.telemetry.status || "UNKNOWN";
+                if (data.telemetry.status === "OFFLINE" || data.telemetry.status === "BGP_FAULT") {
+                    stateElem.className = "lcd-val status-offline";
+                } else {
+                    stateElem.className = "lcd-val highlights";
+                }
+            }
+            if (selectedRouter && routerId === selectedRouter.id) {
+                selectedRouter.fail_mode = !!data.telemetry.fail_mode;
+                updateConsoleControlsState();
+            }
+        }
+
+        if (data.leds) {
+            Object.keys(data.leds).forEach(ledKey => {
+                const ledElem = document.getElementById(`led-${ledKey}-${routerId}`);
+                setLedElementState(ledElem, data.leds[ledKey], routerId);
+            });
+        }
+    }
+
+    /**
+     * Process incoming multiplexed SSE payload frame for the fleet
+     */
+    function handleFleetStreamData(payloadText) {
+        try {
+            const payload = JSON.parse(payloadText);
+            if (payload && payload.routers) {
+                Object.keys(payload.routers).forEach(rId => {
+                    updateRouterNodeUI(rId, payload.routers[rId]);
+                });
+            }
+        } catch (err) {
+            console.error("Error parsing fleet SSE telemetry stream packet:", err);
+        }
+    }
+
+    /**
+     * Polls status telemetry for all registered router cards dynamically (REST Fallback)
      */
     async function pollAllRouterTelemetry() {
         if (!Array.isArray(routerList) || routerList.length === 0) return;
 
         routerList.forEach(async (router) => {
-            const turnOffLeds = () => {
-                ["power", "online", "upstream", "lan1", "lan2", "lan3", "lan4", "send", "receive"].forEach(ledKey => {
-                    const ledElem = document.getElementById(`led-${ledKey}-${router.id}`);
-                    setLedElementState(ledElem, "off", router.id);
-                });
-            };
-
             try {
                 const res = await fetch(`/api/proxy/status?router_id=${encodeURIComponent(router.id)}`);
                 if (!res.ok) {
-                    const stateElem = document.getElementById(`lcd-state-${router.id}`);
-                    if (stateElem) {
-                        stateElem.textContent = "OFFLINE";
-                        stateElem.className = "lcd-val status-offline";
-                    }
-                    turnOffLeds();
+                    updateRouterNodeUI(router.id, { error: "Offline" });
                     return;
                 }
                 const data = await res.json();
-
-                const uptimeElem = document.getElementById(`lcd-uptime-${router.id}`);
-                const stateElem = document.getElementById(`lcd-state-${router.id}`);
-                const updatedElem = document.getElementById(`lcd-updated-${router.id}`);
-
-                if (updatedElem) {
-                    updatedElem.textContent = new Date().toLocaleTimeString();
-                }
-
-                if (data.telemetry) {
-                    if (uptimeElem) uptimeElem.textContent = `${data.telemetry.uptime_seconds || 0}s`;
-                    if (stateElem) {
-                        stateElem.textContent = data.telemetry.status || "UNKNOWN";
-                        if (data.telemetry.status === "OFFLINE" || data.telemetry.status === "BGP_FAULT") {
-                            stateElem.className = "lcd-val status-offline";
-                        } else {
-                            stateElem.className = "lcd-val highlights";
-                        }
-                    }
-                    if (selectedRouter && router.id === selectedRouter.id) {
-                        selectedRouter.fail_mode = !!data.telemetry.fail_mode;
-                        updateConsoleControlsState();
-                    }
-                }
-
-                if (data.leds) {
-                    Object.keys(data.leds).forEach(ledKey => {
-                        const ledElem = document.getElementById(`led-${ledKey}-${router.id}`);
-                        setLedElementState(ledElem, data.leds[ledKey], router.id);
-                    });
-                }
+                updateRouterNodeUI(router.id, data);
             } catch (err) {
-                const stateElem = document.getElementById(`lcd-state-${router.id}`);
-                if (stateElem) {
-                    stateElem.textContent = "OFFLINE";
-                    stateElem.className = "lcd-val status-offline";
-                }
-                turnOffLeds();
+                updateRouterNodeUI(router.id, { error: "Offline" });
             }
+        });
+    }
+
+    let activeFleetFilter = window.IS_LOCAL_ENV ? "local" : "all";
+
+    /**
+     * Filters global routerList array based on active filter tab (all, local, cloudrun)
+     */
+    function getFilteredRouters() {
+        if (activeFleetFilter === "local") {
+            return routerList.filter(r => 
+                r.source === "MANUAL" || 
+                (r.url && (r.url.includes("127.0.0.1") || r.url.includes("localhost"))) || 
+                (r.id && r.id.startsWith("RTR-LOCAL"))
+            );
+        } else if (activeFleetFilter === "cloudrun") {
+            return routerList.filter(r => 
+                r.source === "CLOUDRUN" || 
+                (r.url && r.url.includes("a.run.app"))
+            );
+        }
+        return routerList;
+    }
+
+    /**
+     * Updates active state classes on filter toggle chips and notice banner
+     */
+    function syncFilterControlsUI() {
+        const banner = document.getElementById("local-mode-banner");
+
+        ["all", "local", "cloudrun"].forEach(fKey => {
+            const btn = document.getElementById(`filter-btn-${fKey}`);
+            if (btn) {
+                if (fKey === activeFleetFilter) {
+                    btn.classList.add("active");
+                    btn.setAttribute("aria-checked", "true");
+                } else {
+                    btn.classList.remove("active");
+                    btn.setAttribute("aria-checked", "false");
+                }
+            }
+        });
+
+        if (banner) {
+            if (activeFleetFilter === "local") {
+                banner.classList.remove("hidden");
+            } else {
+                banner.classList.add("hidden");
+            }
+        }
+    }
+
+    // Attach event listeners to fleet filter buttons if present (Local Dev Mode)
+    ["all", "local", "cloudrun"].forEach(fKey => {
+        const btn = document.getElementById(`filter-btn-${fKey}`);
+        if (btn) {
+            btn.addEventListener("click", () => {
+                activeFleetFilter = fKey;
+                syncFilterControlsUI();
+                renderRouterGrid(getFilteredRouters());
+            });
+        }
+    });
+
+    const btnResetBanner = document.getElementById("btn-reset-fleet-filter");
+    if (btnResetBanner) {
+        btnResetBanner.addEventListener("click", () => {
+            activeFleetFilter = "all";
+            syncFilterControlsUI();
+            renderRouterGrid(getFilteredRouters());
         });
     }
 
@@ -743,7 +882,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 selectedRouter = routerList.find(r => r.id === selectedRouter.id) || null;
             }
 
-            renderRouterGrid(routerList);
+            syncFilterControlsUI();
+            renderRouterGrid(getFilteredRouters());
             updateConsoleControlsState();
         } catch (err) {
             appendTerminalLog(`Error loading router registry: ${err.message}`, "ERROR");
@@ -1050,7 +1190,13 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("edit-router-mfg").value = router.manufacturer || "Cisco Systems";
         document.getElementById("edit-router-model").value = router.model || "Nexus 9300-EX";
         document.getElementById("edit-router-pass").value = "";
-        document.getElementById("check-edit-redeploy").checked = true;
+        
+        const isLocalNode = isLocalRouter(router);
+        const chkRedeploy = document.getElementById("check-edit-redeploy");
+        if (chkRedeploy) {
+            chkRedeploy.checked = !isLocalNode;
+            chkRedeploy.disabled = isLocalNode;
+        }
         modalEditRouter.classList.remove("hidden");
     }
 
@@ -1154,13 +1300,338 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    /**
+     * Fetches historical logs from target router emulator and updates ROUTER EVENT LOGS display box
+     */
+    async function fetchHistoricalLogs() {
+        const routerLogsOutput = document.getElementById("router-logs-output");
+        if (!selectedRouter) {
+            if (routerLogsOutput) {
+                routerLogsOutput.innerHTML = `<div class="terminal-line"><span class="term-time">[System]</span> Select a router node card to fetch its historical logs.</div>`;
+            }
+            appendTerminalLog("Please select a router node card to fetch its historical logs.", "WARN");
+            return;
+        }
+
+        const windowSel = document.getElementById("select-log-window");
+        const windowVal = windowSel ? windowSel.value : "300";
+        
+        let url = `/api/proxy/logs?router_id=${encodeURIComponent(selectedRouter.id)}`;
+        if (windowVal !== "all") {
+            url += `&seconds=${encodeURIComponent(windowVal)}`;
+        }
+
+        appendTerminalLog(`Fetching log buffer for node '${selectedRouter.id}' (Window: ${windowVal === "all" ? "Full History" : windowVal + "s"})...`, "INFO", selectedRouter.id);
+
+        try {
+            const res = await fetch(url);
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                const errMsg = `Failed fetching logs: ${errData.message || res.statusText}`;
+                if (routerLogsOutput) {
+                    routerLogsOutput.innerHTML = `<div class="terminal-line"><span class="term-time">[System]</span> <span style="color:#f2b8b5;">[ERROR] ${escapeHtml(errMsg)}</span></div>`;
+                }
+                appendTerminalLog(errMsg, "ERROR", selectedRouter.id);
+                return;
+            }
+
+            const data = await res.json();
+            const fetchedLogs = data.logs || [];
+            
+            if (routerLogsOutput) {
+                routerLogsOutput.innerHTML = "";
+                if (fetchedLogs.length === 0) {
+                    routerLogsOutput.innerHTML = `<div class="terminal-line"><span class="term-time">[System]</span> No log entries found for node '${selectedRouter.id}' in selected time window.</div>`;
+                } else {
+                    fetchedLogs.forEach(l => {
+                        const line = document.createElement("div");
+                        line.className = "terminal-line";
+                        const lvl = (l.level || "INFO").toUpperCase();
+                        let lvlColor = "#8ab4f8";
+                        if (lvl === "WARN") lvlColor = "#ffb74d";
+                        if (lvl === "ERROR" || lvl === "CRITICAL") lvlColor = "#f2b8b5";
+                        
+                        line.innerHTML = `<span class="term-time">[${l.timestamp || l.timestamp_iso || 'UTC'}]</span> <span style="color:${lvlColor}; font-weight:600;">[${lvl}]</span> ${escapeHtml(l.message || '')}`;
+                        routerLogsOutput.appendChild(line);
+                    });
+                    routerLogsOutput.scrollTop = routerLogsOutput.scrollHeight;
+                }
+            }
+
+            appendTerminalLog(`Successfully retrieved ${fetchedLogs.length} collected log entries for '${selectedRouter.id}'.`, "SUCCESS", selectedRouter.id);
+        } catch (err) {
+            const errMsg = `Error communicating with log service: ${err.message}`;
+            if (routerLogsOutput) {
+                routerLogsOutput.innerHTML = `<div class="terminal-line"><span class="term-time">[System]</span> <span style="color:#f2b8b5;">[ERROR] ${escapeHtml(errMsg)}</span></div>`;
+            }
+            appendTerminalLog(errMsg, "ERROR", selectedRouter.id);
+        }
+    }
+
+    /**
+     * Exports client execution log buffer to a downloadable text file
+     */
+    function exportExecutionLogs() {
+        const activeId = selectedRouter ? selectedRouter.id : SYSTEM_LOG_KEY;
+        const logs = routerLogsMap.get(activeId) || [];
+
+        if (logs.length === 0) {
+            alert("No execution log entries available to export.");
+            return;
+        }
+
+        const lines = logs.map(l => {
+            const timeStr = l.time || l.timestamp || l.timestamp_iso || new Date().toLocaleTimeString();
+            const lvlStr = l.prefix || l.level || "INFO";
+            const msgStr = l.message || l.text || "";
+            return `[${timeStr}] [${lvlStr}] ${msgStr}`;
+        });
+        const content = `=== Client Command Execution Log Output: ${activeId} ===\nExported At: ${new Date().toISOString()}\nTotal Entries: ${logs.length}\n\n` + lines.join("\n");
+
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        a.download = `execution-logs-${activeId.toLowerCase()}-${Date.now()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+        appendTerminalLog(`Exported ${logs.length} execution log lines to file 'execution-logs-${activeId.toLowerCase()}.txt'`, "SUCCESS", activeId);
+    }
+
+    /**
+     * Exports fetched router hardware action event logs from the router-logs-output window
+     */
+    function exportRouterEventLogs() {
+        const activeId = selectedRouter ? selectedRouter.id : "router";
+        const routerLogsOutput = document.getElementById("router-logs-output");
+        if (!routerLogsOutput) return;
+
+        const lineElems = Array.from(routerLogsOutput.querySelectorAll(".terminal-line"));
+        const rawLines = lineElems.map(el => el.textContent.trim()).filter(t => t && !t.includes("Select a router node"));
+
+        if (rawLines.length === 0) {
+            alert("No router hardware event logs fetched to export. Click 'Fetch Logs' first.");
+            return;
+        }
+
+        const content = `=== Router Hardware Event Logs: ${activeId} ===\nExported At: ${new Date().toISOString()}\nTotal Entries: ${rawLines.length}\n\n` + rawLines.join("\n");
+
+        const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+        const downloadUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = downloadUrl;
+        a.download = `router-event-logs-${activeId.toLowerCase()}-${Date.now()}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(downloadUrl);
+        appendTerminalLog(`Exported ${rawLines.length} hardware action log lines to file 'router-event-logs-${activeId.toLowerCase()}.txt'`, "SUCCESS", activeId);
+    }
+
+    // Modal Router Event Logs Window Controls
+    const modalRouterLogs = document.getElementById("modal-router-logs");
+    const btnCloseLogsModal = document.getElementById("btn-close-logs-modal");
+    const logsSelectRouter = document.getElementById("logs-select-router");
+    const logsSelectWindow = document.getElementById("logs-select-window");
+    const logsSelectLevel = document.getElementById("logs-select-level");
+    const logsSearchInput = document.getElementById("logs-search-input");
+    const btnModalLogsRefresh = document.getElementById("btn-modal-logs-refresh");
+    const btnModalLogsExport = document.getElementById("btn-modal-logs-export");
+    const checkModalLogsAutorefresh = document.getElementById("check-modal-logs-autorefresh");
+    const logsTerminalBox = document.getElementById("modal-logs-terminal-box");
+    const logsCountBadge = document.getElementById("logs-window-count-badge");
+
+    let logsAutoRefreshInterval = null;
+    let cachedModalLogs = [];
+
+    function populateLogsModalRouterOptions(selectedId = null) {
+        if (!logsSelectRouter) return;
+        logsSelectRouter.innerHTML = "";
+        
+        routerList.forEach(r => {
+            const opt = document.createElement("option");
+            opt.value = r.id;
+            opt.textContent = `${r.name} (${r.id})`;
+            if (selectedId && r.id === selectedId) opt.selected = true;
+            logsSelectRouter.appendChild(opt);
+        });
+
+        if (!selectedId && selectedRouter) {
+            logsSelectRouter.value = selectedRouter.id;
+        }
+    }
+
+    function openLogsModal(targetRouterId = null) {
+        if (!modalRouterLogs) return;
+        populateLogsModalRouterOptions(targetRouterId);
+        modalRouterLogs.classList.remove("hidden");
+        fetchLogsModalData();
+    }
+
+    function renderModalLogsTerminal() {
+        if (!logsTerminalBox) return;
+        
+        const levelVal = logsSelectLevel ? logsSelectLevel.value.toUpperCase() : "";
+        const searchVal = logsSearchInput ? logsSearchInput.value.toLowerCase().trim() : "";
+
+        let filtered = cachedModalLogs;
+        if (levelVal) {
+            filtered = filtered.filter(l => (l.level || "").toUpperCase() === levelVal);
+        }
+        if (searchVal) {
+            filtered = filtered.filter(l => (l.message || "").toLowerCase().includes(searchVal) || (l.timestamp || "").toLowerCase().includes(searchVal));
+        }
+
+        logsTerminalBox.innerHTML = "";
+
+        if (filtered.length === 0) {
+            logsTerminalBox.innerHTML = `<div class="terminal-line"><span class="term-time">[System]</span> No matching event log records found for this criteria.</div>`;
+            if (logsCountBadge) logsCountBadge.textContent = "0 matching log entries";
+            return;
+        }
+
+        filtered.forEach(entry => {
+            const line = document.createElement("div");
+            line.className = "terminal-line";
+            
+            const lvl = (entry.level || "INFO").toUpperCase();
+            let lvlColor = "#8ab4f8";
+            if (lvl === "WARN") lvlColor = "#ffb74d";
+            if (lvl === "ERROR" || lvl === "CRITICAL") lvlColor = "#f2b8b5";
+
+            line.innerHTML = `<span class="term-time">[${entry.timestamp || entry.timestamp_iso || 'UTC'}]</span> <span style="color:${lvlColor}; font-weight:600;">[${lvl}]</span> ${escapeHtml(entry.message || '')}`;
+            logsTerminalBox.appendChild(line);
+        });
+
+        logsTerminalBox.scrollTop = logsTerminalBox.scrollHeight;
+        if (logsCountBadge) logsCountBadge.textContent = `${filtered.length} matching log entries (Total: ${cachedModalLogs.length})`;
+    }
+
+    async function fetchLogsModalData() {
+        const rId = logsSelectRouter ? logsSelectRouter.value : (selectedRouter ? selectedRouter.id : "");
+        if (!rId) return;
+
+        const wVal = logsSelectWindow ? logsSelectWindow.value : "300";
+        let url = `/api/proxy/logs?router_id=${encodeURIComponent(rId)}`;
+        if (wVal !== "all") {
+            url += `&seconds=${encodeURIComponent(wVal)}`;
+        }
+
+        try {
+            const res = await fetch(url);
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                cachedModalLogs = [{ timestamp: new Date().toLocaleTimeString(), level: "ERROR", message: `Failed querying logs: ${errData.message || res.statusText}` }];
+                renderModalLogsTerminal();
+                return;
+            }
+
+            const data = await res.json();
+            cachedModalLogs = data.logs || [];
+            renderModalLogsTerminal();
+        } catch (err) {
+            cachedModalLogs = [{ timestamp: new Date().toLocaleTimeString(), level: "ERROR", message: `Error querying logs: ${err.message}` }];
+            renderModalLogsTerminal();
+        }
+    }
+
+    if (btnCloseLogsModal) {
+        btnCloseLogsModal.addEventListener("click", () => {
+            modalRouterLogs.classList.add("hidden");
+            if (logsAutoRefreshInterval) {
+                clearInterval(logsAutoRefreshInterval);
+                logsAutoRefreshInterval = null;
+            }
+        });
+    }
+
+    const navOpenLogsWindow = document.getElementById("nav-open-logs-window");
+    if (navOpenLogsWindow) {
+        navOpenLogsWindow.addEventListener("click", (e) => {
+            e.preventDefault();
+            closeNavDrawer();
+            openLogsModal();
+        });
+    }
+
+    if (btnModalLogsRefresh) btnModalLogsRefresh.addEventListener("click", fetchLogsModalData);
+    if (logsSelectRouter) logsSelectRouter.addEventListener("change", fetchLogsModalData);
+    if (logsSelectWindow) logsSelectWindow.addEventListener("change", fetchLogsModalData);
+    if (logsSelectLevel) logsSelectLevel.addEventListener("change", renderModalLogsTerminal);
+    if (logsSearchInput) logsSearchInput.addEventListener("input", renderModalLogsTerminal);
+
+    if (checkModalLogsAutorefresh) {
+        checkModalLogsAutorefresh.addEventListener("change", () => {
+            if (checkModalLogsAutorefresh.checked) {
+                if (!logsAutoRefreshInterval) {
+                    logsAutoRefreshInterval = setInterval(fetchLogsModalData, 3000);
+                }
+            } else {
+                if (logsAutoRefreshInterval) {
+                    clearInterval(logsAutoRefreshInterval);
+                    logsAutoRefreshInterval = null;
+                }
+            }
+        });
+    }
+
+    if (btnModalLogsExport) {
+        btnModalLogsExport.addEventListener("click", () => {
+            const rId = logsSelectRouter ? logsSelectRouter.value : "router";
+            if (cachedModalLogs.length === 0) {
+                alert("No log entries available to export.");
+                return;
+            }
+            const lines = cachedModalLogs.map(l => `[${l.timestamp || l.timestamp_iso || ''}] [${(l.level || 'INFO').toUpperCase()}] ${l.message}`);
+            const content = `=== Router Event Log Window Output: ${rId} ===\nExported At: ${new Date().toISOString()}\nTotal Entries: ${cachedModalLogs.length}\n\n` + lines.join("\n");
+
+            const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+            const downloadUrl = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = downloadUrl;
+            a.download = `router-window-logs-${rId.toLowerCase()}-${Date.now()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(downloadUrl);
+        });
+    }
+
     if (btnRunSnmp) btnRunSnmp.addEventListener("click", dispatchSnmpWalk);
+
+    const btnFetchLogs = document.getElementById("btn-fetch-logs");
+    if (btnFetchLogs) btnFetchLogs.addEventListener("click", fetchHistoricalLogs);
+
+    const btnExportExecLogs = document.getElementById("btn-export-exec-logs");
+    if (btnExportExecLogs) btnExportExecLogs.addEventListener("click", exportExecutionLogs);
+
+    const btnExportRouterLogs = document.getElementById("btn-export-router-logs");
+    if (btnExportRouterLogs) btnExportRouterLogs.addEventListener("click", exportRouterEventLogs);
+
+    const selectLogWindow = document.getElementById("select-log-window");
+    if (selectLogWindow) {
+        selectLogWindow.addEventListener("change", () => {
+            if (selectedRouter) fetchHistoricalLogs();
+        });
+    }
 
     if (btnClearTerminal) {
         btnClearTerminal.addEventListener("click", () => {
             const activeId = selectedRouter ? selectedRouter.id : SYSTEM_LOG_KEY;
             routerLogsMap.set(activeId, []);
             renderTerminalForActiveSelection();
+        });
+    }
+
+    const btnClearRouterLogs = document.getElementById("btn-clear-router-logs");
+    if (btnClearRouterLogs) {
+        btnClearRouterLogs.addEventListener("click", () => {
+            const routerLogsOutput = document.getElementById("router-logs-output");
+            if (routerLogsOutput) {
+                routerLogsOutput.innerHTML = `<div class="terminal-line"><span class="term-time">[System]</span> Router log view cleared. Select a node and click 'Fetch Logs' to update.</div>`;
+            }
         });
     }
 
@@ -1190,8 +1661,43 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.addEventListener("blur", resetPreview);
     });
 
-    // Initial load and periodic telemetry refresh
+    let eventSource = null;
+    let isSseActive = false;
+
+    /**
+     * Initializes Server-Sent Events (SSE) stream listener for real-time telemetry updates
+     */
+    function initFleetEventSource() {
+        if (eventSource) {
+            eventSource.close();
+        }
+        eventSource = new EventSource("/api/proxy/stream");
+
+        eventSource.onopen = () => {
+            isSseActive = true;
+            appendTerminalLog("Connected to live fleet SSE telemetry stream (/api/proxy/stream)", "SYSTEM");
+        };
+
+        eventSource.onmessage = (event) => {
+            if (!event.data) return;
+            handleFleetStreamData(event.data);
+        };
+
+        eventSource.onerror = (err) => {
+            if (isSseActive) {
+                appendTerminalLog("SSE stream connection lost. Attempting auto-reconnect with REST fallback...", "WARN");
+            }
+            isSseActive = false;
+        };
+    }
+
+    // Initial load, SSE initialization, and fallback periodic telemetry refresh
     fetchRouters();
+    initFleetEventSource();
     const intervalMs = window.POLLING_INTERVAL_MS || 1500;
-    setInterval(pollAllRouterTelemetry, intervalMs);
+    setInterval(() => {
+        if (!isSseActive) {
+            pollAllRouterTelemetry();
+        }
+    }, intervalMs);
 });

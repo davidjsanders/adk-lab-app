@@ -43,5 +43,50 @@
     "control_header": "X-Control-Password",
     "source": "CLOUDRUN",
     "secret_id": "router-secret-rtr-can-east-02"
+  },
+  {
+    "id": "RTR-LOCAL-18001",
+    "name": "Local Test Router 18001",
+    "url": "http://127.0.0.1:18001",
+    "location": "Local Dev Environment (Port 18001)",
+    "purpose": "Local Emulated Gateway 1",
+    "manufacturer": "Cisco Systems",
+    "model": "Nexus 9300-EX",
+    "last_updated": "",
+    "last_deployed": "",
+    "revision": "local-dev",
+    "control_header": "X-Control-Password",
+    "control_password": "mock-local-control-password",
+    "source": "MANUAL"
+  },
+  {
+    "id": "RTR-LOCAL-18002",
+    "name": "Local Test Router 18002",
+    "url": "http://127.0.0.1:18002",
+    "location": "Local Dev Environment (Port 18002)",
+    "purpose": "Local Emulated Gateway 2",
+    "manufacturer": "Cisco Systems",
+    "model": "8201-32FH",
+    "last_updated": "",
+    "last_deployed": "",
+    "revision": "local-dev",
+    "control_header": "X-Control-Password",
+    "control_password": "mock-local-control-password",
+    "source": "MANUAL"
+  },
+  {
+    "id": "RTR-LOCAL-18003",
+    "name": "Local Test Router 18003",
+    "url": "http://127.0.0.1:18003",
+    "location": "Local Dev Environment (Port 18003)",
+    "purpose": "Local Emulated Gateway 3",
+    "manufacturer": "Cisco Systems",
+    "model": "C8500-12X4QC",
+    "last_updated": "",
+    "last_deployed": "",
+    "revision": "local-dev",
+    "control_header": "X-Control-Password",
+    "control_password": "mock-local-control-password",
+    "source": "MANUAL"
   }
 ]

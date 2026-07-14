@@ -4,10 +4,11 @@ Encapsulates chassis LED state, uptime tracking, operational status, event loggi
 and execution of operational hardware control commands.
 """
 
+from collections import deque
 from datetime import datetime, timezone
 import os
 import time
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 class RouterState:
@@ -75,7 +76,7 @@ class RouterState:
         self.booting: bool = False
         self.last_command: str = "INITIALIZED"
         self.last_command_time: str = datetime.now(timezone.utc).isoformat()
-        self.logs: List[Dict[str, str]] = []
+        self.logs: deque = deque(maxlen=10000)
 
         # Activity Timeout & Auto-Sleep Configuration
         self.last_activity_time: float = time.time()
@@ -154,20 +155,62 @@ class RouterState:
                 )
 
     def add_log(self, message: str, level: str = "INFO") -> None:
-        """Appends a new event log entry to the in-memory log buffer.
+        """Appends a new event log entry to the in-memory FIFO log ring buffer.
 
         Args:
             message: Message text describing the hardware event.
             level: Severity level string (INFO, WARN, ERROR).
         """
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        now_dt = datetime.now(timezone.utc)
         self.logs.append({
-            "timestamp": timestamp,
-            "level": level,
+            "timestamp": now_dt.strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "timestamp_iso": now_dt.isoformat(),
+            "timestamp_epoch": time.time(),
+            "level": level.upper(),
             "message": message,
         })
-        if len(self.logs) > 100:
-            self.logs.pop(0)
+
+    def get_logs(
+        self,
+        since_seconds: Optional[float] = None,
+        since_iso: Optional[str] = None,
+        level: Optional[str] = None,
+        limit: int = 100,
+    ) -> List[Dict[str, Any]]:
+        """Queries historical hardware action logs collected in memory.
+
+        Args:
+            since_seconds: Filter log entries within the last N seconds.
+            since_iso: ISO 8601 string timestamp cutoff.
+            level: Filter by severity level string (e.g. INFO, WARN, ERROR).
+            limit: Maximum number of log entries to return (default: 100).
+
+        Returns:
+            List of matching hardware action log entry dictionaries.
+        """
+        now = time.time()
+        filtered = list(self.logs)
+
+        if since_seconds is not None and since_seconds > 0:
+            cutoff = now - since_seconds
+            window_matches = [entry for entry in filtered if entry.get("timestamp_epoch", 0.0) >= cutoff]
+            if window_matches:
+                filtered = window_matches
+        elif since_iso:
+            try:
+                dt = datetime.fromisoformat(since_iso.replace("Z", "+00:00"))
+                cutoff = dt.timestamp()
+                window_matches = [entry for entry in filtered if entry.get("timestamp_epoch", 0.0) >= cutoff]
+                if window_matches:
+                    filtered = window_matches
+            except ValueError:
+                pass
+
+        if level:
+            lvl_upper = level.upper()
+            filtered = [entry for entry in filtered if entry.get("level", "INFO").upper() == lvl_upper]
+
+        return filtered[-limit:]
 
     @property
     def uptime_seconds(self) -> int:
@@ -216,7 +259,7 @@ class RouterState:
                 "last_command_time": self.last_command_time,
             },
             "leds": current_leds,
-            "logs": self.logs[-25:],
+            "logs": list(self.logs)[-25:],
         }
 
     def execute_command(
@@ -308,8 +351,18 @@ class RouterState:
             self.fail_mode = enabled
             if enabled:
                 self.last_fail_time = time.time()
-                self.add_log(f"Command executed: FAIL MODE ENABLED by controller ({remote_addr}) - 5min fault injection active.", "WARN")
-                msg = "Fail Mode ENABLED - Automated 5-min BGP fault injection active"
+                self.status = "BGP_FAULT"
+                self.leds.update({
+                    "upstream": "red",
+                    "online": "amber",
+                    "send": "off",
+                    "receive": "off",
+                })
+                self.add_log(
+                    f"CRITICAL FAULT: Immediate BGP upstream peering session collapse injected by controller ({remote_addr}).",
+                    "ERROR"
+                )
+                msg = "Fail Mode ENABLED - Immediate BGP upstream fault injected"
             else:
                 self.add_log(f"Command executed: FAIL MODE DISABLED by controller ({remote_addr})")
                 msg = "Fail Mode DISABLED"

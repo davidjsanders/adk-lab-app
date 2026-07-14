@@ -60,7 +60,12 @@ for role in "${ROLES[@]}"; do
 done
 
 # 2. Build and Push Container Image to Artifact Registry
-echo "[2/4] Building and pushing Docker container image via Cloud Build..."
+echo "[2/4] Ensuring Artifact Registry repository exists and building container image..."
+gcloud artifacts repositories create "docker-registry" \
+    --repository-format=docker \
+    --location="${REGION}" \
+    --project="${PROJECT_ID}" 2>/dev/null || true
+
 gcloud builds submit . \
     --project="${PROJECT_ID}" \
     --tag="${IMAGE_URI}"

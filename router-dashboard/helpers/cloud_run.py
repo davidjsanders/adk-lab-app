@@ -197,7 +197,7 @@ def deploy_router_to_cloud_run(
                                 "image": image,
                                 "resources": {
                                     "limits": {
-                                        "memory": "512Mi",
+                                        "memory": "2Gi",
                                         "cpu": "1000m",
                                     }
                                 },

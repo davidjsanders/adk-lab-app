@@ -5,9 +5,11 @@ and command interface protected by Secret Manager header authorization.
 """
 
 import hmac
+import json
 import logging
 import os
-from typing import Dict, Tuple, Union
+import time
+from typing import Dict, Generator, Tuple, Union
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request, Response
@@ -20,7 +22,7 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Configure logging
+# Configure logging (standard stdout/stderr for Cloud Run & console logging)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -123,6 +125,99 @@ def get_status() -> Response:
     return jsonify(data)
 
 
+@app.route("/api/logs", methods=["GET"])
+def get_logs() -> Response:
+    """Retrieves historical logs collected by the router emulator with optional time/level filters.
+
+    Query Parameters:
+        since_seconds / seconds: Filter logs within last N seconds (e.g. 300 for last 5 mins).
+        since_iso / since: ISO 8601 timestamp string cutoff.
+        level: Severity filter (INFO, WARN, ERROR).
+        limit: Maximum log entries to return (default: 100).
+
+    Returns:
+        JSON object containing list of matching log entries.
+    """
+    since_seconds_str = request.args.get("since_seconds", request.args.get("seconds", ""))
+    since_iso = request.args.get("since_iso", request.args.get("since", ""))
+    level = request.args.get("level", "")
+    limit_str = request.args.get("limit", "100")
+
+    since_seconds = None
+    if since_seconds_str:
+        try:
+            since_seconds = float(since_seconds_str)
+        except ValueError:
+            since_seconds = None
+
+    limit = 100
+    if limit_str.isdigit():
+        limit = int(limit_str)
+
+    logs = router.get_logs(since_seconds=since_seconds, since_iso=since_iso, level=level, limit=limit)
+    return jsonify({
+        "status": "SUCCESS",
+        "router_id": router.router_id,
+        "count": len(logs),
+        "logs": logs,
+    })
+
+
+@app.route("/api/stream", methods=["GET"])
+def stream_telemetry() -> Response:
+    """Streams live router state and telemetry via Server-Sent Events (SSE).
+
+    Args:
+        None.
+
+    Returns:
+        Flask Response object configured with text/event-stream MIME type.
+
+    Raises:
+        None.
+    """
+    def generate_events() -> Generator[str, None, None]:
+        """Yields JSON formatted SSE frames and periodic heartbeat ping comments.
+
+        Returns:
+            Generator yielding text SSE event frames.
+
+        Raises:
+            GeneratorExit: Handled when client disconnects.
+        """
+        last_ping = time.time()
+        ping_interval = 15.0
+        stream_interval = 1.5
+
+        try:
+            while True:
+                now = time.time()
+                if now - last_ping >= ping_interval:
+                    yield ": ping\n\n"
+                    last_ping = now
+
+                data = router.to_telemetry_dict()
+                data["metadata"]["snmp"] = {
+                    "enabled": SNMP_ENABLED,
+                    "community": SNMP_COMMUNITY,
+                    "walk_endpoint": "/snmp/walk",
+                    "get_endpoint": "/snmp/get",
+                }
+                payload = json.dumps(data)
+                yield f"data: {payload}\n\n"
+                time.sleep(stream_interval)
+        except GeneratorExit:
+            logger.info("Client disconnected from SSE stream.")
+
+    headers = {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+    }
+    return Response(generate_events(), mimetype="text/event-stream", headers=headers)
+
+
 @app.route("/snmp/walk", methods=["GET"])
 @app.route("/snmp/get", methods=["GET"])
 def http_snmp_emulator() -> Union[Response, str, Tuple[Response, int]]:
@@ -145,6 +240,8 @@ def http_snmp_emulator() -> Union[Response, str, Tuple[Response, int]]:
 
     mib = SNMPAgent.compile_mib_tree(router)
     filter_oid_str = request.args.get("oid", "").strip()
+
+    router.add_log(f"SNMP MIB query processed for OID '{filter_oid_str or '.1.3.6.1'}' (Community: {req_community}) from {request.remote_addr}")
 
     if filter_oid_str:
         filter_tuple = SNMPAgent.oid_to_tuple(filter_oid_str)

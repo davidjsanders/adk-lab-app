@@ -4,9 +4,11 @@ Provides multi-router fleet visualization, auto-discovery of Cloud Run instances
 OIDC IAM proxying of telemetry commands, and hardware visualizers.
 """
 
+import json
 import logging
 import os
-from typing import Any, Dict, List, Tuple, Union
+import time
+from typing import Any, Dict, Generator, List, Tuple, Union
 
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request, Response
@@ -63,6 +65,7 @@ def add_security_headers(response: Response) -> Response:
 
 
 POLLING_INTERVAL_MS: int = int(os.getenv("POLLING_INTERVAL_MS", "1500"))
+IS_LOCAL_ENV: bool = not bool(os.getenv("K_SERVICE"))
 
 
 @app.route("/")
@@ -75,7 +78,8 @@ def index() -> str:
     return render_template(
         "index.html",
         dashboard_name=DASHBOARD_NAME,
-        polling_interval_ms=POLLING_INTERVAL_MS
+        polling_interval_ms=POLLING_INTERVAL_MS,
+        is_local=IS_LOCAL_ENV,
     )
 
 
@@ -295,6 +299,79 @@ def proxy_status() -> Tuple[Response, int]:
         }), 200
 
 
+@app.route("/api/proxy/stream", methods=["GET"])
+def proxy_stream() -> Response:
+    """Proxies and multiplexes telemetry event streams across all registered router nodes.
+
+    Args:
+        None.
+
+    Returns:
+        Response object with text/event-stream MIME type.
+
+    Raises:
+        None.
+    """
+    def generate_fleet_stream() -> Generator[str, None, None]:
+        """Yields multiplexed JSON telemetry frames and heartbeat ping comments for the router fleet.
+
+        Returns:
+            Generator yielding SSE text event frames.
+
+        Raises:
+            GeneratorExit: Handled when client disconnects.
+        """
+        last_ping = time.time()
+        ping_interval = 15.0
+        stream_interval = 1.5
+
+        try:
+            while True:
+                now = time.time()
+                if now - last_ping >= ping_interval:
+                    yield ": ping\n\n"
+                    last_ping = now
+
+                routers = registry.get_all_routers()
+                fleet_data: Dict[str, Any] = {}
+
+                for node in routers:
+                    target_url = f"{node.url}/api/status"
+                    try:
+                        headers = build_proxy_headers(target_url)
+                        res = requests.get(target_url, headers=headers, timeout=2.0)
+                        if res.status_code == 200:
+                            fleet_data[node.id] = res.json()
+                        else:
+                            fleet_data[node.id] = {
+                                "error": "HTTP Error",
+                                "status_code": res.status_code,
+                                "telemetry": {"status": "OFFLINE", "uptime_seconds": 0, "booting": False},
+                                "leds": {"power": "off", "online": "off", "upstream": "off", "lan1": "off", "lan2": "off", "lan3": "off", "lan4": "off", "send": "off", "receive": "off"},
+                            }
+                    except Exception as err:
+                        fleet_data[node.id] = {
+                            "error": "Offline",
+                            "message": str(err),
+                            "telemetry": {"status": "OFFLINE", "uptime_seconds": 0, "booting": False},
+                            "leds": {"power": "off", "online": "off", "upstream": "off", "lan1": "off", "lan2": "off", "lan3": "off", "lan4": "off", "send": "off", "receive": "off"},
+                        }
+
+                payload = json.dumps({"timestamp": now, "routers": fleet_data})
+                yield f"data: {payload}\n\n"
+                time.sleep(stream_interval)
+        except GeneratorExit:
+            logger.info("Client disconnected from fleet SSE proxy stream.")
+
+    headers = {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-transform",
+        "Connection": "keep-alive",
+        "X-Accel-Buffering": "no",
+    }
+    return Response(generate_fleet_stream(), mimetype="text/event-stream", headers=headers)
+
+
 @app.route("/api/proxy/redeploy", methods=["POST"])
 def proxy_redeploy() -> Tuple[Response, int]:
     """Redeploys targeted router node(s) to Google Cloud Run from the pre-built image tag.
@@ -396,10 +473,12 @@ def proxy_command() -> Tuple[Response, int]:
 
         target_url = f"{target_node.url}/api/command"
         header_name = target_node.control_header
-        secret_id = target_node.secret_id or get_secret_id_for_router(r_id)
-
-        # Fetch active control secret UUID from Secret Manager, falling back to stored password
-        password = fetch_router_secret(GCP_PROJECT, secret_id) or target_node.control_password
+        # Prefer configured control password for local manual nodes; otherwise query Secret Manager
+        if target_node.control_password and (target_node.source == "MANUAL" or not target_node.secret_id):
+            password = target_node.control_password
+        else:
+            secret_id = target_node.secret_id or get_secret_id_for_router(r_id)
+            password = fetch_router_secret(GCP_PROJECT, secret_id) or target_node.control_password
 
         try:
             headers = build_proxy_headers(target_url, {
@@ -423,6 +502,54 @@ def proxy_command() -> Tuple[Response, int]:
         "command": command,
         "results": results
     }), 200
+
+
+@app.route("/api/proxy/logs", methods=["GET"])
+def proxy_logs() -> Tuple[Response, int]:
+    """Proxies request to query historical event logs from a target router node.
+
+    Query Parameters:
+        router_id: String ID of target router node.
+        seconds / since_seconds: Elapsed seconds filter window.
+        since / since_iso: ISO timestamp cutoff filter.
+        level: Severity level filter (INFO, WARN, ERROR).
+        limit: Max log count (default: 100).
+
+    Returns:
+        JSON response with router logs from target router emulator.
+    """
+    r_id = request.args.get("router_id", "").strip()
+    if not r_id:
+        return jsonify({"error": "Bad Request", "message": "Missing 'router_id' parameter"}), 400
+
+    target_node = registry.get_router_by_id(r_id)
+    if not target_node:
+        return jsonify({"error": "Not Found", "message": f"Router '{r_id}' not found"}), 404
+
+    header_name = target_node.control_header or "X-Control-Password"
+    if target_node.control_password and (target_node.source == "MANUAL" or not target_node.secret_id or target_node.id.startswith("RTR-LOCAL")):
+        password = target_node.control_password
+    else:
+        secret_id = target_node.secret_id or get_secret_id_for_router(r_id)
+        password = fetch_router_secret(GCP_PROJECT, secret_id) or target_node.control_password or "mock-local-control-password"
+
+    target_url = f"{target_node.url.rstrip('/')}/api/logs"
+    headers = build_proxy_headers(target_url, {
+        "Accept": "application/json",
+        header_name: password,
+    })
+
+    params = {}
+    for param_key in ("seconds", "since_seconds", "since", "since_iso", "level", "limit"):
+        if param_key in request.args:
+            params[param_key] = request.args[param_key]
+
+    try:
+        res = requests.get(target_url, headers=headers, params=params, timeout=5.0)
+        return Response(res.content, status=res.status_code, mimetype="application/json")
+    except Exception as err:
+        logger.error(f"Failed proxy logs request to {target_url}: {err}")
+        return jsonify({"error": "Gateway Timeout", "message": f"Failed reaching router log endpoint: {err}"}), 504
 
 
 @app.route("/api/proxy/snmp", methods=["GET"])

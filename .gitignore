@@ -28,3 +28,8 @@ __pycache__/
 .vscode/
 *.swp
 *.swo
+
+# Logs & Output Files
+logs/
+*.txt
+*.log

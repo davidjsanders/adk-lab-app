@@ -137,5 +137,9 @@ def fetch_router_secret(
         _SECRET_CACHE[secret_id] = (secret_val, now)
         return secret_val
     except Exception as err:
-        logger.error(f"Failed accessing secret '{secret_id}' from Secret Manager: {err}")
+        err_str = str(err)
+        if "not found" in err_str.lower() or "404" in err_str:
+            logger.info(f"Secret '{secret_id}' not found in Secret Manager; falling back to stored password.")
+        else:
+            logger.error(f"Failed accessing secret '{secret_id}' from Secret Manager: {err}")
         return None

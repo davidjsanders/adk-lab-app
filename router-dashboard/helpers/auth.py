@@ -34,6 +34,9 @@ def get_oidc_id_token(target_url: str) -> Optional[str]:
     if not target_url or not target_url.startswith("http"):
         return None
 
+    if "127.0.0.1" in target_url or "localhost" in target_url:
+        return None
+
     parsed = urlparse(target_url)
     audience = f"{parsed.scheme}://{parsed.netloc}"
 

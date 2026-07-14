@@ -86,7 +86,15 @@ class RouterRegistry:
         Returns:
             Merged list of RouterNode objects representing active router fleet.
         """
+        is_local_env = not bool(os.getenv("K_SERVICE"))
         local_nodes = self.load_local_routers()
+        if not is_local_env:
+            # When running on Cloud Run, do not load local test router nodes from routers.json
+            local_nodes = [
+                n for n in local_nodes
+                if not (n.id.startswith("RTR-LOCAL") or "127.0.0.1" in n.url or "localhost" in n.url or n.source == "LOCAL")
+            ]
+
         cloud_run_raw = discover_cloud_run_routers(self.project_id, self.region)
 
         # Map local entries by ID for fast lookup
@@ -119,6 +127,8 @@ class RouterRegistry:
         """
         all_nodes = self.get_all_routers()
         return next((node for node in all_nodes if node.id == router_id), None)
+
+    get_router = get_router_by_id
 
     def register_router(self, node: RouterNode) -> bool:
         """Registers or updates a router node in local persistent storage.

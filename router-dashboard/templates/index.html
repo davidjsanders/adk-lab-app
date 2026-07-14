@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?version=5.0">
     <script>
         window.POLLING_INTERVAL_MS = parseInt("{{ polling_interval_ms }}", 10) || 1500;
+        window.IS_LOCAL_ENV = "{{ 'true' if is_local else 'false' }}" === "true";
     </script>
 </head>
 <body class="material-theme">
@@ -60,6 +61,10 @@
                 <span class="material-symbols-outlined" aria-hidden="true">terminal</span>
                 <span>Command Console</span>
             </a>
+            <a href="#" class="drawer-item" id="nav-open-logs-window" aria-label="Open Dedicated Router Event Logs Window">
+                <span class="material-symbols-outlined" aria-hidden="true">description</span>
+                <span>Router Logs Window</span>
+            </a>
             <a href="#" class="drawer-item" id="nav-refresh-fleet" aria-label="Refresh and sync Cloud Run services">
                 <span class="material-symbols-outlined" aria-hidden="true">sync</span>
                 <span>Sync Cloud Run</span>
@@ -83,11 +88,41 @@
                         <h2 id="fleet-heading">REGISTERED ROUTER FLEET</h2>
                         <p class="sub-text">Click any router card to select it or enable Multi-Select mode to trigger batch commands</p>
                     </div>
-                    <button class="md-button-outlined" id="btn-toggle-select-mode" aria-label="Toggle multi-router selection mode" title="Select multiple router nodes to dispatch batch commands">
-                        <span class="material-symbols-outlined" id="icon-select-mode" aria-hidden="true">checklist</span>
-                        <span id="label-select-mode-text">Select Routers</span>
-                    </button>
+                    <div class="header-controls-group">
+                        {% if is_local %}
+                        <!-- Fleet Source View Filter Segmented Toggle (Visible ONLY when running locally) -->
+                        <div class="m3-segmented-filter" role="radiogroup" aria-label="Fleet Source View Filter">
+                            <button class="m3-filter-btn" id="filter-btn-local" data-filter="local" title="Show only local emulated routers (127.0.0.1)">
+                                <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 16px;">computer</span>
+                                <span>Local Only</span>
+                            </button>
+                            <button class="m3-filter-btn" id="filter-btn-cloudrun" data-filter="cloudrun" title="Show only Cloud Run hosted routers">
+                                <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 16px;">cloud</span>
+                                <span>Cloud Run</span>
+                            </button>
+                            <button class="m3-filter-btn" id="filter-btn-all" data-filter="all" title="Show all registered and discovered routers">
+                                <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 16px;">apps</span>
+                                <span>All Fleet</span>
+                            </button>
+                        </div>
+                        {% endif %}
+                        <button class="md-button-outlined" id="btn-toggle-select-mode" aria-label="Toggle multi-router selection mode" title="Select multiple router nodes to dispatch batch commands">
+                            <span class="material-symbols-outlined" id="icon-select-mode" aria-hidden="true">checklist</span>
+                            <span id="label-select-mode-text">Select Routers</span>
+                        </button>
+                    </div>
                 </div>
+
+                {% if is_local %}
+                <!-- Active Local Mode Notice Banner (Visible ONLY when running locally) -->
+                <div class="local-mode-notice-banner hidden" id="local-mode-banner" role="status">
+                    <span class="material-symbols-outlined banner-icon">computer</span>
+                    <span class="banner-text" id="banner-notice-text">
+                        <strong>LOCAL ROUTER MODE ACTIVE:</strong> Displaying local emulated router nodes only (Ports 18001, 18002, 18003). Cloud Run nodes are hidden.
+                    </span>
+                    <button class="banner-action-btn" id="btn-reset-fleet-filter">Show All Fleet</button>
+                </div>
+                {% endif %}
                 
                 <div class="router-grid" id="router-grid" role="region" aria-label="Registered Router Fleet Cards Grid">
                     <!-- Dynamic router cards rendered via app.js -->
@@ -225,10 +260,37 @@
                                 <span class="term-title">
                                     <span class="material-symbols-outlined" aria-hidden="true">wysiwyg</span> EXECUTION LOGS
                                 </span>
-                                <button class="btn-clear" id="btn-clear-terminal" title="Clear terminal log console" aria-label="Clear terminal log console">Clear</button>
+                                <div class="term-controls">
+                                    <button class="btn-clear" id="btn-export-exec-logs" title="Export client execution log buffer to file">Export</button>
+                                    <button class="btn-clear" id="btn-clear-terminal" title="Clear execution log console" aria-label="Clear execution log console">Clear</button>
+                                </div>
                             </div>
-                            <div class="terminal-box" id="terminal-output" role="log" aria-live="polite">
+                            <div class="terminal-box" id="terminal-output" role="log" aria-live="polite" style="height: 140px;">
                                 <div class="terminal-line"><span class="term-time">[System]</span> Select a router node to view live execution logs and dispatch control requests.</div>
+                            </div>
+                        </div>
+
+                        <!-- Dedicated Router Collected Hardware Event Logs -->
+                        <div class="terminal-card" role="region" aria-label="Target Router Collected Hardware Event Logs" style="margin-top: 14px;">
+                            <div class="term-header">
+                                <span class="term-title">
+                                    <span class="material-symbols-outlined" aria-hidden="true" style="color: var(--md-sys-color-primary);">receipt_long</span> ROUTER EVENT LOGS
+                                </span>
+                                <div class="term-controls">
+                                    <select id="select-log-window" class="term-select-inline" title="Select log query window">
+                                        <option value="60">Last 1 min</option>
+                                        <option value="300" selected>Last 5 min</option>
+                                        <option value="900">Last 15 min</option>
+                                        <option value="3600">Last 1 hr</option>
+                                        <option value="all">All Logs</option>
+                                    </select>
+                                    <button class="btn-clear" id="btn-fetch-logs" title="Fetch collected logs from target router emulator">Fetch Logs</button>
+                                    <button class="btn-clear" id="btn-export-router-logs" title="Export router event log window to file">Export</button>
+                                    <button class="btn-clear" id="btn-clear-router-logs" title="Clear router log view">Clear</button>
+                                </div>
+                            </div>
+                            <div class="terminal-box" id="router-logs-output" role="log" aria-live="polite" style="height: 180px;">
+                                <div class="terminal-line"><span class="term-time">[System]</span> Select a router node and click 'Fetch Logs' to retrieve hardware event history.</div>
                             </div>
                         </div>
                     </div>
@@ -253,14 +315,14 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="form-add-router">
+                <form id="form-add-router" autocomplete="off">
                     <div class="md-text-field">
                         <label for="input-router-id">Router ID (e.g. RTR-US-WEST-01):</label>
-                        <input type="text" id="input-router-id" class="md-input" placeholder="RTR-US-WEST-01" required aria-required="true" aria-label="Unique Router String ID">
+                        <input type="text" id="input-router-id" class="md-input" autocomplete="off" placeholder="RTR-US-WEST-01" required aria-required="true" aria-label="Unique Router String ID">
                     </div>
                     <div class="md-text-field">
                         <label for="input-router-name">Display Name:</label>
-                        <input type="text" id="input-router-name" class="md-input" placeholder="West Coast POP Router" required aria-required="true" aria-label="Display Name">
+                        <input type="text" id="input-router-name" class="md-input" autocomplete="off" placeholder="West Coast POP Router" required aria-required="true" aria-label="Display Name">
                     </div>
                     <div class="md-checkbox-field">
                         <label class="md-checkbox-label">
@@ -270,27 +332,27 @@
                     </div>
                     <div class="md-text-field">
                         <label for="input-router-url">Endpoint URL (Optional if deploying to Cloud Run):</label>
-                        <input type="text" id="input-router-url" class="md-input" placeholder="http://localhost:18001 (or auto-assigned by Cloud Run)" aria-label="Endpoint URL">
+                        <input type="text" id="input-router-url" class="md-input" autocomplete="off" placeholder="http://localhost:18001 (or auto-assigned by Cloud Run)" aria-label="Endpoint URL">
                     </div>
                     <div class="md-text-field">
                         <label for="input-router-purpose">Operational Purpose:</label>
-                        <input type="text" id="input-router-purpose" class="md-input" placeholder="Edge Core BGP Gateway" aria-label="Operational Purpose Description">
+                        <input type="text" id="input-router-purpose" class="md-input" autocomplete="off" placeholder="Edge Core BGP Gateway" aria-label="Operational Purpose Description">
                     </div>
                     <div class="md-text-field">
                         <label for="input-router-loc">Location Description:</label>
-                        <input type="text" id="input-router-loc" class="md-input" placeholder="Seattle Datacenter, Rack 04" aria-label="Location Description">
+                        <input type="text" id="input-router-loc" class="md-input" autocomplete="off" placeholder="Seattle Datacenter, Rack 04" aria-label="Location Description">
                     </div>
                     <div class="md-text-field">
                         <label for="input-router-mfg">Manufacturer Name:</label>
-                        <input type="text" id="input-router-mfg" class="md-input" placeholder="Cisco Systems" aria-label="Manufacturer Name">
+                        <input type="text" id="input-router-mfg" class="md-input" autocomplete="off" placeholder="Cisco Systems" aria-label="Manufacturer Name">
                     </div>
                     <div class="md-text-field">
                         <label for="input-router-model">Model Number / Hardware ID:</label>
-                        <input type="text" id="input-router-model" class="md-input" placeholder="Nexus 9300-EX" aria-label="Model Number">
+                        <input type="text" id="input-router-model" class="md-input" autocomplete="off" placeholder="Nexus 9300-EX" aria-label="Model Number">
                     </div>
                     <div class="md-text-field">
                         <label for="input-router-pass">Control Password (Header Auth):</label>
-                        <input type="password" id="input-router-pass" class="md-input" placeholder="Optional (Auto-generates Secret Manager UUID if empty)" aria-label="Control Password Secret Payload">
+                        <input type="password" id="input-router-pass" class="md-input" autocomplete="current-password" placeholder="Optional (Auto-generates Secret Manager UUID if empty)" aria-label="Control Password Secret Payload">
                     </div>
                     <div class="modal-actions">
                         <button type="button" class="md-button-outlined" id="btn-cancel-modal" aria-label="Cancel registration">Cancel</button>
@@ -314,31 +376,31 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form id="form-edit-router">
+                <form id="form-edit-router" autocomplete="off">
                     <input type="hidden" id="edit-router-id">
                     <div class="md-text-field">
                         <label for="edit-router-name">Display Name:</label>
-                        <input type="text" id="edit-router-name" class="md-input" required aria-required="true" aria-label="Display Name">
+                        <input type="text" id="edit-router-name" class="md-input" autocomplete="off" required aria-required="true" aria-label="Display Name">
                     </div>
                     <div class="md-text-field">
                         <label for="edit-router-loc">Location Description:</label>
-                        <input type="text" id="edit-router-loc" class="md-input" required aria-required="true" aria-label="Location Description">
+                        <input type="text" id="edit-router-loc" class="md-input" autocomplete="off" required aria-required="true" aria-label="Location Description">
                     </div>
                     <div class="md-text-field">
                         <label for="edit-router-purpose">Operational Purpose:</label>
-                        <input type="text" id="edit-router-purpose" class="md-input" required aria-required="true" aria-label="Operational Purpose Description">
+                        <input type="text" id="edit-router-purpose" class="md-input" autocomplete="off" required aria-required="true" aria-label="Operational Purpose Description">
                     </div>
                     <div class="md-text-field">
                         <label for="edit-router-mfg">Manufacturer Name:</label>
-                        <input type="text" id="edit-router-mfg" class="md-input" placeholder="Cisco Systems" aria-label="Manufacturer Name">
+                        <input type="text" id="edit-router-mfg" class="md-input" autocomplete="off" placeholder="Cisco Systems" aria-label="Manufacturer Name">
                     </div>
                     <div class="md-text-field">
                         <label for="edit-router-model">Model Number / Hardware ID:</label>
-                        <input type="text" id="edit-router-model" class="md-input" placeholder="Nexus 9300-EX" aria-label="Model Number">
+                        <input type="text" id="edit-router-model" class="md-input" autocomplete="off" placeholder="Nexus 9300-EX" aria-label="Model Number">
                     </div>
                     <div class="md-text-field">
                         <label for="edit-router-pass">Control Password (Optional update):</label>
-                        <input type="password" id="edit-router-pass" class="md-input" placeholder="Leave blank to keep existing password" aria-label="Control Password Update">
+                        <input type="password" id="edit-router-pass" class="md-input" autocomplete="current-password" placeholder="Leave blank to keep existing password" aria-label="Control Password Update">
                     </div>
                     <div class="md-checkbox-field">
                         <label class="md-checkbox-label">
@@ -355,7 +417,78 @@
         </div>
     </div>
 
+    <!-- Material Modal for Dedicated Router Event Logs Window -->
+    <div class="modal-overlay hidden" id="modal-router-logs" role="dialog" aria-modal="true" aria-labelledby="modal-logs-title">
+        <div class="md-modal-card modal-logs-card">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <span class="material-symbols-outlined" aria-hidden="true" style="font-size: 26px; color: var(--md-sys-color-primary);">feed</span>
+                    <div>
+                        <h3 id="modal-logs-title">Router Event Logs Window</h3>
+                        <p class="sub-text" id="modal-logs-subtitle" style="font-size: 0.78rem; margin: 0; color: var(--md-sys-color-on-surface-variant);">Historical event logs collected from router emulator instances</p>
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <button class="md-button-outlined" id="btn-modal-logs-export" title="Export current log buffer to file" style="height: 32px; padding: 0 12px; font-size: 0.8rem;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">download</span> Export
+                    </button>
+                    <button class="icon-button" id="btn-close-logs-modal" title="Close Logs Window" aria-label="Close logs window">
+                        <span class="material-symbols-outlined" aria-hidden="true">close</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="modal-body" style="display: flex; flex-direction: column; gap: 12px; padding: 16px 24px;">
+                <!-- Toolbar Controls: Router Selector, Time Window, Severity Level, Search Filter -->
+                <div class="logs-window-toolbar">
+                    <div class="logs-toolbar-field">
+                        <label for="logs-select-router"><span class="material-symbols-outlined" style="font-size: 14px;">router</span> Node:</label>
+                        <select id="logs-select-router" class="term-select-inline" style="padding: 4px 8px; font-size: 0.8rem;"></select>
+                    </div>
+                    <div class="logs-toolbar-field">
+                        <label for="logs-select-window"><span class="material-symbols-outlined" style="font-size: 14px;">schedule</span> Window:</label>
+                        <select id="logs-select-window" class="term-select-inline" style="padding: 4px 8px; font-size: 0.8rem;">
+                            <option value="60">Last 1 Minute</option>
+                            <option value="300" selected>Last 5 Minutes</option>
+                            <option value="900">Last 15 Minutes</option>
+                            <option value="3600">Last 1 Hour</option>
+                            <option value="all">All Collected Logs</option>
+                        </select>
+                    </div>
+                    <div class="logs-toolbar-field">
+                        <label for="logs-select-level"><span class="material-symbols-outlined" style="font-size: 14px;">filter_alt</span> Level:</label>
+                        <select id="logs-select-level" class="term-select-inline" style="padding: 4px 8px; font-size: 0.8rem;">
+                            <option value="" selected>All Levels</option>
+                            <option value="INFO">INFO</option>
+                            <option value="WARN">WARN</option>
+                            <option value="ERROR">ERROR</option>
+                        </select>
+                    </div>
+                    <div class="logs-toolbar-field" style="flex: 1; min-width: 160px;">
+                        <label for="logs-search-input"><span class="material-symbols-outlined" style="font-size: 14px;">search</span> Filter:</label>
+                        <input type="text" id="logs-search-input" class="term-select-inline" autocomplete="off" placeholder="Search log text..." aria-label="Filter log text" style="width: 100%; padding: 4px 8px; font-size: 0.8rem;">
+                    </div>
+                    <button class="md-button-filled" id="btn-modal-logs-refresh" style="height: 30px; padding: 0 12px; font-size: 0.78rem;">
+                        <span class="material-symbols-outlined" style="font-size: 15px;">refresh</span> Sync Logs
+                    </button>
+                </div>
+
+                <!-- Window Terminal Box -->
+                <div class="logs-window-terminal" id="modal-logs-terminal-box">
+                    <div class="terminal-line"><span class="term-time">[System]</span> Select a router node to query historical event logs.</div>
+                </div>
+
+                <div class="logs-window-footer">
+                    <span id="logs-window-count-badge" style="font-size: 0.8rem; color: var(--md-sys-color-on-surface-variant);">0 matching log entries</span>
+                    <label class="md-checkbox-label" style="font-size: 0.8rem; gap: 6px;">
+                        <input type="checkbox" id="check-modal-logs-autorefresh" class="md-checkbox"> Auto-refresh (3s)
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Application Javascript -->
-    <script src="{{ url_for('static', filename='js/app.js') }}?version=5.0"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?version=8.0"></script>
 </body>
 </html>

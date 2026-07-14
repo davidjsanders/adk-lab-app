@@ -28,23 +28,23 @@ This implementation plan outlines the architectural steps to upgrade the **Route
 ## Task Breakdown
 
 ### Phase 1: Container & Concurrency Tuning (Cloud Run Optimization)
-- [ ] **Thread Pool Expansion**: Update `router-dashboard/Dockerfile` and `router-emulator/Dockerfile` Gunicorn startup commands to specify `--threads 16` to handle persistent SSE HTTP connections without worker starvation.
-- [ ] **Keep-Alive Configuration**: Ensure timeout settings allow long-running streams with periodic heartbeat frames.
+- [x] **Thread Pool Expansion**: Update `router-dashboard/Dockerfile` and `router-emulator/Dockerfile` Gunicorn startup commands to specify `--threads 16` to handle persistent SSE HTTP connections without worker starvation.
+- [x] **Keep-Alive Configuration**: Ensure timeout settings allow long-running streams with periodic heartbeat frames.
 
 ### Phase 2: Router Emulator SSE Emitter (`router-emulator`)
-- [ ] **Implement `/api/stream`**: Add an SSE endpoint in `router-emulator/app.py` returning `mimetype="text/event-stream"`.
-- [ ] **Event Generator**: Yielder emitting JSON payload frames when telemetry or LED states change.
-- [ ] **Heartbeat Frame Generator**: Include 15-second `: ping\n\n` comments to prevent Cloud Run proxy timeouts.
+- [x] **Implement `/api/stream`**: Add an SSE endpoint in `router-emulator/app.py` returning `mimetype="text/event-stream"`.
+- [x] **Event Generator**: Yielder emitting JSON payload frames when telemetry or LED states change.
+- [x] **Heartbeat Frame Generator**: Include 15-second `: ping\n\n` comments to prevent Cloud Run proxy timeouts.
 
 ### Phase 3: Dashboard Proxy Stream Multiplexer (`router-dashboard`)
-- [ ] **Implement `/api/proxy/stream`**: Create a proxy streaming endpoint in `router-dashboard/app.py`.
-- [ ] **Multi-Router Proxy Handler**: Stream telemetry events from active Cloud Run router services into a unified client SSE feed.
-- [ ] **Preserve REST Control Endpoints**: Keep `/api/proxy/status`, `/api/proxy/command`, and `/api/routers` intact for tool-calling integration.
+- [x] **Implement `/api/proxy/stream`**: Create a proxy streaming endpoint in `router-dashboard/app.py`.
+- [x] **Multi-Router Proxy Handler**: Stream telemetry events from active Cloud Run router services into a unified client SSE feed.
+- [x] **Preserve REST Control Endpoints**: Keep `/api/proxy/status`, `/api/proxy/command`, and `/api/routers` intact for tool-calling integration.
 
 ### Phase 4: Frontend EventSource Integration (`router-dashboard/static/js/app.js`)
-- [ ] **EventSource Connection**: Replace polling interval in `app.js` with an `EventSource('/api/proxy/stream')` listener.
-- [ ] **Dynamic DOM Update Handlers**: Update hardware LCD elements (`STATE`, `UPTIME`, `DEPLOYED`, `REV`) and LED indicators on incoming stream events.
-- [ ] **Fallback Polling Strategy**: Retain explicit REST polling on connection errors or network reconnection events.
+- [x] **EventSource Connection**: Replace polling interval in `app.js` with an `EventSource('/api/proxy/stream')` listener.
+- [x] **Dynamic DOM Update Handlers**: Update hardware LCD elements (`STATE`, `UPTIME`, `DEPLOYED`, `REV`) and LED indicators on incoming stream events.
+- [x] **Fallback Polling Strategy**: Retain explicit REST polling on connection errors or network reconnection events.
 
 ### Phase 5: Peer ADK Agent Integration Blueprint
 - [ ] **ADK Agent Tool Definitions**: Define ADK function tools (`get_router_status`, `reset_bgp_peering`, `set_fail_mode`, `redeploy_service`) that invoke backend REST endpoints (`/api/proxy/command`, `/api/proxy/status`).
@@ -56,9 +56,9 @@ This implementation plan outlines the architectural steps to upgrade the **Route
 ## Verification Plan
 
 ### Automated Testing
-- [ ] Run Python bytecode compilation check across modules:
+- [x] Run Python bytecode compilation check across modules:
   ```bash
-  .venv/bin/python -m py_compile app.py classes/*.py helpers/*.py
+  python3 -m py_compile router-emulator/app.py router-dashboard/app.py
   ```
 - [ ] Validate SSE stream headers and ping frame output using `curl`:
   ```bash

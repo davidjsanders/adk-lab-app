@@ -87,6 +87,10 @@ def get_effective_control_password(router_id: str) -> str:
     Returns:
         Active control password string.
     """
+    control_pass = os.getenv("CONTROL_PASSWORD", "mock-local-control-password")
+    if router_id.startswith("RTR-LOCAL") or not os.getenv("K_SERVICE"):
+        return control_pass
+
     project_id = os.getenv("GCP_PROJECT", os.getenv("PROJECT_ID", ""))
     secret_id = os.getenv("CONTROL_SECRET_ID", "")
     if not secret_id and router_id:
@@ -97,7 +101,7 @@ def get_effective_control_password(router_id: str) -> str:
         if sec:
             return sec
 
-    return os.getenv("CONTROL_PASSWORD", "RouterSecretPass123!")
+    return control_pass
 
 
 def verify_control_auth(req: Request, control_header_name: str, router_id: str) -> bool:
