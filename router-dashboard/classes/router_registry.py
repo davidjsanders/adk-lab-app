@@ -100,6 +100,7 @@ class RouterRegistry:
 
         # Map local entries by ID for fast lookup
         merged_map: Dict[str, RouterNode] = {node.id: node for node in local_nodes}
+        has_updates = False
 
         for cr_data in cloud_run_raw:
             cr_id = cr_data["id"]
@@ -108,14 +109,21 @@ class RouterRegistry:
                 existing = merged_map[cr_id]
                 existing.url = cr_data["url"]
                 existing.source = "CLOUDRUN"
-                if cr_data.get("last_deployed"):
+                if cr_data.get("last_deployed") and existing.last_deployed != cr_data["last_deployed"]:
                     existing.last_deployed = cr_data["last_deployed"]
-                if cr_data.get("revision"):
+                    has_updates = True
+                if cr_data.get("revision") and existing.revision != cr_data["revision"]:
                     existing.revision = cr_data["revision"]
+                    has_updates = True
             else:
                 merged_map[cr_id] = RouterNode.from_dict(cr_data)
+                has_updates = True
 
-        return list(merged_map.values())
+        all_nodes = list(merged_map.values())
+        if has_updates:
+            self.save_local_routers(all_nodes)
+
+        return all_nodes
 
     def get_router_by_id(self, router_id: str) -> Optional[RouterNode]:
         """Finds a specific router node by its unique identifier string.

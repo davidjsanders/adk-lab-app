@@ -138,7 +138,8 @@ def add_router() -> Tuple[Response, int]:
         if not control_password:
             control_password = generate_control_uuid()
 
-        success, res_val = deploy_router_to_cloud_run(
+        new_revision = ""
+        success, res_val, new_revision = deploy_router_to_cloud_run(
             router_id=router_id,
             location=location,
             purpose=purpose,
@@ -152,6 +153,7 @@ def add_router() -> Tuple[Response, int]:
         url = res_val
         source = "CLOUDRUN"
     else:
+        new_revision = ""
         if not url:
             return jsonify({"error": "Bad Request", "message": "Missing required field 'url'"}), 400
         source = "MANUAL"
@@ -169,6 +171,7 @@ def add_router() -> Tuple[Response, int]:
         control_header=control_header,
         control_password=control_password,
         source=source,
+        revision=new_revision,
     )
 
     registry.register_router(node)

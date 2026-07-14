@@ -236,10 +236,11 @@ def deploy_router_to_cloud_run(
             res_obj = put_res.json()
             if put_res.ok:
                 service_url = res_obj.get("status", {}).get("url", "")
-                return True, service_url
+                revision = res_obj.get("status", {}).get("latestReadyRevisionName") or res_obj.get("status", {}).get("latestCreatedRevisionName", "")
+                return True, service_url, revision
             else:
                 err_msg = res_obj.get("message", put_res.text)
-                return False, f"Cloud Run update error: {err_msg}"
+                return False, f"Cloud Run update error: {err_msg}", ""
         else:
             # Create new Cloud Run service (POST)
             logger.info(f"Creating new Cloud Run service '{service_name}' via REST API...")
@@ -248,11 +249,12 @@ def deploy_router_to_cloud_run(
             res_obj = post_res.json()
             if post_res.ok:
                 service_url = res_obj.get("status", {}).get("url", "")
-                return True, service_url
+                revision = res_obj.get("status", {}).get("latestReadyRevisionName") or res_obj.get("status", {}).get("latestCreatedRevisionName", "")
+                return True, service_url, revision
             else:
                 err_msg = res_obj.get("message", post_res.text)
-                return False, f"Cloud Run deployment error: {err_msg}"
+                return False, f"Cloud Run deployment error: {err_msg}", ""
 
     except Exception as err:
         logger.error(f"Error deploying to Cloud Run via REST API: {err}")
-        return False, f"Deployment failed: {str(err)}"
+        return False, f"Deployment failed: {str(err)}", ""
