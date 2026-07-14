@@ -120,6 +120,7 @@ class RouterRegistry:
                 has_updates = True
 
         all_nodes = list(merged_map.values())
+        all_nodes.sort(key=lambda n: n.id)
         if has_updates:
             self.save_local_routers(all_nodes)
 

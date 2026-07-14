@@ -487,6 +487,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     redeployRouterNode(router);
                 });
             }
+            const cloneBtn = document.createElement("button");
+            cloneBtn.className = "icon-button";
+            cloneBtn.style.cssText = "width: 28px; height: 28px; color: #a855f7;";
+            cloneBtn.title = `Clone Router ${router.id} Configuration`;
+            cloneBtn.setAttribute("aria-label", `Clone Router ${router.id} Configuration`);
+            cloneBtn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 16px;" aria-hidden="true">content_copy</span>`;
+            cloneBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                openCloneModal(router);
+            });
+
             const editBtn = document.createElement("button");
             editBtn.className = "icon-button";
             editBtn.style.cssText = "width: 28px; height: 28px; color: var(--md-sys-color-primary);";
@@ -511,6 +522,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             cardActions.appendChild(launchBtn);
             cardActions.appendChild(redeployBtn);
+            cardActions.appendChild(cloneBtn);
             cardActions.appendChild(editBtn);
             cardActions.appendChild(delBtn);
             topBar.appendChild(titleGroup);
@@ -803,19 +815,21 @@ document.addEventListener("DOMContentLoaded", () => {
      * Filters global routerList array based on active filter tab (all, local, cloudrun)
      */
     function getFilteredRouters() {
+        let list = [...routerList];
         if (activeFleetFilter === "local") {
-            return routerList.filter(r => 
+            list = list.filter(r => 
                 r.source === "MANUAL" || 
                 (r.url && (r.url.includes("127.0.0.1") || r.url.includes("localhost"))) || 
                 (r.id && r.id.startsWith("RTR-LOCAL"))
             );
         } else if (activeFleetFilter === "cloudrun") {
-            return routerList.filter(r => 
+            list = list.filter(r => 
                 r.source === "CLOUDRUN" || 
                 (r.url && r.url.includes("a.run.app"))
             );
         }
-        return routerList;
+        list.sort((a, b) => (a.id || "").localeCompare(b.id || "", undefined, { numeric: true, sensitivity: 'base' }));
+        return list;
     }
 
     /**
@@ -1033,17 +1047,42 @@ document.addEventListener("DOMContentLoaded", () => {
      * Deletes a router registration from registry
      */
     async function deleteRouter(routerId) {
-        if (!confirm(`Are you sure you want to remove router '${routerId}' from the dashboard?`)) return;
+        const targetNode = routerList.find(r => r.id === routerId);
+        const isCloudRun = targetNode && (targetNode.source === "CLOUDRUN" || (targetNode.url && targetNode.url.includes("a.run.app")));
+        
+        const confirmMsg = isCloudRun 
+            ? `Are you sure you want to delete router '${routerId}'?\n\nThis will TEAR DOWN the Cloud Run container instance and delete its Secret Manager key from Google Cloud.`
+            : `Are you sure you want to remove router '${routerId}' from the dashboard?`;
+
+        if (!confirm(confirmMsg)) return;
+
+        appendTerminalLog(`Initiating deletion/teardown for router '${routerId}'...`, "COMMAND", routerId);
 
         try {
             const res = await fetch(`/api/routers/${encodeURIComponent(routerId)}`, { method: "DELETE" });
+            const contentType = res.headers.get("content-type") || "";
+            let data = {};
+            if (contentType.includes("application/json")) {
+                data = await res.json();
+            } else if (res.ok) {
+                data = { status: "SUCCESS", message: `Router '${routerId}' deleted.` };
+            } else {
+                const textErr = await res.text();
+                data = { error: `HTTP ${res.status}`, message: textErr.slice(0, 200) };
+            }
+
             if (res.ok) {
+                appendTerminalLog(`Successfully deleted router '${routerId}'. ${data.message || ''}`, "SUCCESS", routerId);
                 if (selectedRouter && selectedRouter.id === routerId) {
                     selectedRouter = null;
                 }
                 fetchRouters();
+            } else {
+                appendTerminalLog(`Deletion Failed: ${data.message || data.error}`, "ERROR", routerId);
+                alert(`Failed deleting router: ${data.message || data.error}`);
             }
         } catch (err) {
+            appendTerminalLog(`Network Error deleting router '${routerId}': ${err.message}`, "ERROR", routerId);
             alert(`Failed deleting router: ${err.message}`);
         }
     }
@@ -1055,10 +1094,57 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (navOpenConsole) navOpenConsole.addEventListener("click", () => { closeNavDrawer(); openConsoleDrawer(); });
     if (navRefreshFleet) navRefreshFleet.addEventListener("click", () => { closeNavDrawer(); fetchRouters(); });
-    if (navTriggerRegister) navTriggerRegister.addEventListener("click", () => { closeNavDrawer(); modalAddRouter.classList.remove("hidden"); });
+    if (navTriggerRegister) navTriggerRegister.addEventListener("click", () => { closeNavDrawer(); openAddModal(); });
 
     // Modal Form Logic
-    if (btnOpenAddModal) btnOpenAddModal.addEventListener("click", () => modalAddRouter.classList.remove("hidden"));
+    function openAddModal() {
+        if (!modalAddRouter) return;
+        if (formAddRouter) formAddRouter.reset();
+        const modalTitle = document.getElementById("modal-add-title");
+        if (modalTitle) modalTitle.textContent = "Register or Deploy New Router";
+        modalAddRouter.classList.remove("hidden");
+    }
+
+    /**
+     * Opens the Add/Register Router modal pre-filled with cloned router properties for editing
+     */
+    function openCloneModal(router) {
+        if (!router || !modalAddRouter) return;
+        if (formAddRouter) formAddRouter.reset();
+
+        const modalTitle = document.getElementById("modal-add-title");
+        if (modalTitle) modalTitle.textContent = `Clone Router '${router.id}'`;
+
+        const inputId = document.getElementById("input-router-id");
+        const inputName = document.getElementById("input-router-name");
+        const inputPurpose = document.getElementById("input-router-purpose");
+        const inputLoc = document.getElementById("input-router-loc");
+        const inputMfg = document.getElementById("input-router-mfg");
+        const inputModel = document.getElementById("input-router-model");
+        const inputPass = document.getElementById("input-router-pass");
+        const inputUrl = document.getElementById("input-router-url");
+        const chkDeploy = document.getElementById("check-deploy-cloudrun");
+
+        const isLocalSrc = isLocalRouter(router);
+
+        if (inputId) inputId.value = `${router.id}-CLONE`;
+        if (inputName) inputName.value = `Copy of ${router.name || router.id}`;
+        if (inputPurpose) inputPurpose.value = router.purpose || "";
+        if (inputLoc) inputLoc.value = router.location || "";
+        if (inputMfg) inputMfg.value = router.manufacturer || "Cisco Systems";
+        if (inputModel) inputModel.value = router.model || "Nexus 9300-EX";
+        if (inputPass) inputPass.value = "";
+        if (chkDeploy) chkDeploy.checked = !isLocalSrc;
+        if (inputUrl) inputUrl.value = isLocalSrc ? router.url : "";
+
+        modalAddRouter.classList.remove("hidden");
+        if (inputId) {
+            inputId.focus();
+            inputId.select();
+        }
+    }
+
+    if (btnOpenAddModal) btnOpenAddModal.addEventListener("click", openAddModal);
     if (btnCloseModal) btnCloseModal.addEventListener("click", () => modalAddRouter.classList.add("hidden"));
     if (btnCancelModal) btnCancelModal.addEventListener("click", () => modalAddRouter.classList.add("hidden"));
 
@@ -1155,7 +1241,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 body: JSON.stringify({ router_ids: targetIds })
             });
 
-            const data = await res.json();
+            const contentType = res.headers.get("content-type") || "";
+            let data = {};
+            if (contentType.includes("application/json")) {
+                data = await res.json();
+            } else if (res.ok) {
+                // Deployment succeeded with non-JSON or proxy standard response
+                data = { status: "SUCCESS", message: "Redeployment triggered successfully." };
+            } else {
+                const textErr = await res.text();
+                data = { error: `HTTP ${res.status}`, message: textErr.slice(0, 200) };
+            }
+
             if (res.ok) {
                 appendTerminalLog(`Successfully completed Cloud Run redeployment for ${targetIds.length} node(s).`, "SUCCESS");
                 if (data.results) {

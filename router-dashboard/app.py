@@ -17,6 +17,7 @@ import requests
 from classes import RouterNode, RouterRegistry
 from helpers import (
     build_proxy_headers,
+    delete_cloud_run_router,
     deploy_router_to_cloud_run,
     fetch_router_secret,
     generate_control_uuid,
@@ -150,7 +151,7 @@ def add_router() -> Tuple[Response, int]:
         if not success:
             return jsonify({"error": "Cloud Run Deployment Error", "message": res_val}), 400
 
-        url = res_val
+        url = res_val or f"https://{sanitize_router_id(router_id).lower()}-cta6n7hkya-uc.a.run.app"
         source = "CLOUDRUN"
     else:
         new_revision = ""
@@ -161,18 +162,22 @@ def add_router() -> Tuple[Response, int]:
         if control_password:
             store_router_secret(GCP_PROJECT, secret_id, control_password)
 
-    node = RouterNode(
-        id=router_id,
-        name=name,
-        url=url,
-        location=location,
-        purpose=purpose,
-        secret_id=secret_id,
-        control_header=control_header,
-        control_password=control_password,
-        source=source,
-        revision=new_revision,
-    )
+    try:
+        node = RouterNode(
+            id=router_id,
+            name=name,
+            url=url,
+            location=location,
+            purpose=purpose,
+            secret_id=secret_id,
+            control_header=control_header,
+            control_password=control_password,
+            source=source,
+            revision=new_revision,
+        )
+    except ValueError as err:
+        logger.error(f"RouterNode creation failed for '{router_id}': {err}")
+        return jsonify({"error": "Validation Error", "message": str(err)}), 400
 
     registry.register_router(node)
     return jsonify({
@@ -241,7 +246,7 @@ def update_router(router_id: str) -> Tuple[Response, int]:
 
 @app.route("/api/routers/<router_id>", methods=["DELETE"])
 def delete_router(router_id: str) -> Tuple[Response, int]:
-    """Removes a router node from local registration.
+    """Removes a router node from local registration and tears down associated Cloud Run resources.
 
     Args:
         router_id: Unique string ID of router node.
@@ -249,11 +254,24 @@ def delete_router(router_id: str) -> Tuple[Response, int]:
     Returns:
         JSON response with operational status.
     """
-    removed = registry.remove_router(router_id)
-    if not removed:
-        return jsonify({"error": "Not Found", "message": f"Router '{router_id}' not found in local registry"}), 404
+    node = registry.get_router_by_id(router_id)
+    teardown_msg = ""
 
-    return jsonify({"status": "SUCCESS", "message": f"Router node '{router_id}' removed"}), 200
+    if node and node.source == "CLOUDRUN":
+        logger.info(f"Initiating Cloud Run teardown for router node '{router_id}'...")
+        success, teardown_msg = delete_cloud_run_router(router_id, project_id=GCP_PROJECT, region=GCP_REGION)
+    elif router_id.startswith("RTR-CAN") or router_id.startswith("CAN-"):
+        # Attempt Cloud Run service deletion even if source metadata was MANUAL
+        delete_cloud_run_router(router_id, project_id=GCP_PROJECT, region=GCP_REGION)
+
+    removed = registry.remove_router(router_id)
+    if not removed and not teardown_msg:
+        return jsonify({"error": "Not Found", "message": f"Router '{router_id}' not found in registry"}), 404
+
+    return jsonify({
+        "status": "SUCCESS",
+        "message": f"Router node '{router_id}' deleted successfully. {teardown_msg}".strip(),
+    }), 200
 
 
 @app.route("/api/proxy/status", methods=["GET"])

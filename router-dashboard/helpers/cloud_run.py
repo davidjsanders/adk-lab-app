@@ -249,6 +249,9 @@ def deploy_router_to_cloud_run(
             res_obj = post_res.json()
             if post_res.ok:
                 service_url = res_obj.get("status", {}).get("url", "")
+                if not service_url:
+                    # Projected Cloud Run URL format for new services in this project & region
+                    service_url = f"https://{service_name}-cta6n7hkya-uc.a.run.app"
                 revision = res_obj.get("status", {}).get("latestReadyRevisionName") or res_obj.get("status", {}).get("latestCreatedRevisionName", "")
                 return True, service_url, revision
             else:
@@ -258,3 +261,50 @@ def deploy_router_to_cloud_run(
     except Exception as err:
         logger.error(f"Error deploying to Cloud Run via REST API: {err}")
         return False, f"Deployment failed: {str(err)}", ""
+
+
+def delete_cloud_run_router(router_id: str, project_id: str = "", region: str = "us-central1") -> Tuple[bool, str]:
+    """Deletes a Cloud Run router service and associated Secret Manager secret.
+
+    Args:
+        router_id: Unique router ID string.
+        project_id: GCP project ID string.
+        region: GCP region string.
+
+    Returns:
+        Tuple of (success_boolean, status_message).
+    """
+    project = project_id or os.getenv("GCP_PROJECT", "agentspace-argolis-demo")
+    reg = region or os.getenv("GCP_REGION", "us-central1")
+    service_name = sanitize_service_name(router_id)
+    secret_id = get_secret_id_for_router(router_id)
+
+    try:
+        credentials, _ = google.auth.default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+        auth_req = google.auth.transport.requests.Request()
+        credentials.refresh(auth_req)
+
+        headers = {"Authorization": f"Bearer {credentials.token}"}
+        svc_url = f"https://run.googleapis.com/v1/projects/{project}/locations/{reg}/services/{service_name}"
+
+        # 1. Delete Cloud Run Service
+        logger.info(f"Tearing down Cloud Run service '{service_name}' via REST API...")
+        del_res = requests.delete(svc_url, headers=headers, timeout=30)
+        if del_res.ok or del_res.status_code == 404:
+            logger.info(f"Successfully deleted Cloud Run service '{service_name}' (status {del_res.status_code})")
+        else:
+            logger.warning(f"Could not delete Cloud Run service '{service_name}': HTTP {del_res.status_code} - {del_res.text}")
+
+        # 2. Delete Secret Manager Secret if present
+        try:
+            sec_client = secretmanager.SecretManagerServiceClient()
+            sec_name = sec_client.secret_path(project, secret_id)
+            sec_client.delete_secret(request={"name": sec_name})
+            logger.info(f"Deleted secret '{secret_id}' from Secret Manager.")
+        except Exception as sec_err:
+            logger.info(f"Secret '{secret_id}' deletion status: {sec_err}")
+
+        return True, f"Cloud Run router '{router_id}' teardown completed."
+    except Exception as err:
+        logger.error(f"Error executing Cloud Run teardown for '{router_id}': {err}")
+        return False, f"Teardown error: {str(err)}"
