@@ -11,8 +11,9 @@ from typing import Any, Dict, List, Optional
 
 from classes.router_node import RouterNode
 from helpers.cloud_run import discover_cloud_run_routers
+from helpers.logger import setup_json_logging
 
-logger = logging.getLogger(__name__)
+logger = setup_json_logging("router-dashboard.registry")
 
 
 class RouterRegistry:

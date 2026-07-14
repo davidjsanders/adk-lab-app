@@ -21,6 +21,7 @@ from helpers import (
     fetch_router_secret,
     generate_control_uuid,
     get_secret_id_for_router,
+    setup_json_logging,
     store_router_secret,
 )
 
@@ -29,9 +30,8 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger(__name__)
+# Configure structured Cloud Run JSON logging
+logger = setup_json_logging("router-dashboard")
 
 DASHBOARD_NAME: str = os.getenv("DASHBOARD_NAME", "Global Router Operations Center")
 ROUTERS_CONFIG_FILE: str = os.getenv("ROUTERS_CONFIG_FILE", "routers.json")
@@ -91,6 +91,7 @@ def get_routers() -> Response:
         JSON response with count and array of router node objects.
     """
     routers = registry.get_all_routers()
+    logger.debug(f"Handling GET /api/routers request: fetched {len(routers)} registered nodes")
     return jsonify({
         "count": len(routers),
         "routers": [r.to_dict() for r in routers],

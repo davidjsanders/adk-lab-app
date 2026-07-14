@@ -75,28 +75,28 @@ trap cleanup SIGINT SIGTERM EXIT
 # 1. Start Router Emulator 1 (Port 18001)
 (
     cd "$EMULATOR_DIR"
-    exec env ROUTER_ID="RTR-LOCAL-18001" PORT=18001 CONTROL_PASSWORD="mock-local-control-password" .venv/bin/python app.py > "${LOGS_DIR}/RTR-LOCAL-18001.txt" 2>&1
+    exec env ROUTER_ID="RTR-LOCAL-18001" PORT=18001 LOG_LEVEL="DEBUG" CONTROL_PASSWORD="mock-local-control-password" .venv/bin/python app.py > "${LOGS_DIR}/RTR-LOCAL-18001.txt" 2>&1
 ) &
 PIDS+=($!)
 
 # 2. Start Router Emulator 2 (Port 18002)
 (
     cd "$EMULATOR_DIR"
-    exec env ROUTER_ID="RTR-LOCAL-18002" PORT=18002 CONTROL_PASSWORD="mock-local-control-password" .venv/bin/python app.py > "${LOGS_DIR}/RTR-LOCAL-18002.txt" 2>&1
+    exec env ROUTER_ID="RTR-LOCAL-18002" PORT=18002 LOG_LEVEL="DEBUG" CONTROL_PASSWORD="mock-local-control-password" .venv/bin/python app.py > "${LOGS_DIR}/RTR-LOCAL-18002.txt" 2>&1
 ) &
 PIDS+=($!)
 
 # 3. Start Router Emulator 3 (Port 18003)
 (
     cd "$EMULATOR_DIR"
-    exec env ROUTER_ID="RTR-LOCAL-18003" PORT=18003 CONTROL_PASSWORD="mock-local-control-password" .venv/bin/python app.py > "${LOGS_DIR}/RTR-LOCAL-18003.txt" 2>&1
+    exec env ROUTER_ID="RTR-LOCAL-18003" PORT=18003 LOG_LEVEL="DEBUG" CONTROL_PASSWORD="mock-local-control-password" .venv/bin/python app.py > "${LOGS_DIR}/RTR-LOCAL-18003.txt" 2>&1
 ) &
 PIDS+=($!)
 
 # 4. Start Router Dashboard (Port 8080)
 (
     cd "$DASHBOARD_DIR"
-    exec env PORT=8080 .venv/bin/python app.py > "${LOGS_DIR}/dashboard.txt" 2>&1
+    exec env PORT=8080 LOG_LEVEL="DEBUG" .venv/bin/python app.py > "${LOGS_DIR}/dashboard.txt" 2>&1
 ) &
 PIDS+=($!)
 

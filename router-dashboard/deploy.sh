@@ -39,7 +39,7 @@ else
     echo "  -> Service Account '${SA_NAME}' already exists."
 fi
 
-# Mandatory Roles: Logging, Tracing, Cloud Run Invoker, Secret Manager, Token Creator, Cloud Run Admin, SA User
+# Mandatory Roles: Logging, Tracing, Cloud Run Invoker, Secret Manager Admin, Token Creator, Cloud Run Admin, SA User
 ROLES=(
     "roles/logging.logWriter"
     "roles/cloudtrace.agent"
@@ -47,6 +47,7 @@ ROLES=(
     "roles/run.admin"
     "roles/iam.serviceAccountUser"
     "roles/secretmanager.secretAccessor"
+    "roles/secretmanager.admin"
     "roles/iam.serviceAccountTokenCreator"
     "roles/artifactregistry.reader"
 )
@@ -70,8 +71,8 @@ gcloud builds submit . \
     --project="${PROJECT_ID}" \
     --tag="${IMAGE_URI}"
 
-# 3. Deploy to Cloud Run with Beta IAP enabled (--iap)
-echo "[3/4] Deploying '${SERVICE_NAME}' to Cloud Run with Identity-Aware Proxy (--iap)..."
+# 3. Deploy to Cloud Run with Identity-Aware Proxy (--iap) and IAM authorization
+echo "[3/4] Deploying '${SERVICE_NAME}' to Cloud Run with IAP & IAM authorization..."
 gcloud beta run deploy "${SERVICE_NAME}" \
     --project="${PROJECT_ID}" \
     --region="${REGION}" \
@@ -81,7 +82,7 @@ gcloud beta run deploy "${SERVICE_NAME}" \
     --cpu=1 \
     --iap \
     --no-allow-unauthenticated \
-    --set-env-vars="GCP_PROJECT=${PROJECT_ID},POLLING_INTERVAL_MS=${POLLING_INTERVAL}"
+    --set-env-vars="GCP_PROJECT=${PROJECT_ID},POLLING_INTERVAL_MS=${POLLING_INTERVAL},LOG_LEVEL=DEBUG"
 
 # 4. Fetch Active Service URL
 SERVICE_URL=$(gcloud run services describe "${SERVICE_NAME}" --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)")

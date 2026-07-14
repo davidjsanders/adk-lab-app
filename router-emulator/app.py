@@ -15,16 +15,21 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request, Response
 
 from classes import RouterState, SNMPAgent
-from helpers import verify_control_auth
+from helpers import (
+    fetch_router_secret,
+    get_effective_control_password,
+    get_secret_id_for_router,
+    setup_json_logging,
+    verify_control_auth,
+)
 
 # Load environment configuration
 load_dotenv()
 
 app = Flask(__name__)
 
-# Configure logging (standard stdout/stderr for Cloud Run & console logging)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger(__name__)
+# Configure structured Cloud Run JSON logging
+logger = setup_json_logging("router-emulator")
 
 # Initialize hardware router state instance from environment variables
 router = RouterState(
@@ -115,6 +120,7 @@ def get_status() -> Response:
     Returns:
         JSON response with router metadata, LED states, uptime, and logs.
     """
+    logger.debug(f"Handling GET /api/status telemetry request for router '{router.router_id}' from {request.remote_addr}")
     data = router.to_telemetry_dict()
     data["metadata"]["snmp"] = {
         "enabled": SNMP_ENABLED,
@@ -154,6 +160,7 @@ def get_logs() -> Response:
     if limit_str.isdigit():
         limit = int(limit_str)
 
+    logger.debug(f"Handling GET /api/logs query: since_seconds={since_seconds}, since_iso='{since_iso}', level='{level}', limit={limit}")
     logs = router.get_logs(since_seconds=since_seconds, since_iso=since_iso, level=level, limit=limit)
     return jsonify({
         "status": "SUCCESS",
@@ -321,6 +328,8 @@ def execute_command() -> Union[Response, Tuple[Response, int]]:
     payload = request.get_json(silent=True) or {}
     command = payload.get("command", "").strip()
     params = payload.get("parameters", {})
+
+    logger.debug(f"Received POST /api/command request from {request.remote_addr}: command='{command}', parameters={params}")
 
     if not command:
         return jsonify({"error": "Bad Request", "message": "Missing 'command' parameter"}), 400

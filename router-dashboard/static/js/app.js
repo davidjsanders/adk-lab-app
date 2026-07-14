@@ -1097,7 +1097,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: JSON.stringify(payload)
                 });
 
-                const data = await res.json();
+                const contentType = res.headers.get("content-type") || "";
+                let data = {};
+                if (contentType.includes("application/json")) {
+                    data = await res.json();
+                } else {
+                    const errHtml = await res.text();
+                    throw new Error(`Server returned non-JSON response (${res.status} ${res.statusText}). Refresh browser window if your IAP session expired.`);
+                }
+
                 if (res.ok) {
                     appendTerminalLog(`Successfully registered/deployed router '${payload.id}'. Endpoint: ${data.url || payload.url}`, "SUCCESS");
                     modalAddRouter.classList.add("hidden");

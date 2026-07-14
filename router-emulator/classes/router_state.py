@@ -10,6 +10,10 @@ import os
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
+from helpers.logger import setup_json_logging
+
+logger = setup_json_logging("router-emulator.state")
+
 
 class RouterState:
     """Manages physical router chassis state, LED indicators, and operational telemetry.
@@ -282,6 +286,11 @@ class RouterState:
         timestamp = datetime.now(timezone.utc).isoformat()
         self.last_command = cmd_clean.upper()
         self.last_command_time = timestamp
+
+        logger.debug(
+            f"Executing state command '{self.last_command}' with params {params} "
+            f"for router '{self.router_id}' from controller '{remote_addr}'"
+        )
 
         if cmd_clean in ("power_up", "powerup", "start"):
             self.leds.update({

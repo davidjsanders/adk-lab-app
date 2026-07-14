@@ -6,6 +6,7 @@ and Secret Manager key management.
 
 from helpers.auth import build_proxy_headers, get_oidc_id_token
 from helpers.cloud_run import deploy_router_to_cloud_run, discover_cloud_run_routers, sanitize_service_name
+from helpers.logger import CloudRunJsonFormatter, setup_json_logging
 from helpers.secret_manager import (
     fetch_router_secret,
     generate_control_uuid,
@@ -14,6 +15,8 @@ from helpers.secret_manager import (
 )
 
 __all__ = [
+    "CloudRunJsonFormatter",
+    "setup_json_logging",
     "build_proxy_headers",
     "deploy_router_to_cloud_run",
     "discover_cloud_run_routers",

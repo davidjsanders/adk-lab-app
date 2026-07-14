@@ -15,7 +15,9 @@ import google.auth
 import google.auth.transport.requests
 from google.oauth2 import id_token
 
-logger = logging.getLogger(__name__)
+from helpers.logger import setup_json_logging
+
+logger = setup_json_logging("router-dashboard.auth")
 
 # In-memory OIDC ID token cache indexed by audience URL
 _OIDC_TOKEN_CACHE: Dict[str, Tuple[str, float]] = {}

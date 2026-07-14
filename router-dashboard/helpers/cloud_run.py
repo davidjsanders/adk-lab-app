@@ -13,9 +13,10 @@ import google.auth.transport.requests
 import requests
 from typing import Any, Dict, List, Optional, Tuple
 
+from helpers.logger import setup_json_logging
 from helpers.secret_manager import get_secret_id_for_router, store_router_secret
 
-logger = logging.getLogger(__name__)
+logger = setup_json_logging("router-dashboard.cloud_run")
 
 # Environment defaults
 DEFAULT_IMAGE_NAME: str = "us-central1-docker.pkg.dev/agentspace-argolis-demo/docker-registry/router-emulator:latest"

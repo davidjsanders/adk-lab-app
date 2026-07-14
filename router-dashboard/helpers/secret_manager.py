@@ -14,7 +14,9 @@ try:
 except ImportError:
     HAS_SECRET_MANAGER = False
 
-logger = logging.getLogger(__name__)
+from helpers.logger import setup_json_logging
+
+logger = setup_json_logging("router-dashboard.secret_manager")
 
 # Cache fetched secret value in memory with TTL
 _SECRET_CACHE: Dict[str, Tuple[str, float]] = {}
