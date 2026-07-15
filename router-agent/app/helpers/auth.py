@@ -51,10 +51,7 @@ def get_oidc_id_token(target_url: str) -> str | None:
     auth_req = google.auth.transport.requests.Request()
 
     # 1. Impersonation path via Google Auth Python SDK (pure Python SDK, 0 subprocesses)
-    impersonate_sa = os.getenv(
-        "IMPERSONATE_SA",
-        "router-dashboard-sa@agentspace-argolis-demo.iam.gserviceaccount.com",
-    ).strip()
+    impersonate_sa = os.getenv("IMPERSONATE_SA", "").strip()
     if impersonate_sa:
         try:
             base_credentials, _ = google.auth.default()

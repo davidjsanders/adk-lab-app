@@ -133,7 +133,7 @@ def a2ui_image_card() -> Response:
     Returns:
         Response object containing <a2ui-json> manifest payload.
     """
-    manifest_str = router.to_a2ui_card_manifest()
+    manifest_str = router.to_a2ui_image_card_manifest()
     return Response(manifest_str, mimetype="text/plain")
 
 

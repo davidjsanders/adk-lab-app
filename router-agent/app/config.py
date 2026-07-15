@@ -13,10 +13,7 @@ GCP_LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION", "us-central1")
 USE_VERTEXAI = os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "True")
 
 # Service Account Impersonation for Cloudtop Workstations
-IMPERSONATE_SA = os.getenv(
-    "IMPERSONATE_SA",
-    "router-dashboard-sa@agentspace-argolis-demo.iam.gserviceaccount.com",
-)
+IMPERSONATE_SA = os.getenv("IMPERSONATE_SA", "")
 
 VERTEX_AI_SEARCH_DATASTORE_ID = os.getenv(
     "VERTEX_AI_SEARCH_DATASTORE_ID",
@@ -24,9 +21,6 @@ VERTEX_AI_SEARCH_DATASTORE_ID = os.getenv(
 )
 
 # Fleet Infrastructure URLs
-DASHBOARD_URL = os.getenv(
-    "DASHBOARD_URL", "https://router-dashboard-cta6n7hkya-uc.a.run.app"
-)
 MCP_SERVER_URL = os.getenv(
     "MCP_SERVER_URL", "https://router-mcp-server-63466983700.us-central1.run.app"
 )

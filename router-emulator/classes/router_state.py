@@ -420,7 +420,30 @@ class RouterState:
         base_dir = os.path.dirname(os.path.dirname(__file__))
         template_path = os.path.join(base_dir, "a2ui_templates", "card.json")
 
+        def get_led_info(name_key: str, label: str):
+            val = str(self.leds.get(name_key, "off")).lower()
+            if "green" in val or "flash" in val:
+                return f"🟢 {label}", "#00FF00"
+            elif "amber" in val or "yellow" in val:
+                return f"🟠 {label}", "#FFA500"
+            elif "red" in val:
+                return f"🔴 {label}", "#FF0000"
+            else:
+                return f"⚫ {label}", "#808080"
+
+        onli_txt, onli_clr = get_led_info("online", "ONLI")
+        upst_txt, upst_clr = get_led_info("upstream", "UPST")
+        lan1_txt, lan1_clr = get_led_info("lan1", "LAN1")
+        lan2_txt, lan2_clr = get_led_info("lan2", "LAN2")
+        lan3_txt, lan3_clr = get_led_info("lan3", "LAN3")
+        lan4_txt, lan4_clr = get_led_info("lan4", "LAN4")
+        send_txt, send_clr = get_led_info("send", "SEND")
+        recv_txt, recv_clr = get_led_info("receive", "RECV")
+
+        surface_id = f"router-card-{self.router_id.lower().replace('-', '_')}-{int(time.time() * 1000)}"
+
         values = {
+            "surface_id": surface_id,
             "display_name": self.router_id,
             "router_id": self.router_id,
             "subtitle": self.purpose,
@@ -428,6 +451,22 @@ class RouterState:
             "uptime": f"{self.uptime_seconds}s",
             "state": self.status,
             "mfg_model": f"{self.manufacturer} {self.firmware_version}",
+            "led_onli_text": onli_txt,
+            "led_onli_color": onli_clr,
+            "led_upst_text": upst_txt,
+            "led_upst_color": upst_clr,
+            "led_lan1_text": lan1_txt,
+            "led_lan1_color": lan1_clr,
+            "led_lan2_text": lan2_txt,
+            "led_lan2_color": lan2_clr,
+            "led_lan3_text": lan3_txt,
+            "led_lan3_color": lan3_clr,
+            "led_lan4_text": lan4_txt,
+            "led_lan4_color": lan4_clr,
+            "led_send_text": send_txt,
+            "led_send_color": send_clr,
+            "led_recv_text": recv_txt,
+            "led_recv_color": recv_clr,
         }
 
         if os.path.exists(template_path):
@@ -443,55 +482,176 @@ class RouterState:
         # Fallback to telemetry dictionary
         return f"<a2ui-json>\n{json.dumps(self.to_telemetry_dict(), indent=2)}\n</a2ui-json>"
 
+    def to_a2ui_image_card_manifest(self) -> str:
+        """Constructs an A2UI v0.8 card manifest containing an embedded Base64 PNG snapshot image.
+
+        Returns:
+            String containing <a2ui-json> enclosed manifest payload.
+        """
+        import base64
+        png_bytes = self.render_png_card_bytes()
+        base64_png = base64.b64encode(png_bytes).decode("utf-8")
+        data_uri = f"data:image/png;base64,{base64_png}"
+
+        surface_id = f"router-card-image-{self.router_id.lower().replace('-', '_')}"
+
+        payload = [
+            {
+                "beginRendering": {
+                    "surfaceId": surface_id,
+                    "root": "card-root"
+                }
+            },
+            {
+                "surfaceUpdate": {
+                    "surfaceId": surface_id,
+                    "components": [
+                        {
+                            "id": "card-root",
+                            "component": {
+                                "Card": {
+                                    "child": "image-comp",
+                                    "style": {
+                                        "backgroundColor": "#0B131E",
+                                        "borderRadius": "12px",
+                                        "padding": "8px"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "id": "image-comp",
+                            "component": {
+                                "Image": {
+                                    "url": {
+                                        "literalString": data_uri
+                                    },
+                                    "fit": "contain"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ]
+
+        return f"<a2ui-json>\n{json.dumps(payload, indent=2)}\n</a2ui-json>"
+
     def render_png_card_bytes(self) -> bytes:
-        """Constructs a visual high-fidelity PNG binary card representation using PIL.
+        """Constructs a high-fidelity, high-resolution (1200x640) PNG visual card representation using PIL.
 
         Returns:
             Raw PNG bytes stream.
         """
         import io
-        from PIL import Image, ImageDraw
+        from PIL import Image, ImageDraw, ImageFont
 
-        width, height = 600, 320
+        width, height = 1200, 640
         img = Image.new("RGBA", (width, height), color=(11, 19, 30, 255))
         draw = ImageDraw.Draw(img)
 
-        # Outer border
-        draw.rounded_rectangle([(10, 10), (width - 10, height - 10)], radius=12, outline=(0, 176, 255, 255), width=2)
+        # Scale fonts using PIL load_default font sizing
+        title_font = ImageFont.load_default(size=36)
+        header_font = ImageFont.load_default(size=24)
+        label_font = ImageFont.load_default(size=24)
+        value_font = ImageFont.load_default(size=24)
+        led_font = ImageFont.load_default(size=20)
+        btn_font = ImageFont.load_default(size=22)
 
-        # Header Title
-        draw.text((30, 30), f"{self.router_id}", fill=(0, 176, 255, 255))
-        draw.text((30, 55), f"Purpose: {self.purpose}", fill=(0, 176, 255, 255))
-        draw.text((30, 75), f"Location: {self.location}", fill=(0, 176, 255, 255))
+        # Outer card rounded rectangle border with cyan accent
+        draw.rounded_rectangle(
+            [(20, 20), (width - 20, height - 20)],
+            radius=24,
+            outline=(0, 176, 255, 255),
+            width=4,
+        )
 
-        # Divider 1
-        draw.line([(30, 100), (width - 30, 100)], fill=(80, 100, 120, 255), width=1)
+        # Draw Header Section
+        draw.text((60, 45), f"🌐  {self.router_id}", font=title_font, fill=(0, 176, 255, 255))
+        draw.text((60, 95), f"Purpose:  {self.purpose}", font=header_font, fill=(0, 176, 255, 255))
+        draw.text((60, 130), f"Location: {self.location}", font=header_font, fill=(0, 176, 255, 255))
 
-        # Telemetry Table
-        draw.text((30, 115), f"Display Name:   {self.router_id}", fill=(0, 255, 255, 255))
-        draw.text((30, 140), f"Uptime:         {self.uptime_seconds}s", fill=(50, 205, 50, 255))
-        draw.text((30, 165), f"State:          {self.status}", fill=(50, 205, 50, 255))
-        draw.text((30, 190), f"MFG/Model:      {self.manufacturer} {self.firmware_version}", fill=(0, 255, 255, 255))
+        # Horizontal Divider 1
+        draw.line([(60, 170), (width - 60, 170)], fill=(0, 176, 255, 120), width=2)
 
-        # Divider 2
-        draw.line([(30, 215), (width - 30, 215)], fill=(80, 100, 120, 255), width=1)
+        # Key / Value Telemetry Table Grid
+        draw.text((60, 195), "Display Name:", font=label_font, fill=(0, 255, 255, 255))
+        draw.text((320, 195), f"{self.router_id}", font=value_font, fill=(0, 255, 255, 255))
 
-        # LEDs Status
+        draw.text((60, 235), "Uptime:", font=label_font, fill=(50, 205, 50, 255))
+        draw.text((320, 235), f"{self.uptime_seconds}s", font=value_font, fill=(50, 205, 50, 255))
+
+        draw.text((60, 275), "State:", font=label_font, fill=(50, 205, 50, 255))
+        draw.text((320, 275), f"{self.status}", font=value_font, fill=(50, 205, 50, 255))
+
+        draw.text((60, 315), "MFG/Model:", font=label_font, fill=(0, 255, 255, 255))
+        draw.text((320, 315), f"{self.manufacturer} {self.firmware_version}", font=value_font, fill=(0, 255, 255, 255))
+
+        # Horizontal Divider 2
+        draw.line([(60, 360), (width - 60, 360)], fill=(0, 176, 255, 120), width=2)
+
+        # Glowing Circular LED Indicators Status Bar
         current_leds = self.leds
-        led_text_parts = []
-        for led_name in ["online", "upstream", "lan1", "lan2", "lan3", "lan4", "send", "receive"]:
-            color = str(current_leds.get(led_name, "off")).lower()
-            icon = "ON" if "green" in color else "ALT" if "amber" in color else "ERR" if "red" in color else "OFF"
-            led_text_parts.append(f"[{led_name.upper()[:4]}:{icon}]")
+        led_names = ["online", "upstream", "lan1", "lan2", "lan3", "lan4", "send", "receive"]
 
-        draw.text((30, 230), "  ".join(led_text_parts), fill=(255, 255, 255, 255))
+        # LED status bar container background pill box
+        draw.rounded_rectangle(
+            [(60, 380), (width - 60, 490)],
+            radius=16,
+            fill=(7, 12, 20, 255),
+            outline=(40, 60, 80, 255),
+            width=2,
+        )
 
-        # Divider 3
-        draw.line([(30, 260), (width - 30, 260)], fill=(80, 100, 120, 255), width=1)
+        start_x = 125
+        step_x = 135
+        cy = 422
 
-        # Footer Actions
-        draw.text((60, 275), "[ PWR TOGGLE ]", fill=(0, 255, 0, 255))
-        draw.text((200, 275), "[ REBOOT SYSTEM ]", fill=(0, 255, 0, 255))
+        for idx, led_name in enumerate(led_names):
+            cx = start_x + (idx * step_x)
+
+            color_str = str(current_leds.get(led_name, "off")).lower()
+            if "green" in color_str:
+                fill_color = (0, 255, 0, 255)
+                glow_color = (0, 255, 0, 60)
+            elif "amber" in color_str or "yellow" in color_str:
+                fill_color = (255, 165, 0, 255)
+                glow_color = (255, 165, 0, 60)
+            elif "red" in color_str:
+                fill_color = (255, 0, 0, 255)
+                glow_color = (255, 0, 0, 60)
+            else:
+                fill_color = (60, 60, 60, 255)
+                glow_color = (40, 40, 40, 30)
+
+            # Draw outer glow circle
+            draw.ellipse([(cx - 18, cy - 18), (cx + 18, cy + 18)], fill=glow_color)
+            # Draw primary LED bulb
+            draw.ellipse([(cx - 12, cy - 12), (cx + 12, cy + 12)], fill=fill_color)
+
+            # Centered LED Label
+            lbl = led_name.upper()[:4]
+            draw.text((cx, cy + 42), lbl, font=led_font, fill=(220, 235, 250, 255), anchor="ms")
+
+        # Horizontal Divider 3
+        draw.line([(60, 510), (width - 60, 510)], fill=(0, 176, 255, 120), width=2)
+
+        # Footer Action Buttons
+        draw.rounded_rectangle(
+            [(80, 530), (360, 595)],
+            radius=14,
+            outline=(0, 255, 0, 255),
+            width=2,
+        )
+        draw.text((220, 562), "PWR TOGGLE", font=btn_font, fill=(0, 255, 0, 255), anchor="mm")
+
+        draw.rounded_rectangle(
+            [(400, 530), (680, 595)],
+            radius=14,
+            outline=(0, 255, 0, 255),
+            width=2,
+        )
+        draw.text((540, 562), "REBOOT SYSTEM", font=btn_font, fill=(0, 255, 0, 255), anchor="mm")
 
         buf = io.BytesIO()
         img.save(buf, format="PNG")

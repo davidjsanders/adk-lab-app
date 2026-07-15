@@ -53,19 +53,14 @@ mcp_toolset = McpToolset(
 )
 
 
-def get_mcp_tools() -> list[BaseTool]:
+async def get_mcp_tools() -> list[BaseTool]:
     """Retrieves tools exposed by the remote MCP server.
-
-    Args:
 
     Returns:
         List of loaded ADK BaseTool objects.
-
-    Raises:
-        RuntimeError: If communicating with the MCP server fails.
     """
     try:
-        tools = mcp_toolset.get_tools()
+        tools = await mcp_toolset.get_tools()
         logger.info(
             f"Successfully loaded {len(tools)} tools from MCP server at {MCP_SERVER_URL}"
         )

@@ -1,13 +1,13 @@
 [
   {
     "beginRendering": {
-      "surfaceId": "router-card-mock-composer",
+      "surfaceId": "$surface_id",
       "root": "card-root"
     }
   },
   {
     "surfaceUpdate": {
-      "surfaceId": "router-card-mock-composer",
+      "surfaceId": "$surface_id",
       "components": [
         {
           "id": "card-root",
@@ -347,11 +347,11 @@
           "component": {
             "Text": {
               "text": {
-                "literalString": "🟢 ONLI"
+                "literalString": "$led_onli_text"
               },
               "usageHint": "caption",
               "style": {
-                "color": "#00FF00"
+                "color": "$led_onli_color"
               }
             }
           }
@@ -361,11 +361,11 @@
           "component": {
             "Text": {
               "text": {
-                "literalString": "🟢 UPST"
+                "literalString": "$led_upst_text"
               },
               "usageHint": "caption",
               "style": {
-                "color": "#00FF00"
+                "color": "$led_upst_color"
               }
             }
           }
@@ -375,11 +375,11 @@
           "component": {
             "Text": {
               "text": {
-                "literalString": "🟢 LAN1"
+                "literalString": "$led_lan1_text"
               },
               "usageHint": "caption",
               "style": {
-                "color": "#00FF00"
+                "color": "$led_lan1_color"
               }
             }
           }
@@ -389,11 +389,11 @@
           "component": {
             "Text": {
               "text": {
-                "literalString": "🟢 LAN2"
+                "literalString": "$led_lan2_text"
               },
               "usageHint": "caption",
               "style": {
-                "color": "#00FF00"
+                "color": "$led_lan2_color"
               }
             }
           }
@@ -403,11 +403,11 @@
           "component": {
             "Text": {
               "text": {
-                "literalString": "⚫ LAN3"
+                "literalString": "$led_lan3_text"
               },
               "usageHint": "caption",
               "style": {
-                "color": "#808080"
+                "color": "$led_lan3_color"
               }
             }
           }
@@ -417,11 +417,11 @@
           "component": {
             "Text": {
               "text": {
-                "literalString": "⚫ LAN4"
+                "literalString": "$led_lan4_text"
               },
               "usageHint": "caption",
               "style": {
-                "color": "#808080"
+                "color": "$led_lan4_color"
               }
             }
           }
@@ -431,11 +431,11 @@
           "component": {
             "Text": {
               "text": {
-                "literalString": "⚫ SEND"
+                "literalString": "$led_send_text"
               },
               "usageHint": "caption",
               "style": {
-                "color": "#808080"
+                "color": "$led_send_color"
               }
             }
           }
@@ -445,11 +445,11 @@
           "component": {
             "Text": {
               "text": {
-                "literalString": "⚫ RECV"
+                "literalString": "$led_recv_text"
               },
               "usageHint": "caption",
               "style": {
-                "color": "#808080"
+                "color": "$led_recv_color"
               }
             }
           }
