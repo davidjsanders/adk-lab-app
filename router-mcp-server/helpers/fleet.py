@@ -3,7 +3,7 @@
 import json
 import logging
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Union
 
 import requests
 
@@ -17,15 +17,6 @@ DEFAULT_DASHBOARD_URL = os.getenv("DASHBOARD_URL", "https://router-dashboard-cta
 
 DEFAULT_STATIC_FLEET = [
     {
-        "id": "RTR-CAN-EAST-01",
-        "name": "Canada East Gateway Router",
-        "url": "https://router-emulator-rtr-can-east-01-cta6n7hkya-uc.a.run.app",
-        "location": "Montréal, QC",
-        "purpose": "Central Hub BGP Border Gateway",
-        "source": "CLOUDRUN",
-        "secret_id": "router-secret-rtr-can-east-01",
-    },
-    {
         "id": "CAN-NN2-CENTRAL-01",
         "name": "Canada Northeast 2 Router 1",
         "url": "https://router-emulator-can-nn2-central-01-cta6n7hkya-uc.a.run.app",
@@ -35,10 +26,46 @@ DEFAULT_STATIC_FLEET = [
         "secret_id": "router-secret-can-nn2-central-01",
     },
     {
-        "id": "RTR-CAN-EAST-02",
+        "id": "CAN-NN2-CENTRAL-PAIR-01-A",
         "name": "Canada Northeast 2 Router 2",
-        "url": "https://router-emulator-rtr-can-east-02-cta6n7hkya-uc.a.run.app",
+        "url": "https://router-emulator-can-nn2-central-02-cta6n7hkya-uc.a.run.app",
         "location": "Toronto, ON",
+        "purpose": "East Hub Secondary Gateway",
+        "source": "CLOUDRUN",
+        "secret_id": "router-secret-can-nn2-central-02",
+    },
+    {
+        "id": "RTR-CAN-ATLANTIC-01",
+        "name": "Atlantic Hub Gateway 01",
+        "url": "https://router-emulator-rtr-can-atlantic-01-cta6n7hkya-uc.a.run.app",
+        "location": "Halifax, NS",
+        "purpose": "Atlantic Border Gateway",
+        "source": "CLOUDRUN",
+        "secret_id": "router-secret-rtr-can-atlantic-01",
+    },
+    {
+        "id": "RTR-CAN-ATLANTIC-02",
+        "name": "Atlantic Hub Gateway 02",
+        "url": "https://router-emulator-rtr-can-atlantic-02-cta6n7hkya-uc.a.run.app",
+        "location": "Halifax, NS",
+        "purpose": "Atlantic Backup Gateway",
+        "source": "CLOUDRUN",
+        "secret_id": "router-secret-rtr-can-atlantic-02",
+    },
+    {
+        "id": "RTR-CAN-EAST-01",
+        "name": "Canada East Gateway Router",
+        "url": "https://router-emulator-rtr-can-east-01-cta6n7hkya-uc.a.run.app",
+        "location": "Montréal, QC",
+        "purpose": "Central Hub BGP Border Gateway",
+        "source": "CLOUDRUN",
+        "secret_id": "router-secret-rtr-can-east-01",
+    },
+    {
+        "id": "RTR-CAN-EAST-02",
+        "name": "Canada East Backup Gateway Router",
+        "url": "https://router-emulator-rtr-can-east-02-cta6n7hkya-uc.a.run.app",
+        "location": "Québec City, QC",
         "purpose": "Backup East Hub BGP Border Gateway",
         "source": "CLOUDRUN",
         "secret_id": "router-secret-rtr-can-east-02",
@@ -47,61 +74,37 @@ DEFAULT_STATIC_FLEET = [
 
 
 def fetch_fleet_data() -> List[Dict[str, Any]]:
-    """Helper to query fleet metadata list from dashboard API or direct GCP Cloud Run discovery fallback.
-
-    Args:
-        None.
+    """Helper to query fleet metadata list directly from GCP Cloud Run API with dashboard/static fallbacks.
 
     Returns:
-        List of router node metadata dictionaries.
-
-    Raises:
-        None.
+        List of router node metadata dictionaries auto-discovered from Cloud Run services.
     """
+    # 1. Primary Method: Direct GCP Cloud Run API Dynamic Service Discovery
+    try:
+        mod = _load_dashboard_cloud_run_module()
+        cr_nodes = mod.discover_cloud_run_routers()
+        if cr_nodes:
+            logger.info(f"Direct GCP Cloud Run API discovery retrieved {len(cr_nodes)} dynamic router services.")
+            return cr_nodes
+    except Exception as cr_err:
+        logger.warning(f"Direct GCP Cloud Run API discovery encountered error: {cr_err}")
+
+    # 2. Secondary Method: Dashboard API Query
     url = f"{DEFAULT_DASHBOARD_URL}/api/routers"
     try:
         headers = get_auth_headers(url)
         resp = requests.get(url, headers=headers, timeout=5)
-        resp.raise_for_status()
-        data = resp.json()
-        if isinstance(data, dict) and "routers" in data:
-            return data["routers"]
-        if isinstance(data, list):
-            return data
+        if resp.ok:
+            data = resp.json()
+            if isinstance(data, dict) and "routers" in data and data["routers"]:
+                return data["routers"]
+            if isinstance(data, list) and data:
+                return data
     except Exception as err:
-        logger.warning(f"Dashboard URL query to {url} failed ({err}); attempting fallback inventory assembly.")
+        logger.warning(f"Dashboard URL query to {url} failed ({err}); using static fallback list.")
 
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    parent_dir = os.path.dirname(base_dir)
-    local_json = os.path.join(parent_dir, "router-dashboard", "routers.json")
-    loaded_nodes: List[Dict[str, Any]] = []
-    if os.path.exists(local_json):
-        try:
-            with open(local_json, "r", encoding="utf-8") as f:
-                loaded_nodes = json.load(f)
-        except Exception as read_err:
-            logger.error(f"Failed reading local routers.json: {read_err}")
-
-    load_cloud_fleet = os.getenv("LOAD_CLOUD_FLEET", "true").strip().lower() in ("true", "1", "yes")
-    if load_cloud_fleet:
-        try:
-            mod = _load_dashboard_cloud_run_module()
-            cr_nodes = mod.discover_cloud_run_routers()
-            known_ids = {node["id"] for node in loaded_nodes if isinstance(node, dict) and "id" in node}
-            for cr_node in cr_nodes:
-                cr_id = cr_node["id"]
-                if cr_id not in known_ids:
-                    loaded_nodes.append(cr_node)
-                    known_ids.add(cr_id)
-            logger.info(f"Direct GCP Cloud Run discovery loaded {len(cr_nodes)} cloud nodes (LOAD_CLOUD_FLEET=true).")
-        except Exception as cr_err:
-            logger.warning(f"Direct GCP Cloud Run discovery failed ({cr_err}); using static fallback metadata.")
-            known_ids = {node["id"] for node in loaded_nodes if isinstance(node, dict) and "id" in node}
-            for default_node in DEFAULT_STATIC_FLEET:
-                if default_node["id"] not in known_ids:
-                    loaded_nodes.append(default_node)
-
-    return loaded_nodes
+    # 3. Fallback Method: Static Default Fleet
+    return DEFAULT_STATIC_FLEET
 
 
 def get_router_node(router_id: str) -> Dict[str, Any]:
@@ -145,6 +148,70 @@ def fetch_status_data(router_id: str) -> Dict[str, Any]:
     resp = requests.get(url, headers=headers, timeout=10)
     resp.raise_for_status()
     return resp.json()
+
+
+def fetch_a2ui_card_data(router_id: str) -> str:
+    """Helper to query target router node endpoint directly for its native component-tree A2UI card manifest.
+
+    Args:
+        router_id: Unique string ID of target router node.
+
+    Returns:
+        String containing <a2ui-json> enclosed payload.
+
+    Raises:
+        RuntimeError: If router node lookup or HTTP A2UI query fails.
+    """
+    node = get_router_node(router_id)
+    base_url = str(node.get("url", "")).rstrip("/")
+    if not base_url:
+        raise RuntimeError(f"Router node '{router_id}' has no configured target URL.")
+
+    url = f"{base_url}/a2compact"
+    try:
+        headers = get_auth_headers(url)
+        resp = requests.get(url, headers=headers, timeout=10)
+        resp.raise_for_status()
+        return resp.text
+    except Exception as err:
+        logger.warning(f"Direct fetch of /a2compact from '{url}' failed: {err}; attempting dashboard proxy fallback...")
+        proxy_url = f"{DEFAULT_DASHBOARD_URL}/api/proxy/a2compact?router_id={router_id}"
+        proxy_headers = get_auth_headers(proxy_url)
+        proxy_resp = requests.get(proxy_url, headers=proxy_headers, timeout=10)
+        proxy_resp.raise_for_status()
+        return proxy_resp.text
+
+
+def fetch_a2ui_image_card_data(router_id: str) -> str:
+    """Helper to query target router node endpoint directly for its Base64 PNG snapshot A2UI card manifest.
+
+    Args:
+        router_id: Unique string ID of target router node.
+
+    Returns:
+        String containing <a2ui-json> enclosed payload.
+
+    Raises:
+        RuntimeError: If router node lookup or HTTP A2UI query fails.
+    """
+    node = get_router_node(router_id)
+    base_url = str(node.get("url", "")).rstrip("/")
+    if not base_url:
+        raise RuntimeError(f"Router node '{router_id}' has no configured target URL.")
+
+    url = f"{base_url}/a2image"
+    try:
+        headers = get_auth_headers(url)
+        resp = requests.get(url, headers=headers, timeout=10)
+        resp.raise_for_status()
+        return resp.text
+    except Exception as err:
+        logger.warning(f"Direct fetch of /a2image from '{url}' failed: {err}; attempting dashboard proxy fallback...")
+        proxy_url = f"{DEFAULT_DASHBOARD_URL}/api/proxy/a2image?router_id={router_id}"
+        proxy_headers = get_auth_headers(proxy_url)
+        proxy_resp = requests.get(proxy_url, headers=proxy_headers, timeout=10)
+        proxy_resp.raise_for_status()
+        return proxy_resp.text
 
 
 def _load_dashboard_cloud_run_module():

@@ -11,7 +11,7 @@ WORKDIR /app
 
 # Create virtual environment and install dependencies using uv
 RUN uv venv /opt/venv
-COPY requirements.txt .
+COPY pyproject.toml requirements.txt* ./
 RUN uv pip install --no-cache -r requirements.txt --python /opt/venv
 
 # --- Stage 2: Final Runtime Container ---
@@ -34,11 +34,7 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN uv pip install --no-cache gunicorn --python /opt/venv
 
 # Copy application source code
-COPY app.py .
-COPY classes/ classes/
-COPY helpers/ helpers/
-COPY templates/ templates/
-COPY static/ static/
+COPY . .
 
 # Ensure proper non-root file permissions for app and home directory
 RUN chown -R appuser:appuser /app /home/appuser

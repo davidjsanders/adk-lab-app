@@ -26,6 +26,8 @@ from helpers import (
     dispatch_register_router,
     dispatch_set_led,
     dispatch_snmp_walk,
+    fetch_a2ui_card_data,
+    fetch_a2ui_image_card_data,
     fetch_fleet_data,
     fetch_fleet_summary,
     fetch_status_data,
@@ -111,7 +113,9 @@ def get_router_status(router_id: str) -> Dict[str, Any]:
 
 @mcp.tool()
 def render_router_card(router_id: str) -> str:
-    """Renders a compact A2UI v0.8 snapshot card for the target router node.
+    """Renders a native interactive component-tree A2UI v0.8 snapshot card for the target router node.
+
+    Use this tool when a standard interactive text & button component card is preferred.
 
     Args:
         router_id: Unique string ID of target router node (e.g. 'CAN-NN2-CENTRAL-01').
@@ -120,10 +124,36 @@ def render_router_card(router_id: str) -> str:
         A2UI v0.8 JSON declarative card payload string enclosed in <a2ui-json> tags.
 
     Raises:
-        RuntimeError: If status query for card payload fails.
+        RuntimeError: If querying target router node for A2UI card fails.
     """
-    status_data = fetch_status_data(router_id)
-    return build_a2ui_router_card_manifest(status_data, default_id=router_id)
+    try:
+        return fetch_a2ui_card_data(router_id)
+    except Exception as err:
+        logger.warning(f"Direct fetch of /a2compact for '{router_id}' failed ({err}); using local fallback manifest builder.")
+        status_data = fetch_status_data(router_id)
+        return build_a2ui_router_card_manifest(status_data, default_id=router_id)
+
+
+@mcp.tool()
+def render_router_card_image(router_id: str) -> str:
+    """Renders a high-fidelity visual PNG snapshot A2UI card for the target router node matching the Operations Console design.
+
+    Use this tool when exact visual chassis formatting (glowing LED indicators, monospace telemetry grid, exact card styling) is required.
+
+    Args:
+        router_id: Unique string ID of target router node (e.g. 'CAN-NN2-CENTRAL-01').
+
+    Returns:
+        A2UI v0.8 JSON declarative card payload string containing an embedded Base64 PNG image enclosed in <a2ui-json> tags.
+
+    Raises:
+        RuntimeError: If querying target router node for PNG card fails.
+    """
+    try:
+        return fetch_a2ui_image_card_data(router_id)
+    except Exception as err:
+        logger.error(f"Fetch of /a2image for '{router_id}' failed: {err}")
+        raise RuntimeError(f"Failed rendering PNG card image for router '{router_id}': {err}")
 
 
 @mcp.tool()
@@ -358,6 +388,8 @@ def redeploy_router_node(router_ids: Union[List[str], str]) -> Dict[str, Any]:
     """
     ids_list = [router_ids] if isinstance(router_ids, str) else router_ids
     return dispatch_redeploy_routers(ids_list)
+# Expose ASGI application instance for Gunicorn / Uvicorn server execution on Cloud Run
+app = mcp.http_app(transport="streamable-http", stateless_http=True)
 
 
 if __name__ == "__main__":

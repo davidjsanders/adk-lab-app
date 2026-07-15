@@ -1,0 +1,20 @@
+[project]
+name = "router-emulator"
+version = "0.1.0"
+description = "Hardware Router Emulator Node with SSE Telemetry & SNMP support"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "flask>=3.0.0",
+    "pysnmp>=7.0.0",
+    "python-dotenv>=1.0.0",
+    "google-cloud-secret-manager>=2.20.0",
+    "pillow>=10.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]

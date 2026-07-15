@@ -11,7 +11,7 @@ WORKDIR /app
 
 # Create virtual environment and install dependencies using uv
 RUN uv venv /opt/venv
-COPY requirements.txt .
+COPY pyproject.toml requirements.txt* ./
 RUN uv pip install --no-cache -r requirements.txt --python /opt/venv
 
 # --- Stage 2: Final Runtime Container ---

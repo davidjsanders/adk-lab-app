@@ -11,6 +11,8 @@ from .fleet import (
     dispatch_delete_router,
     dispatch_redeploy_routers,
     dispatch_register_router,
+    fetch_a2ui_card_data,
+    fetch_a2ui_image_card_data,
     fetch_fleet_data,
     fetch_status_data,
     get_router_node,

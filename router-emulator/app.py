@@ -113,6 +113,42 @@ def compact() -> str:
     )
 
 
+@app.route("/a2compact", methods=["GET"])
+@app.route("/api/a2compact", methods=["GET"])
+def a2ui_compact() -> Response:
+    """Renders the A2UI v0.8 snapshot manifest card for the router node.
+
+    Returns:
+        Response object containing <a2ui-json> manifest payload.
+    """
+    manifest_str = router.to_a2ui_card_manifest()
+    return Response(manifest_str, mimetype="text/plain")
+
+
+@app.route("/a2image", methods=["GET"])
+@app.route("/api/a2image", methods=["GET"])
+def a2ui_image_card() -> Response:
+    """Renders an A2UI v0.8 snapshot card containing a high-fidelity Base64 PNG image of the router card.
+
+    Returns:
+        Response object containing <a2ui-json> manifest payload.
+    """
+    manifest_str = router.to_a2ui_card_manifest()
+    return Response(manifest_str, mimetype="text/plain")
+
+
+@app.route("/card.png", methods=["GET"])
+@app.route("/api/card.png", methods=["GET"])
+def get_card_image_png() -> Response:
+    """Returns the raw PNG card image binary stream.
+
+    Returns:
+        Response object with image/png mimetype and binary stream.
+    """
+    png_bytes = router.render_png_card_bytes()
+    return Response(png_bytes, mimetype="image/png")
+
+
 @app.route("/api/status", methods=["GET"])
 def get_status() -> Response:
     """Fetches full telemetry, metadata, LED state, and logs for the router.

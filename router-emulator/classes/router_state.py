@@ -6,7 +6,9 @@ and execution of operational hardware control commands.
 
 from collections import deque
 from datetime import datetime, timezone
+import json
 import os
+from string import Template
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -408,3 +410,89 @@ class RouterState:
                 "error": "Bad Request",
                 "message": f"Unrecognized command '{cmd_clean}'. Valid commands: power_up, power_down, reset, bgp_reset, send_info, set_led",
             }, 400
+
+    def to_a2ui_card_manifest(self) -> str:
+        """Constructs and returns the dynamic A2UI v0.8 card manifest string for this router node.
+
+        Returns:
+            String containing <a2ui-json> enclosed manifest payload.
+        """
+        base_dir = os.path.dirname(os.path.dirname(__file__))
+        template_path = os.path.join(base_dir, "a2ui_templates", "card.json")
+
+        values = {
+            "display_name": self.router_id,
+            "router_id": self.router_id,
+            "subtitle": self.purpose,
+            "location": self.location,
+            "uptime": f"{self.uptime_seconds}s",
+            "state": self.status,
+            "mfg_model": f"{self.manufacturer} {self.firmware_version}",
+        }
+
+        if os.path.exists(template_path):
+            try:
+                with open(template_path, "r", encoding="utf-8") as f:
+                    template_str = f.read()
+                rendered_json_str = Template(template_str).safe_substitute(values)
+                payload = json.loads(rendered_json_str)
+                return f"<a2ui-json>\n{json.dumps(payload, indent=2)}\n</a2ui-json>"
+            except Exception as err:
+                logger.warning(f"Failed loading A2UI card template at '{template_path}': {err}")
+
+        # Fallback to telemetry dictionary
+        return f"<a2ui-json>\n{json.dumps(self.to_telemetry_dict(), indent=2)}\n</a2ui-json>"
+
+    def render_png_card_bytes(self) -> bytes:
+        """Constructs a visual high-fidelity PNG binary card representation using PIL.
+
+        Returns:
+            Raw PNG bytes stream.
+        """
+        import io
+        from PIL import Image, ImageDraw
+
+        width, height = 600, 320
+        img = Image.new("RGBA", (width, height), color=(11, 19, 30, 255))
+        draw = ImageDraw.Draw(img)
+
+        # Outer border
+        draw.rounded_rectangle([(10, 10), (width - 10, height - 10)], radius=12, outline=(0, 176, 255, 255), width=2)
+
+        # Header Title
+        draw.text((30, 30), f"{self.router_id}", fill=(0, 176, 255, 255))
+        draw.text((30, 55), f"Purpose: {self.purpose}", fill=(0, 176, 255, 255))
+        draw.text((30, 75), f"Location: {self.location}", fill=(0, 176, 255, 255))
+
+        # Divider 1
+        draw.line([(30, 100), (width - 30, 100)], fill=(80, 100, 120, 255), width=1)
+
+        # Telemetry Table
+        draw.text((30, 115), f"Display Name:   {self.router_id}", fill=(0, 255, 255, 255))
+        draw.text((30, 140), f"Uptime:         {self.uptime_seconds}s", fill=(50, 205, 50, 255))
+        draw.text((30, 165), f"State:          {self.status}", fill=(50, 205, 50, 255))
+        draw.text((30, 190), f"MFG/Model:      {self.manufacturer} {self.firmware_version}", fill=(0, 255, 255, 255))
+
+        # Divider 2
+        draw.line([(30, 215), (width - 30, 215)], fill=(80, 100, 120, 255), width=1)
+
+        # LEDs Status
+        current_leds = self.leds
+        led_text_parts = []
+        for led_name in ["online", "upstream", "lan1", "lan2", "lan3", "lan4", "send", "receive"]:
+            color = str(current_leds.get(led_name, "off")).lower()
+            icon = "ON" if "green" in color else "ALT" if "amber" in color else "ERR" if "red" in color else "OFF"
+            led_text_parts.append(f"[{led_name.upper()[:4]}:{icon}]")
+
+        draw.text((30, 230), "  ".join(led_text_parts), fill=(255, 255, 255, 255))
+
+        # Divider 3
+        draw.line([(30, 260), (width - 30, 260)], fill=(80, 100, 120, 255), width=1)
+
+        # Footer Actions
+        draw.text((60, 275), "[ PWR TOGGLE ]", fill=(0, 255, 0, 255))
+        draw.text((200, 275), "[ REBOOT SYSTEM ]", fill=(0, 255, 0, 255))
+
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        return buf.getvalue()
