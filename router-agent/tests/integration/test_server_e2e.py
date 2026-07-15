@@ -263,3 +263,29 @@ def test_reasoning_engine_stream(server_fixture: subprocess.Popen[str]) -> None:
         for event in events
     )
     assert has_text, "No text content in reasoning_engine events"
+
+
+def test_a2a_missing_message_id_sanitizer(server_fixture: subprocess.Popen[str]) -> None:
+    """Test that the A2A endpoint correctly handles requests missing messageId (Gemini Enterprise format)."""
+    raw_payload = {
+        "jsonrpc": "2.0",
+        "id": f"test-req-{uuid.uuid4()}",
+        "method": "message/send",
+        "params": {
+            "message": {
+                "role": "user",
+                "parts": [{"kind": "text", "text": "Show me RTR-CAN-EAST-01"}]
+            }
+        }
+    }
+    response = requests.post(
+        A2A_RPC_URL,
+        headers=HEADERS,
+        json=raw_payload,
+        timeout=60,
+    )
+    assert response.status_code == 200
+    res_json = response.json()
+    assert "error" not in res_json, f"Unexpected error in A2A response: {res_json}"
+    assert "result" in res_json
+

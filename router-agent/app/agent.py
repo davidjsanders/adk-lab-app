@@ -8,7 +8,12 @@ Integrates tools exclusively served over MCP from router-mcp-server with dynamic
 import logging
 
 from google.adk import Agent
+from google.adk.a2a.utils.agent_to_a2a import to_a2a
+from google.adk.agents import BaseAgent
 from google.adk.apps import App
+
+# Bind to_a2a helper directly onto BaseAgent so my_agent.to_a2a() works across all agents
+BaseAgent.to_a2a = lambda self, **kwargs: to_a2a(self, **kwargs)
 
 from app.config import FAST_MODEL, PRO_MODEL
 from app.helpers import GlobalGemini, intercept_image_card_tool
@@ -134,6 +139,13 @@ Direct Execution & Delegation Workflow:
     ],
 )
 
-# Export root agent and App instance required by ADK runner & FastAPI
+# 1. Define root agent
 root_agent = router_fleet_coordinator
-app = App(name="app", root_agent=root_agent)
+
+# 2. Convert and expose it directly into an A2A-compliant server application
+app = root_agent.to_a2a()
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)

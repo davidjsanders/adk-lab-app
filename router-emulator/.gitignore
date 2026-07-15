@@ -9,5 +9,6 @@ venv/
 ENV/
 run.log
 .env
-cloudrun.env
+*.egg-info/
+*.egg
 .DS_Store

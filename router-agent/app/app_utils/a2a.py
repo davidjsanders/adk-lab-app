@@ -22,8 +22,12 @@ registration.
 
 from __future__ import annotations
 
+import json
 import os
+import uuid
 from typing import TYPE_CHECKING
+
+from fastapi import Request
 
 from a2a.server.apps import A2AFastAPIApplication
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -88,6 +92,28 @@ def _resolve_app_url(app_url: str | None) -> str:
         )
 
     return "http://0.0.0.0:8000"
+
+
+def attach_a2a_middleware(app: FastAPI) -> None:
+    """Register HTTP middleware on application initialization to sanitize incoming A2A payloads."""
+    @app.middleware("http")
+    async def sanitize_a2a_payloads(request: Request, call_next):
+        if "/a2a/" in request.url.path and request.method == "POST":
+            try:
+                body_bytes = await request.body()
+                if body_bytes:
+                    body = json.loads(body_bytes)
+                    if isinstance(body, dict):
+                        params = body.get("params")
+                        if isinstance(params, dict):
+                            msg = params.get("message")
+                            if isinstance(msg, dict) and not msg.get("messageId") and not msg.get("message_id"):
+                                msg["messageId"] = str(uuid.uuid4())
+                                modified_bytes = json.dumps(body).encode("utf-8")
+                                request._body = modified_bytes
+            except Exception:
+                pass
+        return await call_next(request)
 
 
 async def attach_a2a_routes(

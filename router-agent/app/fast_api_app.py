@@ -25,7 +25,7 @@ from google.adk.runners import Runner
 from google.cloud import logging as google_cloud_logging
 
 from app.app_utils import services
-from app.app_utils.a2a import attach_a2a_routes
+from app.app_utils.a2a import attach_a2a_middleware, attach_a2a_routes
 from app.app_utils.reasoning_engine_adapter import (
     attach_reasoning_engine_routes,
 )
@@ -85,6 +85,7 @@ app: FastAPI = get_fast_api_app(
     otel_to_cloud=False,
     lifespan=lifespan,
 )
+attach_a2a_middleware(app)
 app.title = "router-agent"
 app.description = "API for interacting with the Agent router-agent"
 
