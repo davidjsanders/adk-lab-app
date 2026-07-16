@@ -2,11 +2,12 @@
 
 import logging
 import os
-import subprocess
+
 from typing import Any, Dict, Optional
 import urllib.parse
 
 import google.auth
+from google.auth import impersonated_credentials
 from google.auth.transport.requests import Request
 from google.oauth2 import id_token
 import requests
@@ -70,21 +71,27 @@ def get_oidc_id_token(target_url: str) -> Optional[str]:
     is_iap_target = bool(iap_client_id)
     audience = iap_client_id if iap_client_id else f"{parsed.scheme}://{parsed.netloc}"
 
-    # 1. Impersonation path if IMPERSONATE_SA is set or default service account
-    impersonate_sa = os.getenv("IMPERSONATE_SA", "router-dashboard-sa@agentspace-argolis-demo.iam.gserviceaccount.com").strip()
+    # 1. Impersonation path using SDK if IMPERSONATE_SA is set
+    impersonate_sa = os.getenv("IMPERSONATE_SA", "").strip()
     if impersonate_sa:
         try:
-            cmd = ["gcloud", "auth", "print-identity-token", f"--impersonate-service-account={impersonate_sa}", f"--audiences={audience}"]
-            if is_iap_target:
-                cmd.append("--include-email")
-            logger.info(f"Generating OIDC token using IMPERSONATE_SA='{impersonate_sa}' for audience='{audience}' (IAP={is_iap_target})")
-            res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=10)
-            if res.returncode == 0:
-                token_lines = [l.strip() for l in res.stdout.splitlines() if l.strip().startswith("eyJ")]
-                if token_lines:
-                    return token_lines[0]
+            logger.info(f"Generating OIDC token using IMPERSONATE_SA SDK='{impersonate_sa}' for audience='{audience}' (IAP={is_iap_target})")
+            
+            source_creds, _ = google.auth.default()
+            
+            target_creds = impersonated_credentials.IDTokenCredentials(
+                source_credentials=source_creds,
+                target_principal=impersonate_sa,
+                target_audience=audience,
+                include_email=is_iap_target
+            )
+            
+            auth_req = Request()
+            target_creds.refresh(auth_req)
+            if target_creds.token:
+                return target_creds.token
         except Exception as gerr:
-            logger.warning(f"Failed generating OIDC token via IMPERSONATE_SA ({impersonate_sa}) for {audience}: {gerr}")
+            logger.warning(f"Failed generating OIDC token via IMPERSONATE_SA SDK ({impersonate_sa}) for {audience}: {gerr}")
 
     # 2. Native runtime path: Use default ADC service account token generation
     try:

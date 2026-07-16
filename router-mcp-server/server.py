@@ -12,7 +12,6 @@ from typing import Any, Dict, List, Optional, Union
 from dotenv import load_dotenv
 from fastmcp import FastMCP
 
-from classes import build_a2ui_router_card_manifest
 from helpers import (
     ActionType,
     ColorType,
@@ -129,9 +128,9 @@ def render_router_card(router_id: str) -> str:
     try:
         return fetch_a2ui_card_data(router_id)
     except Exception as err:
-        logger.warning(f"Direct fetch of /a2compact for '{router_id}' failed ({err}); using local fallback manifest builder.")
-        status_data = fetch_status_data(router_id)
-        return build_a2ui_router_card_manifest(status_data, default_id=router_id)
+        logger.error(f"Fetch of /a2compact for '{router_id}' failed: {err}")
+        raise RuntimeError(f"Router '{router_id}' is unreachable or failed to provide A2UI card: {err}")
+
 
 
 @mcp.tool()

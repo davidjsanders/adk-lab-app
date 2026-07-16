@@ -11,10 +11,40 @@ import os
 from string import Template
 import time
 from typing import Any, Dict, List, Optional, Tuple
+import io
+
+from PIL import Image, ImageDraw, ImageFont
 
 from helpers.logger import setup_json_logging
 
 logger = setup_json_logging("router-emulator.state")
+
+# Font Initialization for PNG Rendering
+_font_paths = [
+    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+]
+_selected_font_path = None
+for _path in _font_paths:
+    try:
+        ImageFont.truetype(_path, 12)
+        _selected_font_path = _path
+        break
+    except Exception:
+        continue
+
+def _get_font(size: int):
+    if _selected_font_path:
+        return ImageFont.truetype(_selected_font_path, size)
+    return ImageFont.load_default(size=size)
+
+_TITLE_FONT = _get_font(36)
+_HEADER_FONT = _get_font(24)
+_LABEL_FONT = _get_font(24)
+_VALUE_FONT = _get_font(24)
+_LED_FONT = _get_font(20)
+_BTN_FONT = _get_font(22)
+
 
 
 class RouterState:
@@ -294,7 +324,7 @@ class RouterState:
             f"for router '{self.router_id}' from controller '{remote_addr}'"
         )
 
-        if cmd_clean in ("power_up", "powerup", "start"):
+        if cmd_clean in ("power_up", "powerup", "start", "power up", "power on", "turn on", "power_on"):
             self.leds.update({
                 "power": "green",
                 "online": "green",
@@ -309,7 +339,7 @@ class RouterState:
             self.add_log(f"Command executed: POWER UP by controller ({remote_addr})")
             return {"status": "SUCCESS", "message": "Router powered up successfully", "state": self.to_telemetry_dict()}, 200
 
-        elif cmd_clean in ("power_down", "powerdown", "shutdown", "stop"):
+        elif cmd_clean in ("power_down", "powerdown", "shutdown", "stop", "power down", "power off", "turn off", "power_off"):
             self.leds.update({
                 "power": "red",
                 "online": "off",
@@ -326,7 +356,7 @@ class RouterState:
             self.add_log(f"Command executed: POWER DOWN by controller ({remote_addr})", "WARN")
             return {"status": "SUCCESS", "message": "Router powered down", "state": self.to_telemetry_dict()}, 200
 
-        elif cmd_clean in ("reset", "reboot", "boot"):
+        elif cmd_clean in ("reset", "reboot", "boot", "restart", "system reset", "system reboot"):
             self.status = "BOOTING"
             self.booting = True
             self.boot_start_time = time.time()
@@ -340,7 +370,7 @@ class RouterState:
             self.add_log(f"Command executed: SYSTEM REBOOT initiated by controller ({remote_addr})")
             return {"status": "SUCCESS", "message": "Boot sequence initiated (6s POST sequence)", "state": self.to_telemetry_dict()}, 200
 
-        elif cmd_clean in ("bgp_reset", "bgp_restart"):
+        elif cmd_clean in ("bgp_reset", "bgp_restart", "bgp reset", "reset bgp", "restart bgp"):
             self.fail_mode = False  # Turn fail mode off when user resets BGP!
             self.status = "OPERATIONAL"
             self.leds.update({
@@ -357,7 +387,7 @@ class RouterState:
                 "state": self.to_telemetry_dict(),
             }, 200
 
-        elif cmd_clean in ("set_fail_mode", "fail_mode", "toggle_fail"):
+        elif cmd_clean in ("set_fail_mode", "fail_mode", "toggle_fail", "set fail mode", "fail mode", "toggle fail", "sef fail mode", "enable fail mode", "disable fail mode"):
             enabled = bool(params.get("enabled", True))
             self.fail_mode = enabled
             if enabled:
@@ -379,7 +409,7 @@ class RouterState:
                 msg = "Fail Mode DISABLED"
             return {"status": "SUCCESS", "message": msg, "state": self.to_telemetry_dict()}, 200
 
-        elif cmd_clean in ("send_info", "simulate_traffic", "traffic_burst"):
+        elif cmd_clean in ("send_info", "simulate_traffic", "traffic_burst", "send info", "simulate traffic", "traffic burst", "burst"):
             self.leds.update({
                 "send": "flash_fast",
                 "receive": "flash_fast",
@@ -408,7 +438,7 @@ class RouterState:
         else:
             return {
                 "error": "Bad Request",
-                "message": f"Unrecognized command '{cmd_clean}'. Valid commands: power_up, power_down, reset, bgp_reset, send_info, set_led",
+                "message": f"Unrecognized command '{cmd_clean}'. Valid commands: power_up, power_down, reset, bgp_reset, set_fail_mode, send_info, set_led",
             }, 400
 
     def to_a2ui_card_manifest(self) -> str:
@@ -422,8 +452,10 @@ class RouterState:
 
         def get_led_info(name_key: str, label: str):
             val = str(self.leds.get(name_key, "off")).lower()
-            if "green" in val or "flash" in val:
+            if "green" in val:
                 return f"🟢 {label}", "#00FF00"
+            elif "flash" in val:
+                return f"⚡ {label}", "#00FF00"
             elif "amber" in val or "yellow" in val:
                 return f"🟠 {label}", "#FFA500"
             elif "red" in val:
@@ -543,38 +575,12 @@ class RouterState:
         Returns:
             Raw PNG bytes stream.
         """
-        import io
-        from PIL import Image, ImageDraw, ImageFont
-
         width, height = 1200, 530
         img = Image.new("RGBA", (width, height), color=(11, 19, 30, 255))
         draw = ImageDraw.Draw(img)
 
-        # Resolve a scalable TrueType font if available, fallback to default
-        font_paths = [
-            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
-        ]
-        selected_path = None
-        for path in font_paths:
-            try:
-                ImageFont.truetype(path, 12)
-                selected_path = path
-                break
-            except Exception:
-                continue
+        # Outer card rounded rectangle border with cyan accent
 
-        def get_font(size: int):
-            if selected_path:
-                return ImageFont.truetype(selected_path, size)
-            return ImageFont.load_default(size=size)
-
-        title_font = get_font(36)
-        header_font = get_font(24)
-        label_font = get_font(24)
-        value_font = get_font(24)
-        led_font = get_font(20)
-        btn_font = get_font(22)
 
         # Outer card rounded rectangle border with cyan accent
         draw.rounded_rectangle(
@@ -585,25 +591,25 @@ class RouterState:
         )
 
         # Draw Header Section
-        draw.text((60, 45), f"🌐  {self.router_id}", font=title_font, fill=(0, 176, 255, 255))
-        draw.text((60, 95), f"Purpose:  {self.purpose}", font=header_font, fill=(0, 176, 255, 255))
-        draw.text((60, 130), f"Location: {self.location}", font=header_font, fill=(0, 176, 255, 255))
+        draw.text((60, 45), f"🛜  {self.router_id}", font=_TITLE_FONT, fill=(0, 176, 255, 255))
+        draw.text((60, 95), f"Purpose:  {self.purpose}", font=_HEADER_FONT, fill=(0, 176, 255, 255))
+        draw.text((60, 130), f"Location: {self.location}", font=_HEADER_FONT, fill=(0, 176, 255, 255))
 
         # Horizontal Divider 1
         draw.line([(60, 170), (width - 60, 170)], fill=(0, 176, 255, 120), width=2)
 
         # Key / Value Telemetry Table Grid
-        draw.text((60, 195), "Display Name:", font=label_font, fill=(0, 255, 255, 255))
-        draw.text((320, 195), f"{self.router_id}", font=value_font, fill=(0, 255, 255, 255))
+        draw.text((60, 195), "Display Name:", font=_LABEL_FONT, fill=(0, 255, 255, 255))
+        draw.text((320, 195), f"{self.router_id}", font=_VALUE_FONT, fill=(0, 255, 255, 255))
 
-        draw.text((60, 235), "Uptime:", font=label_font, fill=(50, 205, 50, 255))
-        draw.text((320, 235), f"{self.uptime_seconds}s", font=value_font, fill=(50, 205, 50, 255))
+        draw.text((60, 235), "Uptime:", font=_LABEL_FONT, fill=(50, 205, 50, 255))
+        draw.text((320, 235), f"{self.uptime_seconds}s", font=_VALUE_FONT, fill=(50, 205, 50, 255))
 
-        draw.text((60, 275), "State:", font=label_font, fill=(50, 205, 50, 255))
-        draw.text((320, 275), f"{self.status}", font=value_font, fill=(50, 205, 50, 255))
+        draw.text((60, 275), "State:", font=_LABEL_FONT, fill=(50, 205, 50, 255))
+        draw.text((320, 275), f"{self.status}", font=_VALUE_FONT, fill=(50, 205, 50, 255))
 
-        draw.text((60, 315), "MFG/Model:", font=label_font, fill=(0, 255, 255, 255))
-        draw.text((320, 315), f"{self.manufacturer} {self.firmware_version}", font=value_font, fill=(0, 255, 255, 255))
+        draw.text((60, 315), "MFG/Model:", font=_LABEL_FONT, fill=(0, 255, 255, 255))
+        draw.text((320, 315), f"{self.manufacturer} {self.firmware_version}", font=_VALUE_FONT, fill=(0, 255, 255, 255))
 
         # Horizontal Divider 2
         draw.line([(60, 360), (width - 60, 360)], fill=(0, 176, 255, 120), width=2)
@@ -649,7 +655,7 @@ class RouterState:
 
             # Centered LED Label
             lbl = led_name.upper()[:4]
-            draw.text((cx, cy + 42), lbl, font=led_font, fill=(220, 235, 250, 255), anchor="ms")
+            draw.text((cx, cy + 42), lbl, font=_LED_FONT, fill=(220, 235, 250, 255), anchor="ms")
 
 
 

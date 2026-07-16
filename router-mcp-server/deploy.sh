@@ -83,6 +83,7 @@ gcloud auth configure-docker "$REGISTRY_HOST" --quiet || {
 
 # Step 4: Build Multi-Stage Docker Image
 echo "--> Step 4: Building Docker container image with uv..."
+
 docker build \
     --platform linux/amd64 \
     -t "${IMAGE_URI}" \

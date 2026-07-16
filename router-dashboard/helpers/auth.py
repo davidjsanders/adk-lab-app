@@ -6,13 +6,14 @@ Credentials (ADC) to authorize service-to-service calls to IAM-protected Cloud R
 
 import logging
 import os
-import subprocess
+
 import time
 from typing import Dict, Optional, Tuple
 from urllib.parse import urlparse
 
 import google.auth
 import google.auth.transport.requests
+from google.auth import impersonated_credentials
 from google.oauth2 import id_token
 
 from .logger import setup_json_logging
@@ -48,24 +49,26 @@ def get_oidc_id_token(target_url: str) -> Optional[str]:
         if now < exp_time - 60:
             return token_str
 
-    # 1. Impersonation path if IMPERSONATE_SA is set in environment (workaround for internal Google workstations)
+    # 1. Impersonation path using SDK if IMPERSONATE_SA is set in environment (workaround for internal Google workstations)
     impersonate_sa = os.getenv("IMPERSONATE_SA", "").strip()
     if impersonate_sa:
         try:
-            res = subprocess.run(
-                ["gcloud", "auth", "print-identity-token", f"--impersonate-service-account={impersonate_sa}", f"--audiences={audience}"],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=10,
+            source_creds, _ = google.auth.default()
+            
+            target_creds = impersonated_credentials.IDTokenCredentials(
+                source_credentials=source_creds,
+                target_principal=impersonate_sa,
+                target_audience=audience,
+                include_email=True # Assuming IAP might be involved or email is needed
             )
-            token_lines = [l.strip() for l in res.stdout.splitlines() if l.strip().startswith("eyJ")]
-            if token_lines:
-                token = token_lines[0]
-                _OIDC_TOKEN_CACHE[audience] = (token, now + 3500)
-                return token
+            
+            auth_req = google.auth.transport.requests.Request()
+            target_creds.refresh(auth_req)
+            if target_creds.token:
+                _OIDC_TOKEN_CACHE[audience] = (target_creds.token, now + 3500)
+                return target_creds.token
         except Exception as gerr:
-            logger.warning(f"Failed generating OIDC token via IMPERSONATE_SA ({impersonate_sa}) for {audience}: {gerr}")
+            logger.warning(f"Failed generating OIDC token via IMPERSONATE_SA SDK ({impersonate_sa}) for {audience}: {gerr}")
 
     # 2. Native runtime path: Use default ADC service account token generation (Cloud Run runtime)
     try:

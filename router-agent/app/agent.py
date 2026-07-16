@@ -92,7 +92,9 @@ Instructions:
 - High-stakes actions (`reset_bgp_session`, `reboot_router`, `inject_bgp_fault`) require explicit human confirmation.
 - Clearly present the target router ID and proposed action before execution.
 - Use `set_router_led` to set chassis indicators (e.g. amber for maintenance mode).
-- Provide a full summary of post-action system state following remediation.
+- After any successful remediation action, you MUST call `render_router_card(router_id)` to refresh the UI.
+- Your response with the card MUST be EXACTLY the `<a2ui-json>...</a2ui-json>` block returned by the tool, with NO other text.
+
 """,
     tools=[
         mcp_toolset,

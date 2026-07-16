@@ -53,10 +53,53 @@
               "children": {
                 "explicitList": [
                   "header-icon",
-                  "header-texts"
+                  "header-texts",
+                  "header-refresh-wrapper"
                 ]
               },
-              "align": "center"
+              "align": "center",
+              "justify": "spaceBetween"
+            }
+          }
+        },
+        {
+          "id": "header-refresh-wrapper",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": [
+                  "btn-refresh"
+                ]
+              },
+              "align": "end"
+            }
+          }
+        },
+        {
+          "id": "btn-refresh-text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Refresh"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#00B0FF"
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-refresh",
+          "component": {
+            "Button": {
+              "child": "btn-refresh-text",
+              "action": {
+                "name": "render_router_card",
+                "parameters": {
+                  "router_id": "$router_id"
+                }
+              }
             }
           }
         },
@@ -65,7 +108,7 @@
           "component": {
             "Text": {
               "text": {
-                "literalString": "🌐"
+                "literalString": "🛜"
               },
               "usageHint": "h2"
             }
@@ -82,6 +125,9 @@
                   "header-location"
                 ]
               }
+            },
+            "style": {
+              "fillWidth": true
             }
           }
         },
@@ -472,19 +518,24 @@
             "Row": {
               "children": {
                 "explicitList": [
-                  "btn-pwr",
-                  "btn-reset"
+                  "btn-power-up",
+                  "btn-power-down",
+                  "btn-reset",
+                  "btn-bgp-reset",
+                  "btn-traffic",
+                  "btn-fail-mode"
                 ]
-              }
+              },
+              "justify": "spaceAround"
             }
           }
         },
         {
-          "id": "btn-pwr-text",
+          "id": "btn-power-up-text",
           "component": {
             "Text": {
               "text": {
-                "literalString": "PWR"
+                "literalString": "Power Up"
               },
               "usageHint": "caption",
               "style": {
@@ -494,15 +545,44 @@
           }
         },
         {
-          "id": "btn-pwr",
+          "id": "btn-power-up",
           "component": {
             "Button": {
-              "child": "btn-pwr-text",
+              "child": "btn-power-up-text",
               "action": {
                 "name": "send_router_command",
                 "parameters": {
                   "router_id": "$router_id",
-                  "action": "POWER_TOGGLE"
+                  "action": "POWER_UP"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-power-down-text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Power Down"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#FF0000"
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-power-down",
+          "component": {
+            "Button": {
+              "child": "btn-power-down-text",
+              "action": {
+                "name": "send_router_command",
+                "parameters": {
+                  "router_id": "$router_id",
+                  "action": "POWER_DOWN"
                 }
               }
             }
@@ -513,11 +593,11 @@
           "component": {
             "Text": {
               "text": {
-                "literalString": "RESET"
+                "literalString": "Reboot"
               },
               "usageHint": "caption",
               "style": {
-                "color": "#00FF00"
+                "color": "#FFA500"
               }
             }
           }
@@ -532,6 +612,93 @@
                 "parameters": {
                   "router_id": "$router_id",
                   "action": "REBOOT"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-bgp-reset-text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "BGP Reset"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#00B0FF"
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-bgp-reset",
+          "component": {
+            "Button": {
+              "child": "btn-bgp-reset-text",
+              "action": {
+                "name": "send_router_command",
+                "parameters": {
+                  "router_id": "$router_id",
+                  "action": "BGP_RESET"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-traffic-text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Burst"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#FFFF00"
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-traffic",
+          "component": {
+            "Button": {
+              "child": "btn-traffic-text",
+              "action": {
+                "name": "send_router_command",
+                "parameters": {
+                  "router_id": "$router_id",
+                  "action": "TRAFFIC_BURST"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-fail-mode-text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Fail Mode"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#FF0000"
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-fail-mode",
+          "component": {
+            "Button": {
+              "child": "btn-fail-mode-text",
+              "action": {
+                "name": "send_router_command",
+                "parameters": {
+                  "router_id": "$router_id",
+                  "action": "FAIL_MODE"
                 }
               }
             }
