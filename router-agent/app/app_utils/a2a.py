@@ -23,22 +23,37 @@ registration.
 from __future__ import annotations
 
 import json
+import logging
 import os
+import re
 import uuid
-from typing import TYPE_CHECKING
-
-from fastapi import Request
+from typing import TYPE_CHECKING, Any
 
 from a2a.server.apps import A2AFastAPIApplication
 from a2a.server.request_handlers import DefaultRequestHandler
 from a2a.server.tasks import TaskStore
-from a2a.types import AgentCapabilities, AgentExtension
+from a2a.types import (
+    AgentCapabilities,
+    AgentExtension,
+    DataPart,
+    Part,
+    TaskArtifactUpdateEvent,
+    TaskStatusUpdateEvent,
+    TextPart,
+)
 from a2a.utils.constants import (
     AGENT_CARD_WELL_KNOWN_PATH,
     EXTENDED_AGENT_CARD_PATH,
 )
+from fastapi import Request
 from google.adk.a2a.executor.a2a_agent_executor import A2aAgentExecutor
+from google.adk.a2a.executor.config import A2aAgentExecutorConfig, ExecuteInterceptor
+from google.adk.a2a.executor.interceptors.include_artifacts_in_a2a_event import (
+    include_artifacts_in_a2a_event_interceptor,
+)
 from google.adk.a2a.utils.agent_card_builder import AgentCardBuilder
+
+logger = logging.getLogger("router-agent.app_utils.a2a")
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
@@ -107,13 +122,97 @@ def attach_a2a_middleware(app: FastAPI) -> None:
                         params = body.get("params")
                         if isinstance(params, dict):
                             msg = params.get("message")
-                            if isinstance(msg, dict) and not msg.get("messageId") and not msg.get("message_id"):
-                                msg["messageId"] = str(uuid.uuid4())
-                                modified_bytes = json.dumps(body).encode("utf-8")
-                                request._body = modified_bytes
+                            if isinstance(msg, dict):
+                                modified = False
+                                if not msg.get("messageId") and not msg.get("message_id"):
+                                    msg["messageId"] = str(uuid.uuid4())
+                                    modified = True
+                                if not msg.get("role"):
+                                    msg["role"] = "user"
+                                    modified = True
+                                parts = msg.get("parts")
+                                if isinstance(parts, list):
+                                    for part in parts:
+                                        if isinstance(part, dict) and "text" in part and not part.get("kind"):
+                                            part["kind"] = "text"
+                                            modified = True
+                                if modified:
+                                    request._body = json.dumps(body).encode("utf-8")
             except Exception:
                 pass
         return await call_next(request)
+
+
+async def _a2ui_after_event(
+    ctx: Any,
+    a2a_event: Any,
+    adk_event: Any,
+) -> Any:
+    """Interceptor hook that converts <a2ui-json> string payloads into FileParts with application/json+a2ui mimeType.
+
+    Args:
+        ctx: ExecutorContext containing the runner and session metadata.
+        a2a_event: The converted outgoing A2A event.
+        adk_event: The original ADK event instance.
+
+    Returns:
+        The updated A2A event with A2UI content converted.
+
+    Raises:
+        None.
+    """
+    parts = []
+
+    if isinstance(a2a_event, TaskStatusUpdateEvent) and a2a_event.status and a2a_event.status.message:
+        parts = a2a_event.status.message.parts
+    elif isinstance(a2a_event, TaskArtifactUpdateEvent) and a2a_event.artifact:
+        parts = a2a_event.artifact.parts
+
+    if not parts:
+        return a2a_event
+
+    new_parts = []
+    for part in parts:
+        part_root = getattr(part, "root", part)
+        if isinstance(part_root, TextPart) and part_root.text:
+            text = part_root.text
+            if "<a2ui-json>" in text and "</a2ui-json>" in text:
+                match = re.search(r"<a2ui-json>(.*?)</a2ui-json>", text, re.DOTALL)
+                if match:
+                    json_str = match.group(1).strip()
+                    try:
+                        parsed_json = json.loads(json_str)
+                        if isinstance(parsed_json, list):
+                            for msg in parsed_json:
+                                a2ui_part = Part(
+                                    root=DataPart(
+                                        data=msg,
+                                        metadata={"mimeType": "application/json+a2ui"},
+                                    )
+                                )
+                                new_parts.append(a2ui_part)
+                        else:
+                            a2ui_part = Part(
+                                root=DataPart(
+                                    data=parsed_json,
+                                    metadata={"mimeType": "application/json+a2ui"},
+                                )
+                            )
+                            new_parts.append(a2ui_part)
+                        continue
+                    except Exception as e:
+                        logger.error(f"Error parsing <a2ui-json> in interceptor: {e}")
+        new_parts.append(part)
+
+    if isinstance(a2a_event, TaskStatusUpdateEvent) and a2a_event.status and a2a_event.status.message:
+        a2a_event.status.message.parts = new_parts
+    elif isinstance(a2a_event, TaskArtifactUpdateEvent) and a2a_event.artifact:
+        a2a_event.artifact.parts = new_parts
+
+    return a2a_event
+
+
+a2ui_converter_interceptor = ExecuteInterceptor(after_event=_a2ui_after_event)
 
 
 async def attach_a2a_routes(
@@ -147,8 +246,15 @@ async def attach_a2a_routes(
         agent_version=resolved_agent_version,
     ).build()
 
+    executor_config = A2aAgentExecutorConfig(
+        execute_interceptors=[
+            include_artifacts_in_a2a_event_interceptor,
+            a2ui_converter_interceptor,
+        ]
+    )
+
     request_handler = DefaultRequestHandler(
-        agent_executor=A2aAgentExecutor(runner=runner),
+        agent_executor=A2aAgentExecutor(runner=runner, config=executor_config),
         task_store=task_store,
     )
 

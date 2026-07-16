@@ -3,12 +3,5 @@
   "deployment_target": "agent_runtime",
   "is_a2a": true,
   "agent_directory": "app",
-  "deployment_timestamp": "2026-07-15T21:09:51.906020+00:00",
-  "pending_operation": {
-    "operation_name": "projects/63466983700/locations/us-central1/reasoningEngines/2620389646420410368/operations/7600374200016044032",
-    "project": "agentspace-argolis-demo",
-    "location": "us-central1",
-    "deployment_target": "agent_runtime",
-    "started_at": "2026-07-15T22:36:18.122458+00:00"
-  }
+  "deployment_timestamp": "2026-07-15T22:51:28.644625+00:00"
 }

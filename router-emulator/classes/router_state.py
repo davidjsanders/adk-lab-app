@@ -538,7 +538,7 @@ class RouterState:
         return f"<a2ui-json>\n{json.dumps(payload, indent=2)}\n</a2ui-json>"
 
     def render_png_card_bytes(self) -> bytes:
-        """Constructs a high-fidelity, high-resolution (1200x640) PNG visual card representation using PIL.
+        """Constructs a high-fidelity, high-resolution (1200x530) PNG visual card representation using PIL.
 
         Returns:
             Raw PNG bytes stream.
@@ -546,17 +546,35 @@ class RouterState:
         import io
         from PIL import Image, ImageDraw, ImageFont
 
-        width, height = 1200, 640
+        width, height = 1200, 530
         img = Image.new("RGBA", (width, height), color=(11, 19, 30, 255))
         draw = ImageDraw.Draw(img)
 
-        # Scale fonts using PIL load_default font sizing
-        title_font = ImageFont.load_default(size=36)
-        header_font = ImageFont.load_default(size=24)
-        label_font = ImageFont.load_default(size=24)
-        value_font = ImageFont.load_default(size=24)
-        led_font = ImageFont.load_default(size=20)
-        btn_font = ImageFont.load_default(size=22)
+        # Resolve a scalable TrueType font if available, fallback to default
+        font_paths = [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        ]
+        selected_path = None
+        for path in font_paths:
+            try:
+                ImageFont.truetype(path, 12)
+                selected_path = path
+                break
+            except Exception:
+                continue
+
+        def get_font(size: int):
+            if selected_path:
+                return ImageFont.truetype(selected_path, size)
+            return ImageFont.load_default(size=size)
+
+        title_font = get_font(36)
+        header_font = get_font(24)
+        label_font = get_font(24)
+        value_font = get_font(24)
+        led_font = get_font(20)
+        btn_font = get_font(22)
 
         # Outer card rounded rectangle border with cyan accent
         draw.rounded_rectangle(
@@ -633,25 +651,7 @@ class RouterState:
             lbl = led_name.upper()[:4]
             draw.text((cx, cy + 42), lbl, font=led_font, fill=(220, 235, 250, 255), anchor="ms")
 
-        # Horizontal Divider 3
-        draw.line([(60, 510), (width - 60, 510)], fill=(0, 176, 255, 120), width=2)
 
-        # Footer Action Buttons
-        draw.rounded_rectangle(
-            [(80, 530), (360, 595)],
-            radius=14,
-            outline=(0, 255, 0, 255),
-            width=2,
-        )
-        draw.text((220, 562), "PWR TOGGLE", font=btn_font, fill=(0, 255, 0, 255), anchor="mm")
-
-        draw.rounded_rectangle(
-            [(400, 530), (680, 595)],
-            radius=14,
-            outline=(0, 255, 0, 255),
-            width=2,
-        )
-        draw.text((540, 562), "REBOOT SYSTEM", font=btn_font, fill=(0, 255, 0, 255), anchor="mm")
 
         buf = io.BytesIO()
         img.save(buf, format="PNG")

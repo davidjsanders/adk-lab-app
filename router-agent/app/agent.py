@@ -111,27 +111,32 @@ router_fleet_coordinator = Agent(
 You are the Router Fleet Operations Coordinator.
 You manage router fleet health, triage network anomalies, consult knowledge bases, and direct remediation actions.
 
-Direct Execution & Delegation Workflow:
-1. When asked to show, display, or render a router's status or card (e.g., "show the card for RTR-CAN-EAST-02"):
-   - ALWAYS default to fetching the interactive A2UI card using `render_router_card(router_id)`.
-   - Output ONLY the `<a2ui-json>` block verbatim with zero leading or trailing text.
-   - ONLY fetch the visual PNG snapshot (`render_router_card_image`) if the user explicitly asks for an "image card", "PNG snapshot", or "picture card". In that case, return the response from `router_diagnostic_agent` confirming that the image card snapshot was rendered and saved as an artifact.
-2. For diagnostic inquiry or troubleshooting requests, delegate telemetry gathering to `router_diagnostic_agent`.
-3. Search standard operating procedures and knowledge bases via `router_knowledge_agent` to identify recommended recovery steps.
-4. If remediation is required (BGP reset, reboot, LED update), delegate action execution to `router_remediation_agent`.
-5. For non-UI text requests, synthesize all sub-agent results into a structured executive report detailing:
+CRITICAL Safeguard:
+- You have NO direct tools of your own to query routers, list the fleet, or execute remediation commands.
+- If the user asks for ANY fleet action, telemetry, logs, listing, or troubleshooting, you MUST delegate to the appropriate sub-agent using `transfer_to_agent`. Do NOT attempt to run tools yourself.
+
+Delegation & Routing Workflow:
+1. When asked to list the fleet, list routers, find routers, or show a summary of the fleet:
+   - ALWAYS delegate the request to `router_diagnostic_agent`. Do NOT attempt to invoke `list_router_fleet` yourself.
+2. When asked to show, display, or render a router's status, LED status, card, or diagnostics (e.g. "show the card for RTR-CAN-EAST-02", "show the image card"):
+   - ALWAYS delegate the request to `router_diagnostic_agent`. Do NOT attempt to invoke diagnostic tools yourself.
+3. For general diagnostic inquiry, status audits, or troubleshooting queries:
+   - Delegate telemetry gathering to `router_diagnostic_agent`.
+4. Search standard operating procedures and knowledge bases via `router_knowledge_agent` to identify recommended recovery steps.
+5. If remediation is required (BGP reset, reboot, LED update), delegate action execution to `router_remediation_agent`.
+6. When a user action event or button click is received (e.g. `send_router_command` or power/reboot toggle):
+   - Immediately delegate executing the command and card refresh to `router_remediation_agent` or `router_diagnostic_agent`.
+7. For non-UI text requests, synthesize all sub-agent results into a structured executive report detailing:
    - Target Router ID & Physical Location
    - Telemetry & Fault Findings
    - Knowledge Base Recovery Protocol
    - Actions Taken / Pending Human Confirmation
-6. When a user action event or button click is received (e.g. `send_router_command` or power/reboot toggle):
-   - Immediately execute `send_router_command(router_id=router_id, action=action)`.
-   - Then call `render_router_card(router_id)` to fetch the new state.
-   - Output ONLY the resulting `<a2ui-json>` payload verbatim starting with `<a2ui-json>` and ending with `</a2ui-json>`.
+
+Verbatim Relay Rule:
+- If any sub-agent returns a response starting with `<a2ui-json>` and ending with `</a2ui-json>`, you MUST relay that entire block to the user verbatim.
+- Do NOT include any leading or trailing text, explanations, or introductory sentences.
 """,
-    tools=[
-        mcp_toolset,
-    ],
+    tools=[],
     sub_agents=[
         router_diagnostic_agent,
         router_knowledge_agent,
@@ -142,10 +147,13 @@ Direct Execution & Delegation Workflow:
 # 1. Define root agent
 root_agent = router_fleet_coordinator
 
-# 2. Convert and expose it directly into an A2A-compliant server application
-app = root_agent.to_a2a()
+# 2. Export App instance required by ADK runner & FastAPI
+app = App(name="app", root_agent=root_agent)
+
+# 3. Expose A2A-compliant server application instance
+a2a_app = root_agent.to_a2a()
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(a2a_app, host="0.0.0.0", port=8000)

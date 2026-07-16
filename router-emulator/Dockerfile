@@ -20,6 +20,11 @@ FROM python:3.12.3-slim AS runner
 # Install uv binary in final stage
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
+# Install dejavu fonts to enable high-quality rendering of PNG cards
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends fonts-dejavu-core && \
+    rm -rf /var/lib/apt/lists/*
+
 # Create non-root system user and home directory
 RUN groupadd -r appuser && useradd -r -g appuser -m -d /home/appuser appuser
 ENV HOME=/home/appuser
