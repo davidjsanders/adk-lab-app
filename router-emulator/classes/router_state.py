@@ -257,6 +257,19 @@ class RouterState:
         """
         return int(time.time() - self.start_time)
 
+    @property
+    def uptime_formatted(self) -> str:
+        """Formats current system uptime into a human-readable string (e.g., 1d 2h 3m 4s).
+
+        Returns:
+            Formatted uptime string.
+        """
+        seconds = self.uptime_seconds
+        days, remainder = divmod(seconds, 86400)
+        hours, remainder = divmod(remainder, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{days}d {hours}h {minutes}m {seconds}s"
+
     def to_telemetry_dict(self) -> Dict[str, Any]:
         """Serializes current router telemetry and LED state into a API response dictionary.
 
@@ -480,7 +493,7 @@ class RouterState:
             "router_id": self.router_id,
             "subtitle": self.purpose,
             "location": self.location,
-            "uptime": f"{self.uptime_seconds}s",
+            "uptime": self.uptime_formatted,
             "state": self.status,
             "mfg_model": f"{self.manufacturer} {self.firmware_version}",
             "led_onli_text": onli_txt,
@@ -603,7 +616,7 @@ class RouterState:
         draw.text((320, 195), f"{self.router_id}", font=_VALUE_FONT, fill=(0, 255, 255, 255))
 
         draw.text((60, 235), "Uptime:", font=_LABEL_FONT, fill=(50, 205, 50, 255))
-        draw.text((320, 235), f"{self.uptime_seconds}s", font=_VALUE_FONT, fill=(50, 205, 50, 255))
+        draw.text((320, 235), self.uptime_formatted, font=_VALUE_FONT, fill=(50, 205, 50, 255))
 
         draw.text((60, 275), "State:", font=_LABEL_FONT, fill=(50, 205, 50, 255))
         draw.text((320, 275), f"{self.status}", font=_VALUE_FONT, fill=(50, 205, 50, 255))

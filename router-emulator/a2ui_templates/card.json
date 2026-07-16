@@ -53,53 +53,11 @@
               "children": {
                 "explicitList": [
                   "header-icon",
-                  "header-texts",
-                  "header-refresh-wrapper"
+                  "header-texts"
                 ]
               },
               "align": "center",
               "justify": "spaceBetween"
-            }
-          }
-        },
-        {
-          "id": "header-refresh-wrapper",
-          "component": {
-            "Column": {
-              "children": {
-                "explicitList": [
-                  "btn-refresh"
-                ]
-              },
-              "align": "end"
-            }
-          }
-        },
-        {
-          "id": "btn-refresh-text",
-          "component": {
-            "Text": {
-              "text": {
-                "literalString": "Refresh"
-              },
-              "usageHint": "caption",
-              "style": {
-                "color": "#00B0FF"
-              }
-            }
-          }
-        },
-        {
-          "id": "btn-refresh",
-          "component": {
-            "Button": {
-              "child": "btn-refresh-text",
-              "action": {
-                "name": "render_router_card",
-                "parameters": {
-                  "router_id": "$router_id"
-                }
-              }
             }
           }
         },
