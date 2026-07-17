@@ -43,6 +43,16 @@ class Settings(BaseSettings):
     )
     pro_model: str = Field(default="gemini-3-pro-preview", validation_alias="PRO_MODEL")
 
+    @property
+    def project_id(self) -> str:
+        """Alias for google_cloud_project."""
+        return self.google_cloud_project
+
+    @property
+    def location(self) -> str:
+        """Alias for google_cloud_location."""
+        return self.google_cloud_location
+
 
 # Global config instance
 settings = Settings()

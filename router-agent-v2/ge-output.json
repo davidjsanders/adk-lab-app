@@ -1,0 +1,670 @@
+<a2ui-json>
+[
+  {
+    "beginRendering": {
+      "surfaceId": "router-card-rtr_can_atlantic_02-1784313246837",
+      "root": "card-root"
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "router-card-rtr_can_atlantic_02-1784313246837",
+      "components": [
+        {
+          "id": "card-root",
+          "component": {
+            "Card": {
+              "child": "main-column",
+              "style": {
+                "backgroundColor": "#0B131E",
+                "borderRadius": "12px",
+                "padding": "12px"
+              }
+            }
+          }
+        },
+        {
+          "id": "main-column",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": [
+                  "header-row",
+                  "divider-1",
+                  "info-table",
+                  "divider-2",
+                  "status-bar",
+                  "divider-3",
+                  "btn-row"
+                ]
+              },
+              "align": "stretch"
+            },
+            "style": {
+              "margin": "0px",
+              "padding": "0px",
+              "gap": "4px"
+            }
+          }
+        },
+        {
+          "id": "header-row",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": [
+                  "header-icon",
+                  "header-texts"
+                ]
+              },
+              "align": "center",
+              "justify": "spaceBetween"
+            }
+          }
+        },
+        {
+          "id": "header-icon",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "\ud83d\udedc"
+              },
+              "usageHint": "h2"
+            }
+          }
+        },
+        {
+          "id": "header-texts",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": [
+                  "header-title",
+                  "header-subtitle",
+                  "header-location"
+                ]
+              }
+            },
+            "style": {
+              "fillWidth": true
+            }
+          }
+        },
+        {
+          "id": "header-title",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "RTR-CAN-ATLANTIC-02"
+              },
+              "usageHint": "h3",
+              "style": {
+                "color": "#00B0FF"
+              }
+            }
+          }
+        },
+        {
+          "id": "header-subtitle",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Edge BGP Gateway"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#00B0FF"
+              }
+            }
+          }
+        },
+        {
+          "id": "header-location",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Location: Halifax NS"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#00B0FF"
+              }
+            }
+          }
+        },
+        {
+          "id": "divider-1",
+          "component": {
+            "Divider": {
+              "axis": "horizontal"
+            }
+          },
+          "style": {
+            "marginTop": "4px",
+            "marginBottom": "4px"
+          }
+        },
+        {
+          "id": "info-table",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": [
+                  "info-labels-col",
+                  "info-values-col"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "info-labels-col",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": [
+                  "info-row-1-label",
+                  "info-row-2-label",
+                  "info-row-3-label",
+                  "info-row-4-label"
+                ]
+              }
+            },
+            "style": {
+              "gap": "2px"
+            }
+          }
+        },
+        {
+          "id": "info-values-col",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": [
+                  "info-row-1-value",
+                  "info-row-2-value",
+                  "info-row-3-value",
+                  "info-row-4-value"
+                ]
+              }
+            },
+            "style": {
+              "gap": "2px"
+            }
+          }
+        },
+        {
+          "id": "info-row-1-label",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Display Name:  "
+              },
+              "usageHint": "body",
+              "style": {
+                "color": "#00FFFF",
+                "fontWeight": "700"
+              }
+            }
+          }
+        },
+        {
+          "id": "info-row-1-value",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "RTR-CAN-ATLANTIC-02"
+              },
+              "usageHint": "body",
+              "style": {
+                "color": "#00FFFF"
+              }
+            }
+          }
+        },
+        {
+          "id": "info-row-2-label",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Uptime:  "
+              },
+              "usageHint": "body",
+              "style": {
+                "color": "#32CD32",
+                "fontWeight": "700"
+              }
+            }
+          }
+        },
+        {
+          "id": "info-row-2-value",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "0d 0h 7m 44s"
+              },
+              "usageHint": "body",
+              "style": {
+                "color": "#32CD32"
+              }
+            }
+          }
+        },
+        {
+          "id": "info-row-3-label",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "State:  "
+              },
+              "usageHint": "body",
+              "style": {
+                "color": "#32CD32",
+                "fontWeight": "700"
+              }
+            }
+          }
+        },
+        {
+          "id": "info-row-3-value",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "OPERATIONAL"
+              },
+              "usageHint": "body",
+              "style": {
+                "color": "#32CD32"
+              }
+            }
+          }
+        },
+        {
+          "id": "info-row-4-label",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "MFG/Model:  "
+              },
+              "usageHint": "body",
+              "style": {
+                "color": "#00FFFF",
+                "fontWeight": "700"
+              }
+            }
+          }
+        },
+        {
+          "id": "info-row-4-value",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "CISCO-NEXUS-9000-X v4.18.2-LTS"
+              },
+              "usageHint": "body",
+              "style": {
+                "color": "#00FFFF"
+              }
+            }
+          }
+        },
+        {
+          "id": "divider-2",
+          "component": {
+            "Divider": {
+              "axis": "horizontal"
+            }
+          },
+          "style": {
+            "marginTop": "4px",
+            "marginBottom": "4px"
+          }
+        },
+        {
+          "id": "status-bar",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": [
+                  "indicator-onli",
+                  "indicator-upst",
+                  "indicator-lan1",
+                  "indicator-lan2",
+                  "indicator-lan3",
+                  "indicator-lan4",
+                  "indicator-send",
+                  "indicator-recv"
+                ]
+              },
+              "style": {
+                "backgroundColor": "#070C14",
+                "padding": "4px",
+                "borderRadius": "8px"
+              },
+              "justify": "spaceAround",
+              "align": "center"
+            }
+          }
+        },
+        {
+          "id": "indicator-onli",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "\ud83d\udfe2 ONLI"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#00FF00"
+              }
+            }
+          }
+        },
+        {
+          "id": "indicator-upst",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "\ud83d\udfe2 UPST"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#00FF00"
+              }
+            }
+          }
+        },
+        {
+          "id": "indicator-lan1",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "\ud83d\udfe2 LAN1"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#00FF00"
+              }
+            }
+          }
+        },
+        {
+          "id": "indicator-lan2",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "\ud83d\udfe2 LAN2"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#00FF00"
+              }
+            }
+          }
+        },
+        {
+          "id": "indicator-lan3",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "\u26ab LAN3"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#808080"
+              }
+            }
+          }
+        },
+        {
+          "id": "indicator-lan4",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "\u26ab LAN4"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#808080"
+              }
+            }
+          }
+        },
+        {
+          "id": "indicator-send",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "\u26a1 SEND"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#00FF00"
+              }
+            }
+          }
+        },
+        {
+          "id": "indicator-recv",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "\u26a1 RECV"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#00FF00"
+              }
+            }
+          }
+        },
+        {
+          "id": "divider-3",
+          "component": {
+            "Divider": {
+              "axis": "horizontal"
+            }
+          },
+          "style": {
+            "marginTop": "4px",
+            "marginBottom": "4px"
+          }
+        },
+        {
+          "id": "btn-row",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": [
+                  "btn-power-up",
+                  "btn-power-down",
+                  "btn-reset",
+                  "btn-bgp-reset",
+                  "btn-traffic",
+                  "btn-fail-mode"
+                ]
+              },
+              "justify": "spaceAround"
+            }
+          }
+        },
+        {
+          "id": "btn-power-up-text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Power Up"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#00FF00"
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-power-up",
+          "component": {
+            "Button": {
+              "child": "btn-power-up-text",
+              "action": {
+                "name": "send_router_command",
+                "parameters": {
+                  "router_id": "RTR-CAN-ATLANTIC-02",
+                  "action": "POWER_UP"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-power-down-text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Power Down"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#FF0000"
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-power-down",
+          "component": {
+            "Button": {
+              "child": "btn-power-down-text",
+              "action": {
+                "name": "send_router_command",
+                "parameters": {
+                  "router_id": "RTR-CAN-ATLANTIC-02",
+                  "action": "POWER_DOWN"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-reset-text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Reboot"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#FFA500"
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-reset",
+          "component": {
+            "Button": {
+              "child": "btn-reset-text",
+              "action": {
+                "name": "send_router_command",
+                "parameters": {
+                  "router_id": "RTR-CAN-ATLANTIC-02",
+                  "action": "REBOOT"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-bgp-reset-text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "BGP Reset"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#00B0FF"
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-bgp-reset",
+          "component": {
+            "Button": {
+              "child": "btn-bgp-reset-text",
+              "action": {
+                "name": "send_router_command",
+                "parameters": {
+                  "router_id": "RTR-CAN-ATLANTIC-02",
+                  "action": "BGP_RESET"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-traffic-text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Burst"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#FFFF00"
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-traffic",
+          "component": {
+            "Button": {
+              "child": "btn-traffic-text",
+              "action": {
+                "name": "send_router_command",
+                "parameters": {
+                  "router_id": "RTR-CAN-ATLANTIC-02",
+                  "action": "TRAFFIC_BURST"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-fail-mode-text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Fail Mode"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#FF0000"
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-fail-mode",
+          "component": {
+            "Button": {
+              "child": "btn-fail-mode-text",
+              "action": {
+                "name": "send_router_command",
+                "parameters": {
+                  "router_id": "RTR-CAN-ATLANTIC-02",
+                  "action": "FAIL_MODE"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+]
+</a2ui-json>
