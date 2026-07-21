@@ -183,35 +183,38 @@ def fetch_a2ui_card_data(router_id: str) -> str:
 
 
 def fetch_a2ui_image_card_data(router_id: str) -> str:
-    """Helper to query target router node endpoint directly for its Base64 PNG snapshot A2UI card manifest.
+    """Helper to query target router node endpoint directly for its Base64 PNG snapshot image.
 
     Args:
         router_id: Unique string ID of target router node.
 
     Returns:
-        String containing <a2ui-json> enclosed payload.
+        Base64-encoded PNG image data URI string formatted as 'data:image/png;base64,...'.
 
     Raises:
-        RuntimeError: If router node lookup or HTTP A2UI query fails.
+        RuntimeError: If router node lookup or HTTP query fails.
     """
+    import base64
     node = get_router_node(router_id)
     base_url = str(node.get("url", "")).rstrip("/")
     if not base_url:
         raise RuntimeError(f"Router node '{router_id}' has no configured target URL.")
 
-    url = f"{base_url}/a2image"
+    url = f"{base_url}/card.png"
     try:
         headers = get_auth_headers(url)
         resp = requests.get(url, headers=headers, timeout=10)
         resp.raise_for_status()
-        return resp.text
+        base64_png = base64.b64encode(resp.content).decode("utf-8")
+        return f"data:image/png;base64,{base64_png}"
     except Exception as err:
-        logger.warning(f"Direct fetch of /a2image from '{url}' failed: {err}; attempting dashboard proxy fallback...")
-        proxy_url = f"{DEFAULT_DASHBOARD_URL}/api/proxy/a2image?router_id={router_id}"
-        proxy_headers = get_auth_headers(proxy_url)
-        proxy_resp = requests.get(proxy_url, headers=proxy_headers, timeout=10)
-        proxy_resp.raise_for_status()
-        return proxy_resp.text
+        logger.warning(f"Direct fetch of /card.png from '{url}' failed: {err}; attempting /api/card.png fallback...")
+        alt_url = f"{base_url}/api/card.png"
+        alt_headers = get_auth_headers(alt_url)
+        alt_resp = requests.get(alt_url, headers=alt_headers, timeout=10)
+        alt_resp.raise_for_status()
+        base64_png = base64.b64encode(alt_resp.content).decode("utf-8")
+        return f"data:image/png;base64,{base64_png}"
 
 
 def _load_dashboard_cloud_run_module():
