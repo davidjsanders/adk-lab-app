@@ -15,12 +15,15 @@
 """A2UI Rendering and Image Artifact Interception Plugin for ADK Agents and Tools."""
 
 import base64
+import json
 import logging
 import re
 from typing import Any
 
 from google.adk.plugins import BasePlugin
 from google.adk.tools import BaseTool, ToolContext
+from google.adk.agents.invocation_context import InvocationContext
+from google.adk.events.event import Event
 from google.genai import types
 
 from app.models.callback_skips import CallbackSkips
@@ -79,20 +82,6 @@ class A2UIPlugin(BasePlugin):
             )
             return result
 
-        # result_dict = {}
-        # content = []
-
-        # if isinstance(result, dict):
-        #     logger.info("It is a dict")
-        #     result_dict = result
-        #     if (
-        #         result_dict.get("content", None)
-        #         and isinstance(result_dict.get("content", None), list)
-        #     ):
-        #         logger.info("It has content type %s", type(result["content"]))
-        #         content = result["content"]
-
-
         raw_str = None
         first_item = result["content"][0]
         if not isinstance(first_item, dict):
@@ -102,32 +91,115 @@ class A2UIPlugin(BasePlugin):
             )
             return result
 
-        raw_str = first_item.get("text")
-        target_str = raw_str
+        a2ui_canvas = []
+        for content in result["content"]:
+            raw_str = content.get("text")
+            match raw_str:
+                case s if s and TargetOutput.DATA_IMAGE_PNG in s:
+                    logger.debug("Intercepting image artifact for session artifact storage")
+                    extracted = await self.intercept_image_artifact(
+                        args=tool_args,
+                        tool_context=tool_context,
+                        raw_str=s,
+                    )
+                    logger.debug("Image artifact extracted: %s", extracted)
+                    return extracted if extracted is not None else result
 
-        match target_str:
-            case s if s and TargetOutput.DATA_IMAGE_PNG in s:
-                logger.debug("Intercepting image artifact for session artifact storage")
-                extracted = await self.intercept_image_artifact(
-                    args=tool_args,
-                    tool_context=tool_context,
-                    raw_str=s,
-                )
-                logger.debug("Image artifact extracted: %s", extracted)
-                return extracted if extracted is not None else result
+                case s if s and TargetOutput.A2UI_JSON in s:
+                    logger.debug("Intercepting A2UI JSON card")
+                    tool_context.actions.skip_summarization = True
+                    match = re.search(r"(<a2ui-json>(.*?)</a2ui-json>)", s, re.DOTALL)
+                    if match:
+                        clean_output = match.group(2).strip()
+                        logger.debug("A2UI JSON extracted: %s", clean_output)
+                        a2ui_canvas.append(clean_output)
 
-            case s if s and TargetOutput.A2UI_JSON in s:
-                logger.debug("Intercepting A2UI JSON card")
-                extracted = await self.intercept_a2ui_card(
-                    tool=tool,
-                    tool_context=tool_context,
-                    target_str=s,
-                )
-                logger.debug("A2UI JSON extracted: %s", extracted)
-                return extracted if extracted is not None else result
-            case _:
-                logger.debug("No match for target string %s", target_str)
-                return result
+                case _:
+                    logger.debug("No match for target string %s", raw_str)
+                    continue
+
+        if a2ui_canvas:
+            return "<a2ui-json>\n"+"\n".join(a2ui_canvas)+"\n</a2ui-json>\n"
+
+        # raw_str = first_item.get("text")
+        # target_str = raw_str
+
+        # match target_str:
+        #     case s if s and TargetOutput.DATA_IMAGE_PNG in s:
+        #         logger.debug("Intercepting image artifact for session artifact storage")
+        #         extracted = await self.intercept_image_artifact(
+        #             args=tool_args,
+        #             tool_context=tool_context,
+        #             raw_str=s,
+        #         )
+        #         logger.debug("Image artifact extracted: %s", extracted)
+        #         return extracted if extracted is not None else result
+
+        #     case s if s and TargetOutput.A2UI_JSON in s:
+        #         logger.debug("Intercepting A2UI JSON card")
+        #         extracted = await self.intercept_a2ui_card(
+        #             tool=tool,
+        #             tool_context=tool_context,
+        #             target_str=s,
+        #         )
+        #         logger.debug("A2UI JSON extracted: %s", extracted)
+        #         return extracted if extracted is not None else result
+        #     case _:
+        #         logger.debug("No match for target string %s", target_str)
+        #         return result
+
+    async def on_event_callback(
+        self,
+        *,
+        invocation_context: InvocationContext,
+        event: Event,
+    ) -> Event | None:
+        """Consolidates multiple <a2ui-json> blocks across all event parts into a single A2UI block.
+
+        Args:
+            invocation_context: The execution context for the current invocation.
+            event: The final turn Event containing content parts generated by the runner.
+
+        Returns:
+            The modified Event with a single consolidated <a2ui-json> block, or the original event.
+
+        Raises:
+            None.
+        """
+        if not event.content or not event.content.parts:
+            return event
+
+        all_operations: list[dict[str, Any]] = []
+        has_a2ui = False
+
+        for part in event.content.parts:
+            text = getattr(part, "text", None)
+            if not text:
+                continue
+
+            # Extract all <a2ui-json> payloads in this part (group 1 is the inner JSON)
+            for match in re.finditer(r"<a2ui-json>(.*?)</a2ui-json>", text, re.DOTALL):
+                has_a2ui = True
+                clean_json_str = match.group(1).strip()
+                try:
+                    ops = json.loads(clean_json_str)
+                    if isinstance(ops, list):
+                        all_operations.extend(ops)
+                    elif isinstance(ops, dict):
+                        all_operations.append(ops)
+                except Exception as err:
+                    logger.error("Failed to parse A2UI JSON in on_event_callback: %s", err)
+
+            # Strip the original <a2ui-json> blocks from the text part
+            part.text = re.sub(r"<a2ui-json>.*?</a2ui-json>", "", text, flags=re.DOTALL).strip()
+
+        # If any A2UI blocks were found, append a single consolidated <a2ui-json> block
+        if has_a2ui and all_operations:
+            merged_payload = f"<a2ui-json>\n{json.dumps(all_operations, indent=2)}\n</a2ui-json>"
+            event.content.parts.append(types.Part.from_text(text=merged_payload))
+
+        return event
+
 
     @staticmethod
     def has_content(result: Any) -> bool:
