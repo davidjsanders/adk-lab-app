@@ -90,12 +90,20 @@ def dispatch_command(
         try:
             params_dict = json.loads(parameters)
         except Exception:
-            try:
-                params_dict = ast.literal_eval(parameters)
-            except Exception as err:
-                logger.warning(f"Failed parsing string parameters '{parameters}': {err}")
+            params_dict = {"value": parameters}
     elif isinstance(parameters, dict):
         params_dict = dict(parameters)
+
+    command_map = {
+        "BGP_FAULT": "set_fail_mode",
+        "BGP_RESET": "bgp_reset",
+        "REBOOT": "reset",
+        "POWER_UP": "power_up",
+        "POWER_DOWN": "power_down",
+        "SET_LED": "set_led",
+        "SEND_INFO": "send_info",
+    }
+    target_command = command_map.get(action_str.upper().strip(), action_str.lower().strip())
 
     match action_str.upper().strip():
         case "SET_LED":
@@ -105,12 +113,10 @@ def dispatch_command(
                     params_dict = set_led_model.model_dump()
                 except Exception as val_err:
                     logger.debug(f"Pydantic SET_LED normalization note: {val_err}")
-        case "POWER_UP" | "POWER_DOWN" | "REBOOT" | "BGP_RESET" | "BGP_FAULT" | "TRAFFIC_BURST":
+        case _:
             pass
-        case custom_action:
-            logger.info(f"Dispatching custom hardware action '{custom_action}'")
 
-    payload = {"command": action_str, "parameters": params_dict}
+    payload = {"command": target_command, "parameters": params_dict}
 
     try:
         resp = requests.post(url, headers=headers, json=payload, timeout=15)

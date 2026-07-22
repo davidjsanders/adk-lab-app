@@ -61,7 +61,7 @@ def get_oidc_id_token(target_url: str) -> str | None:
 
     # 1. Impersonation path via Google Auth Python SDK (pure Python SDK, 0 subprocesses)
     impersonate_sa = os.getenv("IMPERSONATE_SA", "").strip()
-    if impersonate_sa:
+    if impersonate_sa and not os.getenv("K_SERVICE") and not os.getenv("APP_URL"):
         try:
             base_credentials, _ = google.auth.default()
             impersonated_credentials = Credentials(
@@ -87,11 +87,30 @@ def get_oidc_id_token(target_url: str) -> str | None:
     # 2. Native runtime path: Use default ADC service account token generation (Cloud Run runtime)
     try:
         token = id_token.fetch_id_token(auth_req, audience)
-        _OIDC_TOKEN_CACHE[audience] = (token, now + 3500)
-        return token
+        if token:
+            _OIDC_TOKEN_CACHE[audience] = (token, now + 3500)
+            return token
     except Exception as err:
         logger.debug(
             f"Default ADC OIDC ID token creation for {audience} unavailable: {err}"
+        )
+
+    # 3. Fallback for Agent Runtime / Vertex AI container environment using IAM IDTokenCredentials
+    try:
+        base_credentials, _ = google.auth.default()
+        target_id_credentials = IDTokenCredentials(
+            target_credentials=base_credentials,
+            target_audience=audience,
+            include_email=True,
+        )
+        target_id_credentials.refresh(auth_req)
+        token = target_id_credentials.token
+        if token:
+            _OIDC_TOKEN_CACHE[audience] = (token, now + 3500)
+            return token
+    except Exception as iam_err:
+        logger.warning(
+            f"IAM IDTokenCredentials fallback for {audience} failed: {iam_err}"
         )
 
     return None

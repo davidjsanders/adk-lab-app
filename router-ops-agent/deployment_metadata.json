@@ -1,6 +1,7 @@
 {
-  "remote_agent_runtime_id": "https://router-ops-agent-cta6n7hkya-uc.a.run.app",
-  "remote_agent_engine_id": "https://router-ops-agent-cta6n7hkya-uc.a.run.app",
-  "deployment_target": "cloud_run",
-  "deployment_timestamp": "2026-07-22T16:27:46Z"
+  "remote_agent_runtime_id": "projects/63466983700/locations/us-central1/reasoningEngines/3051120028066775040",
+  "deployment_target": "agent_runtime",
+  "is_a2a": true,
+  "agent_directory": "app",
+  "deployment_timestamp": "2026-07-22T18:03:47.477372+00:00"
 }

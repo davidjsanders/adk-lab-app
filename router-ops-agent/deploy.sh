@@ -2,6 +2,12 @@
 set -euo pipefail
 
 # Configuration
+TARGET="${1:-cloud_run}"
+
+if [ "${TARGET}" = "agent_runtime" ]; then
+  exec ./deploy_agent_runtime.sh "$@"
+fi
+
 PROJECT_ID="agentspace-argolis-demo"
 REGION="us-central1"
 SERVICE_NAME="router-ops-agent"
