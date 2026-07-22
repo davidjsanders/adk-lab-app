@@ -1,9 +1,0 @@
-{
-  "agent_directory": "router-agent",
-  "deployment_target": "agent_runtime",
-  "remote_agent_runtime_id": "projects/adk-lab-app-dev/locations/us-central1/reasoningEngines/router-agent-engine",
-  "registration_type": "adk",
-  "display_name": "Router Fleet Operations Agent",
-  "description": "Autonomous ADK agent for router fleet telemetry diagnosis, grounding with Vertex AI Search, and remediation.",
-  "tool_description": "Interacts with MCP router servers, identifies BGP and hardware faults, searches SOP manuals, and dispatches remediation actions."
-}
