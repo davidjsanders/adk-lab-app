@@ -1,35 +1,40 @@
-# Copyright 2026 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     https://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Multi-stage Dockerfile for router-ops-agent adhering to Google Cloud Run standards
 
-FROM python:3.12-slim
+# Stage 1: Build & Dependencies
+FROM python:3.12.3-slim AS builder
 
 RUN pip install --no-cache-dir uv==0.8.13
 
-WORKDIR /code
+WORKDIR /app
 
-COPY ./pyproject.toml ./README.md ./uv.lock* ./
+COPY pyproject.toml README.md uv.lock* ./
+RUN uv sync --frozen --no-dev --no-install-project
 
-COPY ./app ./app
+COPY app ./app
+COPY agent_engine ./agent_engine
+COPY run_a2a.py ./
+RUN uv sync --frozen --no-dev
+RUN uv pip install gunicorn "uvicorn[standard]"
+RUN find /app/.venv -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 
-RUN uv sync --frozen
+# Stage 2: Final Runtime Image
+FROM python:3.12.3-slim AS runner
 
-ARG COMMIT_SHA=""
-ENV COMMIT_SHA=${COMMIT_SHA}
+WORKDIR /app
 
-ARG AGENT_VERSION=0.0.0
-ENV AGENT_VERSION=${AGENT_VERSION}
+# Create non-root user for security compliance
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
+COPY --chown=appuser:appgroup --from=builder /app /app
+
+ENV VIRTUAL_ENV="/app/.venv"
+ENV PATH="/app/.venv/bin:$PATH"
+ENV PORT=8080
+ENV PYTHONUNBUFFERED=1
+ENV HOME=/app
+
+USER appuser
 
 EXPOSE 8080
 
-CMD ["uv", "run", "uvicorn", "app.fast_api_app:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["sh", "-c", "exec gunicorn -w 1 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:${PORT} app.fast_api_app:app"]

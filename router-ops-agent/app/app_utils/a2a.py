@@ -22,7 +22,10 @@ registration.
 
 from __future__ import annotations
 
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 from typing import TYPE_CHECKING
 
 from a2a.server.apps import A2AFastAPIApplication
@@ -62,6 +65,40 @@ def _default_capabilities() -> AgentCapabilities:
     )
 
 
+import requests
+
+
+def _get_cloud_run_base_url() -> str | None:
+    """Dynamically resolves Cloud Run service base URL using GCP metadata server and env vars.
+
+    Format: https://<service_name>-<project_number>.<location>.run.app
+    """
+    if os.getenv("APP_URL"):
+        logger.info("Using APP_URL env var: %s", os.getenv("APP_URL"))
+        return os.getenv("APP_URL")
+
+    service_name = os.environ.get("K_SERVICE", "router-ops-agent")
+    location = os.environ.get("GOOGLE_CLOUD_LOCATION") or "us-central1"
+
+    try:
+        headers = {"Metadata-Flavor": "Google"}
+        resp = requests.get(
+            "http://metadata.google.internal/computeMetadata/v1/project/numeric-project-id",
+            headers=headers,
+            timeout=3,
+        )
+        logger.info("Metadata server response status: %s, text: %s", resp.status_code, resp.text)
+        if resp.status_code == 200:
+            project_number = resp.text.strip()
+            url = f"https://{service_name}-{project_number}.{location}.run.app"
+            logger.info("Resolved Cloud Run base URL: %s", url)
+            return url
+    except Exception as exc:
+        logger.warning("_get_cloud_run_base_url failed: %s", exc)
+
+    return None
+
+
 async def attach_a2a_routes(
     app: FastAPI,
     *,
@@ -82,7 +119,7 @@ async def attach_a2a_routes(
     ``APP_URL``). Call once per app — typically in a FastAPI ``lifespan``, since
     the card is built asynchronously; repeated calls register duplicate routes.
     """
-    resolved_app_url = app_url or os.getenv("APP_URL", "http://0.0.0.0:8000")
+    resolved_app_url = app_url or _get_cloud_run_base_url() or "http://0.0.0.0:8000"
     resolved_agent_version = agent_version or os.getenv("AGENT_VERSION", "0.1.0")
     resolved_capabilities = capabilities or _default_capabilities()
 

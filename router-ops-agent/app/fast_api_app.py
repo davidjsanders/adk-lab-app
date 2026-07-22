@@ -71,6 +71,7 @@ app: FastAPI = get_fast_api_app(
     allow_origins=allow_origins,
     session_service_uri=services.SESSION_SERVICE_URI,
     otel_to_cloud=False,
+    a2a=False,
     lifespan=lifespan,
 )
 app.title = "router-ops-agent"
