@@ -14,7 +14,7 @@
 
 """Router Operations Agent combining MCP Tools, Dynamic Auth, Global Gemini, ADK Skills, and Subagents."""
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 
 from google.adk.agents import Agent
 from google.adk.apps import App

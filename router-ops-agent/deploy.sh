@@ -34,6 +34,9 @@ REQUIRED_ROLES=(
   "roles/logging.logWriter"
   "roles/secretmanager.secretAccessor"
   "roles/storage.objectAdmin"
+  "roles/run.invoker"
+  "roles/cloudtrace.agent"
+  "roles/telemetry.tracesWriter"
 )
 
 for role in "${REQUIRED_ROLES[@]}"; do
@@ -60,6 +63,8 @@ gcloud run deploy "${SERVICE_NAME}" \
   --no-allow-unauthenticated \
   --memory="2Gi" \
   --cpu="2" \
+  --min-instances=0 \
+  --no-cpu-throttling \
   --env-vars-file="env.yaml"
 
 SERVICE_URL=$(gcloud run services describe "${SERVICE_NAME}" --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)")

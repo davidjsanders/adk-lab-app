@@ -19,7 +19,7 @@ from collections.abc import AsyncIterator
 import google.auth
 from a2a.server.tasks import InMemoryTaskStore
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from google.adk.cli.fast_api import get_fast_api_app
 from google.adk.runners import Runner
 from google.cloud import logging as google_cloud_logging
@@ -76,6 +76,13 @@ app: FastAPI = get_fast_api_app(
 )
 app.title = "router-ops-agent"
 app.description = "API for interacting with the Agent router-ops-agent"
+
+
+@app.get("/icon.svg")
+def get_icon() -> Response:
+    """Serves the SVG Wi-Fi icon for Gemini Enterprise UI."""
+    svg = "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛜</text></svg>"
+    return Response(content=svg, media_type="image/svg+xml")
 
 
 @app.post("/feedback")
