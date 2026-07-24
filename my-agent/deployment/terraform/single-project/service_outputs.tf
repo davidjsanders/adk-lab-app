@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from .a2a_agent import get_a2a_agent
-
-__all__ = ["get_a2a_agent"]
+output "agent_runtime_resource_name" {
+  description = "Agent Runtime resource name"
+  value       = google_vertex_ai_reasoning_engine.app.name
+}

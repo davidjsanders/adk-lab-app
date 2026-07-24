@@ -33,50 +33,6 @@ pro_model = GlobalGemini(model=settings.pro_model)
 # Shared A2UI Plugin instance (preserved for plugin use)
 a2ui_plugin = A2UIPlugin()
 
-# # 1. Diagnostic Agent (Uses MCP Tools)
-# diagnostic_agent = Agent(
-#     name="diagnostic_agent",
-#     model=fast_model,
-#     description="Specialized diagnostic agent that inspects hardware state, chassis LEDs, action logs, runs SNMP walks, and renders A2UI cards via the MCP Server.",
-#     instruction="""
-#     You are the Router Fleet Diagnostic Specialist.
-#     Your task is to gather physical telemetry, check hardware LED indicators, query error logs, run SNMP walks, and render visual A2UI snapshot cards using the MCP Server tools.
-    
-#     Instructions:
-#     - Use MCP server tools (`list_router_fleet`, `get_router_status`, `fetch_router_logs`, `run_snmp_walk`, `render_router_card`, `render_router_card_image`) to gather node metrics.
-#     - Tool Selection for UI / Card Queries:
-#       - ALWAYS default to calling `render_router_card(router_id)` (interactive A2UI card) whenever the user asks to see a router status, view a router, show a card, check health, or display a router dashboard.
-#       - ONLY call `render_router_card_image(router_id)` if the user specifically and explicitly asks for an "image card", "PNG snapshot", "image snapshot", or "picture card".
-#     - Verbatim Relay Rule for `render_router_card`:
-#       1. Your ENTIRE response MUST be EXACTLY the `<a2ui-json>...</a2ui-json>` block returned by the tool.
-#       2. Your response MUST start immediately with `<a2ui-json>` and end with `</a2ui-json>`.
-#       3. Do NOT include ANY text, sentence, greeting, or explanation before or after the `<a2ui-json>` block.
-#     - For `render_router_card_image` queries:
-#       - The card is rendered visually in the tool event and saved as a session artifact. Briefly confirm the image card rendering and reference the saved PNG artifact filename.
-#     """,
-#     tools=[mcp_toolset],
-#     after_tool_callback=intercept_image_card_tool,
-# )
-
-# # 2. Remediation Agent (Uses MCP Tools)
-# remediation_agent = Agent(
-#     name="remediation_agent",
-#     model=pro_model,  # High reasoning
-#     description="High-reasoning remediation specialist executing BGP resets, chassis reboots, fault tests, and LED overrides via the MCP Server.",
-#     instruction="""
-#     You are the Router Hardware Remediation Specialist.
-#     You carry out hardware state modifications, BGP peering resets, chassis reboots, and LED overrides via MCP Server tools.
-    
-#     Instructions:
-#     - High-stakes actions (`reset_bgp_session`, `reboot_router`, `inject_bgp_fault`, `send_router_command`) require explicit human confirmation.
-#     - Clearly present the target router ID and proposed action before execution.
-#     - Use `set_router_led` to set chassis indicators (e.g. amber for maintenance mode).
-#     - After any successful remediation action, you MUST call `render_router_card(router_id)` to refresh the UI.
-#     - Your response with the card MUST be EXACTLY the `<a2ui-json>...</a2ui-json>` block returned by the tool, with NO other text.
-#     """,
-#     tools=[mcp_toolset],
-# )
-
 # ---------------------------------------------------------------------------
 # Fleet Coordinator Root Agent & App Definition
 # ---------------------------------------------------------------------------

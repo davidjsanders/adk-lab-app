@@ -32,8 +32,8 @@ from google.adk.auth.credential_service.session_state_credential_service import 
 
 from app.agent import root_agent, app as adk_app
 from app.config import settings
-from agent_engine.build_agent_card import build_agent_card
-from agent_engine.agent_executor_builder import agent_executor_builder
+from a2a_agent.build_agent_card import build_agent_card
+from a2a_agent.agent_executor_builder import agent_executor_builder
 
 port = int(os.environ.get("PORT", "8000"))
 host = os.environ.get("HOST", "0.0.0.0")

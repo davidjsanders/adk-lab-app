@@ -58,3 +58,8 @@ BASE_INSTRUCTIONS = """
 """
 
 INSTRUCTIONS = BASE_INSTRUCTIONS.strip()
+DESCRIPTION = """
+Router Fleet Operations Coordinator.
+Managing router fleet health, triaging network anomalies, and directing
+remediation actions.
+"""

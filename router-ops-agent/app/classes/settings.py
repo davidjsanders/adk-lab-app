@@ -13,7 +13,8 @@
 # limitations under the License.
 
 """Application settings class loaded from environment variables."""
-
+import os
+from typing import Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -27,19 +28,61 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # Logging
+    log_level: str = Field(
+        default=os.environ.get("LOG_LEVEL", "INFO").upper(),
+        validation_alias="LOG_LEVEL"
+    )
+    log_format: str = Field(
+        default="%(asctime)s, %(levelname)s, %(module)s.%(funcName)s: %(message)s",
+        validation_alias="LOG_FORMAT"
+    )
+
+    # Agent configuration
+    agent_version: str = Field(
+        default=os.environ.get("AGENT_VERSION", "0.1.0"),
+        validation_alias="AGENT_VERSION"
+    )
+    agent_endpoint: Optional[str] = Field(
+        default=os.environ.get("AGENT_ENDPOINT", None),
+        validation_alias="AGENT_ENDPOINT"
+    )
+
     # GCP and Vertex AI Configuration
     google_cloud_project: str = Field(
-        default="agentspace-argolis-demo", validation_alias="GOOGLE_CLOUD_PROJECT"
+        default="agentspace-argolis-demo",
+        validation_alias="GOOGLE_CLOUD_PROJECT"
     )
     google_cloud_location: str = Field(
-        default="us-central1", validation_alias="GOOGLE_CLOUD_LOCATION"
+        default="us-central1",
+        validation_alias="GOOGLE_CLOUD_LOCATION"
     )
     google_genai_use_vertexai: bool = Field(
-        default=True, validation_alias="GOOGLE_GENAI_USE_VERTEXAI"
+        default=True,
+        validation_alias="GOOGLE_GENAI_USE_VERTEXAI"
+    )
+    artifact_storage_bucket: str = Field(
+        default="",
+        validation_alias="ARTIFACT_STORAGE_BUCKET"
+    )
+    google_cloud_agent_engine_id: Optional[str] = Field(
+        default=os.environ.get("GOOGLE_CLOUD_AGENT_ENGINE_ID", None),
+        validation_alias="GOOGLE_CLOUD_AGENT_ENGINE_ID"
+    )
+    google_cloud_run_service_name: Optional[str] = Field(
+        default=os.environ.get("K_SERVICE", None),
+        validation_alias="GOOGLE_CLOUD_RUN_SERVICE_NAME"
+    )
+    google_cloud_run_revision: Optional[str] = Field(
+        default=os.environ.get("K_REVISION", None),
+        validation_alias="GOOGLE_CLOUD_RUN_REVISION"
     )
 
     # Service Account Impersonation
-    impersonate_sa: str = Field(default="", validation_alias="IMPERSONATE_SA")
+    impersonate_sa: str = Field(
+        default="",
+        validation_alias="IMPERSONATE_SA"
+    )
 
     # Fleet Infrastructure URLs
     mcp_server_url: str = Field(
@@ -49,12 +92,15 @@ class Settings(BaseSettings):
 
     # Model Configuration
     fast_model: str = Field(
-        default="gemini-3-flash-preview", validation_alias="FAST_MODEL"
+        default="gemini-3-flash-preview",
+        validation_alias="FAST_MODEL"
     )
     pro_model: str = Field(
-        default="gemini-3.1-pro-preview", validation_alias="PRO_MODEL"
+        default="gemini-3.1-pro-preview",
+        validation_alias="PRO_MODEL"
     )
 
+    # Alias properties
     @property
     def project_id(self) -> str:
         """Alias for google_cloud_project."""
