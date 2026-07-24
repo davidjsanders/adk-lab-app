@@ -11,7 +11,7 @@ COPY pyproject.toml README.md uv.lock* ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 COPY app ./app
-COPY agent_engine ./agent_engine
+COPY a2a_agent ./a2a_agent
 COPY run_a2a.py ./
 RUN uv sync --frozen --no-dev
 RUN uv pip install gunicorn "uvicorn[standard]"
@@ -24,6 +24,8 @@ WORKDIR /app
 
 # Create non-root user for security compliance
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
+RUN chown appuser:appgroup /app
 
 COPY --chown=appuser:appgroup --from=builder /app /app
 

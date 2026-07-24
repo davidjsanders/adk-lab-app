@@ -51,7 +51,9 @@ class Deployer:
         self.client = AgentEngineClient(
             project=self.configuration.project_id,
             location=self.configuration.location,
-            http_options={"api_version": self.configuration.api_version}
+            http_options={
+                "api_version": self.configuration.api_version
+            }
         )
         # self.client = genai.Client(
         #     vertexai=True,  # Tells the client to target enterprise Vertex AI infrastructure
@@ -126,7 +128,7 @@ class Deployer:
             json.dumps(config, indent=2)
         )
         logger.debug(
-            "Resource (if any): %s",
+            "Agent Runtime Resource ID: %s",
             resource_id
         )
 
@@ -138,17 +140,19 @@ class Deployer:
             remote_app = self.client.agent_engines.update(
                 name=resource_id,
                 agent=self.configuration.agent,
-                config=genai_types.AgentEngineConfig(
-                    **config
-                ),
+                config=config,
+                # config=genai_types.AgentEngineConfig(
+                #     **config
+                # ),
             )
         else:
             logger.debug("Deploying to new instance")
             remote_app = self.client.agent_engines.create(
                 agent=self.configuration.agent,
-                config=genai_types.AgentEngineConfig(
-                    **config
-                ),
+                config=config,
+                # config=genai_types.AgentEngineConfig(
+                #     **config
+                # ),
             )
 
         logger.info(

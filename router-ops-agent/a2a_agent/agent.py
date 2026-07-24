@@ -50,26 +50,46 @@ def get_a2a_agent() -> A2aAgent:
     url = ""
     match identify_platform():
         case Platform.GOOGLE_CLOUD_RUN:
+            logger.info("Deployment platform is Cloud Run")
             svc = settings.google_cloud_run_service_name
             project_number = get_project_number()
             region = get_instance_region()
             url = f"https://{svc}-{project_number}.{region}.run.app/"
         case Platform.GOOGLE_CLOUD_AGENT_ENGINE:
+            logger.info("Deployment platform is Agent Engine")
             project = settings.google_cloud_project # or get_project_number()
             region = settings.google_cloud_location
             ae_id = settings.google_cloud_agent_engine_id
             url = (
                 f"https://{region}-aiplatform.googleapis.com/v1beta1/"
                 f"projects/{project}/locations/{region}/reasoningEngines/"
-                f"{ae_id}/"
+                f"{ae_id}/a2a"
             )
         case Platform.CUSTOM:
+            logger.info("Deployment platform is Custom")
             url = settings.agent_endpoint or "http://localhost:8001/"
             
 
     agent_card = asyncio.run(builder.build())
+    logger.info("Built agent card. Url: %s", agent_card.url)
     agent_card.preferred_transport = TransportProtocol.http_json
+    agent_card.supports_authenticated_extended_card = True
+
+
+    # TEMP
+    project = settings.google_cloud_project # or get_project_number()
+    region = settings.google_cloud_location
+    ae_id = "7383829160201814016"
+    url = (
+        f"https://{region}-aiplatform.googleapis.com/v1beta1/"
+        f"projects/{project}/locations/{region}/reasoningEngines/"
+        f"{ae_id}/a2a"
+    )
+    # END TEMP
+
     agent_card.url = url
+    logger.info("Setting url to: %s", url)
+    logger.info("Built agent card. Url: %s", agent_card.url)
     agent_card.capabilities = AgentCapabilities(
         streaming=True,
         extensions=[
