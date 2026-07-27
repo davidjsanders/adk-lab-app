@@ -39,6 +39,8 @@ from a2a.server.tasks import TaskStore
 from a2a.types import (
     AgentCapabilities,
     AgentExtension,
+    HTTPAuthSecurityScheme,
+    SecurityScheme,
     DataPart,
     Part,
     TaskArtifactUpdateEvent,
@@ -66,10 +68,15 @@ _ADK_AGENT_EXECUTOR_EXTENSION_URI = (
 )
 
 
+from a2a_agent.helpers.identify_platform import identify_platform
+from a2a_agent.models.platform import Platform
+
 def _default_capabilities() -> AgentCapabilities:
     """Returns the default A2A capabilities used by scaffolded projects."""
+    platform = identify_platform()
+    is_streaming = platform != Platform.GOOGLE_CLOUD_AGENT_ENGINE
     return AgentCapabilities(
-        streaming=True,
+        streaming=is_streaming,
         extensions=[
             AgentExtension(
                 uri="https://a2ui.org/a2a-extension/a2ui/v0.8",
@@ -160,6 +167,17 @@ def _get_cloud_run_base_url() -> str | None:
         logger.info("Using APP_URL env var: %s", os.getenv("APP_URL"))
         return os.getenv("APP_URL")
 
+    platform = identify_platform()
+    if platform == Platform.GOOGLE_CLOUD_AGENT_ENGINE:
+        project = os.environ.get("GOOGLE_CLOUD_PROJECT", "agentspace-argolis-demo")
+        location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+        k_service = os.environ.get("K_SERVICE", "")
+        match = re.search(r"reasoning-engine-(\d+)", k_service)
+        ae_id = match.group(1) if match else os.environ.get("GOOGLE_CLOUD_AGENT_ENGINE_ID", "")
+        url = f"https://{location}-aiplatform.googleapis.com/reasoningEngines/v1/projects/{project}/locations/{location}/reasoningEngines/{ae_id}/api"
+        logger.info("Resolved Agent Engine base URL: %s", url)
+        return url
+
     service_name = os.environ.get("K_SERVICE", "router-ops-agent")
     location = os.environ.get("GOOGLE_CLOUD_LOCATION") or "us-central1"
 
@@ -217,6 +235,17 @@ async def attach_a2a_routes(
         "AGENT_ICON_URL",
         "https://fonts.gstatic.com/s/i/short-term/release/googlesymbols/wifi/default/24px.svg",
     )
+    agent_card.security_schemes = {
+        "google_bearer": SecurityScheme(
+            root=HTTPAuthSecurityScheme(
+                type="http",
+                scheme="bearer",
+                bearer_format="JWT",
+                description="Google Cloud OAuth2 Bearer Token",
+            )
+        )
+    }
+    agent_card.security = [{"google_bearer": []}]
 
     executor_config = A2aAgentExecutorConfig(
         execute_interceptors=[
