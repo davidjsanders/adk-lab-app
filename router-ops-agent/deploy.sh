@@ -100,11 +100,21 @@ echo "Step 6: Writing deployment_metadata.json..."
 cat <<EOF > deployment_metadata.json
 {
   "remote_agent_runtime_id": "${SERVICE_URL}",
-  "remote_agent_engine_id": "${SERVICE_URL}",
   "deployment_target": "cloud_run",
   "deployment_timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 }
 EOF
+
+# 7. Publish to Gemini Enterprise (A2A mode)
+GEMINI_APP="${GEMINI_ENTERPRISE_APP_ID:-projects/${PROJECT_NUMBER}/locations/global/collections/default_collection/engines/agentspace-exemplar_1755693787640}"
+if [ -n "${GEMINI_APP}" ]; then
+  echo "Step 7: Registering with Gemini Enterprise..."
+  agents-cli publish gemini-enterprise \
+    --registration-type a2a \
+    --agent-card-url "${SERVICE_URL}/a2a/app/.well-known/agent-card.json" \
+    --gemini-enterprise-app-id "${GEMINI_APP}" \
+    --deployment-target cloud_run || echo "Warning: Gemini Enterprise registration skipped or failed."
+fi
 
 echo "========================================================================="
 echo "Deployment Complete!"
