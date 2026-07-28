@@ -14,6 +14,7 @@
 
 """Remediation sub-agent definition for router state changes and hardware actions."""
 
+from typing import Any
 from google.adk.agents import Agent
 
 from app.classes.global_gemini import GlobalGemini
@@ -28,6 +29,32 @@ pro_model = GlobalGemini(model=settings.pro_model)
 remediation_skills = get_skill_toolset(
     skill_names=["policy-based-routing", "routing-metrics"]
 )
+
+
+async def require_human_confirmation(
+    tool,
+    args: dict[str, Any],
+    tool_context,
+) -> str | None:
+    """Programmatic guardrail blocking BGP reset or reboot tool calls if unconfirmed.
+
+    Args:
+        tool: Target tool executed.
+        args: Arguments passed.
+        tool_context: Execution context containing human confirmation state.
+
+    Returns:
+        Stop message string or None.
+    """
+    tool_name = getattr(tool, "name", "")
+    if tool_name in ["reset_bgp_session", "reboot_router", "inject_bgp_fault", "send_router_command"]:
+        if not tool_context.state.get("human_confirmed"):
+            return (
+                "ACTION STOPPED BY PROGRAMMATIC GUARDRAIL: High-stakes operations "
+                "require explicit confirmation. Please confirm you want to proceed."
+            )
+    return None
+
 
 remediation_agent = Agent(
     name="remediation_agent",
@@ -48,5 +75,6 @@ remediation_agent = Agent(
         mcp_toolset,
         # remediation_skills,
     ],
+    before_tool_callback=require_human_confirmation,
     # after_tool_callback=intercept_image_card_tool,
 )

@@ -27,3 +27,4 @@
 
 ### 5. Deployment Setup
 *   **Credential Verification:** Before attempting a deployment to Agent Engine via `adk deploy`, verify that you are authenticated against the correct GCP project. Ensure you run verification checks like `gcloud config get-value project` and output the current active project before attempting deployment.
+*   **Docker / Compilation Builds:** Do not run docker builds (`docker build`, `make build`, etc.) or registry pushes. Let the user run these commands directly.

@@ -113,4 +113,12 @@ def get_oidc_id_token(target_url: str) -> str | None:
             f"IAM IDTokenCredentials fallback for {audience} failed: {iam_err}"
         )
 
+    if not impersonate_sa and not os.getenv("K_SERVICE") and not os.getenv("APP_URL"):
+        logger.warning(
+            "⚠️ OIDC ID token generation failed and IMPERSONATE_SA environment variable is not set. "
+            "If you are running locally on a workstation, you must set IMPERSONATE_SA in your .env "
+            "to impersonate a service account that has access to the target Cloud Run service. "
+            "Otherwise, requests to authenticated GCP services (like Cloud Run MCP server) will fail with 403."
+        )
+
     return None

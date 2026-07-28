@@ -1,0 +1,17 @@
+[
+  {
+    "id": "linux-server-01",
+    "type": "linux",
+    "name": "Linux Core Server"
+  },
+  {
+    "id": "jira-app-01",
+    "type": "jira",
+    "name": "Production Jira Server"
+  },
+  {
+    "id": "confluence-app-01",
+    "type": "confluence",
+    "name": "Team Confluence Wiki"
+  }
+]

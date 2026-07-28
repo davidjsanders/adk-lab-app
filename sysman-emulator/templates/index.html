@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SysMan Operations Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0a0f1d;
+            --bg-card: #12192c;
+            --bg-card-border: #222f4e;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --primary-blue: #38bdf8;
+            --accent-glow: #0284c7;
+            
+            --led-off: #1e293b;
+            --led-green: #22c55e;
+            --led-green-glow: 0 0 12px #22c55e, 0 0 20px rgba(34, 197, 94, 0.4);
+            --led-amber: #f59e0b;
+            --led-amber-glow: 0 0 12px #f59e0b, 0 0 20px rgba(245, 158, 11, 0.4);
+            --led-red: #ef4444;
+            --led-red-glow: 0 0 12px #ef4444, 0 0 20px rgba(239, 68, 68, 0.4);
+            
+            --card-gradient: linear-gradient(135deg, #16223f 0%, #0d1628 100%);
+            --header-gradient: linear-gradient(90deg, #1b2a4a 0%, #121c33 100%);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 1300px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* Top Header */
+        .top-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: var(--header-gradient);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .brand-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--primary-blue);
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+        }
+
+        .meta-badges {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .badge {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid var(--bg-card-border);
+        }
+
+        .badge-project {
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--primary-blue);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+
+        .badge-status {
+            background: rgba(34, 197, 94, 0.1);
+            color: #4ade80;
+            border-color: rgba(34, 197, 94, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge-status::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--led-green);
+            box-shadow: var(--led-green-glow);
+        }
+
+        /* Systems Grid */
+        .systems-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 24px;
+        }
+
+        .system-card {
+            background: var(--card-gradient);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .system-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary-blue);
+        }
+
+        .system-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 24px;
+            background: rgba(0, 0, 0, 0.2);
+            border-bottom: 1px solid var(--bg-card-border);
+        }
+
+        .sys-title {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .sys-name {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .sys-type {
+            font-size: 0.75rem;
+            font-family: 'Fira Code', monospace;
+            color: var(--primary-blue);
+            text-transform: uppercase;
+        }
+
+        .sys-state-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background-color: var(--led-green);
+            box-shadow: var(--led-green-glow);
+            transition: all 0.3s;
+        }
+
+        .system-card-body {
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex-grow: 1;
+        }
+
+        .metric-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .metric-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .metric-val {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .progress-bar-bg {
+            background-color: rgba(255, 255, 255, 0.05);
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            background-color: var(--primary-blue);
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease-in-out;
+        }
+
+        .metrics-numerical-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .num-metric-box {
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .num-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .num-value {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* Action Buttons */
+        .system-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: auto;
+            border-top: 1px solid var(--bg-card-border);
+            padding: 16px 24px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            border: none;
+            transition: opacity 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-success { background-color: #10b981; color: #fff; }
+        .btn-danger { background-color: #ef4444; color: #fff; }
+        .btn-warning { background-color: #f59e0b; color: #fff; }
+        .btn-secondary { background-color: #4b5563; color: #fff; }
+        .btn-info { background-color: #06b6d4; color: #fff; }
+
+        /* Auth Panel and Console */
+        .dashboard-console {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 24px;
+        }
+
+        .console-card {
+            background: var(--card-gradient);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .form-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--bg-card-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+
+        /* Log console box */
+        .logs-box {
+            background: #040814;
+            border: 1px solid var(--bg-card-border);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            color: #a5f3fc;
+            overflow-y: auto;
+            max-height: 250px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+        }
+
+        .log-line {
+            display: flex;
+            gap: 8px;
+            white-space: pre-wrap;
+        }
+
+        .log-time { color: #64748b; }
+        .log-lvl-info { color: #10b981; }
+        .log-lvl-warn { color: #f59e0b; }
+        .log-lvl-error { color: #ef4444; }
+        .log-msg { color: #e2e8f0; }
+
+        .system-select-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top App Header -->
+        <header class="top-header">
+            <div class="brand-title">
+                <span>🛡️ SYSMAN TELEMETRY EMULATOR</span>
+            </div>
+            <div class="meta-badges">
+                <span class="badge badge-project">Telco's Architecture Exemplar</span>
+                <span class="badge badge-status">SYSTEM FLEET RUNNING</span>
+            </div>
+        </header>
+
+        <!-- Dynamic Systems Section -->
+        <section class="systems-grid" id="systems-container">
+            <!-- Populated via Javascript -->
+        </section>
+
+        <!-- Control Console and Logs -->
+        <section class="dashboard-console">
+            <!-- Left: Config & Authentication -->
+            <div class="console-card">
+                <h3>Console Controls</h3>
+                <div class="form-group">
+                    <label class="form-label" for="auth-password">Control Authorization (<code>{{ control_header }}</code>):</label>
+                    <input type="password" id="auth-password" class="form-input" value="SysManSecretPass123!">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="log-sys-select">Log Viewer Source:</label>
+                    <select id="log-sys-select" class="form-input" style="background-color:#12192c">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div style="margin-top:auto">
+                    <p style="font-size:0.75rem; color:var(--text-muted)">
+                        The emulator runs standard Prometheus metrics at <a href="/metrics" target="_blank" style="color:var(--primary-blue);text-decoration:none">/metrics</a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right: Real-time logs panel -->
+            <div class="console-card">
+                <div style="display:flex; justify-content:space-between; align-items:center">
+                    <h3>Syslog Stream</h3>
+                    <button class="btn btn-secondary" onclick="clearLogsBox()" style="padding:4px 8px; font-size:0.75rem">Clear Screen</button>
+                </div>
+                <div class="logs-box" id="logs-container">
+                    <!-- Logs populated via Javascript -->
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Frontend Scripting -->
+    <script>
+        const controlHeader = "{{ control_header }}";
+        let activeSystemIds = [];
+
+        async function fetchState() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                if (data.status === 'SUCCESS') {
+                    renderSystems(data.systems);
+                    updateSystemSelector(data.systems);
+                }
+            } catch (err) {
+                console.error("Failed fetching emulator statuses:", err);
+            }
+        }
+
+        function updateSystemSelector(systems) {
+            const selector = document.getElementById('log-sys-select');
+            const currentVal = selector.value;
+            
+            // Check if lists are identical
+            const ids = systems.map(s => s.system_id);
+            if (JSON.stringify(ids) === JSON.stringify(activeSystemIds)) {
+                return; // No need to rebuild options
+            }
+            
+            activeSystemIds = ids;
+            selector.innerHTML = '';
+            systems.forEach(sys => {
+                const opt = document.createElement('option');
+                opt.value = sys.system_id;
+                opt.textContent = `${sys.name} (${sys.system_id})`;
+                selector.appendChild(opt);
+            });
+            
+            if (currentVal && ids.includes(currentVal)) {
+                selector.value = currentVal;
+            }
+        }
+
+        function renderSystems(systems) {
+            const container = document.getElementById('systems-container');
+            container.innerHTML = '';
+
+            systems.forEach(sys => {
+                const card = document.createElement('div');
+                card.className = 'system-card';
+
+                // Resolve health LED color
+                let ledClass = 'var(--led-green)';
+                let ledGlow = 'var(--led-green-glow)';
+                if (sys.status === 'DEGRADED') {
+                    ledClass = 'var(--led-amber)';
+                    ledGlow = 'var(--led-amber-glow)';
+                } else if (sys.status === 'UNHEALTHY' || sys.status === 'REBOOTING') {
+                    ledClass = 'var(--led-red)';
+                    ledGlow = 'var(--led-red-glow)';
+                }
+
+                let bodyHtml = '';
+
+                if (sys.type === 'linux') {
+                    const cpu = sys.metrics.cpu_load_percent;
+                    const ram = sys.metrics.ram_usage_percent;
+                    const disk = sys.metrics.disk_usage_percent;
+                    const procDown = sys.metrics.process_down;
+
+                    bodyHtml = `
+                        <div class="metric-row">
+                            <div class="metric-header">
+                                <span>CPU Load</span>
+                                <span class="metric-val">${cpu}%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${cpu}%"></div>
+                            </div>
+                        </div>
+                        <div class="metric-row">
+                            <div class="metric-header">
+                                <span>RAM Usage</span>
+                                <span class="metric-val">${ram}%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${ram}%"></div>
+                            </div>
+                        </div>
+                        <div class="metric-row">
+                            <div class="metric-header">
+                                <span>Disk Space</span>
+                                <span class="metric-val">${disk}%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${disk}%"></div>
+                            </div>
+                        </div>
+                        <div class="metrics-numerical-grid" style="grid-template-columns: 1fr">
+                            <div class="num-metric-box">
+                                <span class="num-label">node_exporter state</span>
+                                <span class="num-value" style="color: ${procDown === 1 ? '#4ade80' : '#ef4444'}">
+                                    ${procDown === 1 ? 'ACTIVE (1)' : 'DOWN (0)'}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                } else if (sys.type === 'jira') {
+                    const heap = sys.metrics.jvm_heap_mb;
+                    const maxHeap = sys.metrics.jvm_max_heap_mb;
+                    const heapPercent = (heap / maxHeap) * 100;
+                    const activeDb = sys.metrics.db_connections;
+                    const maxDb = sys.metrics.db_pool_max;
+                    const latency = sys.metrics.request_latency_ms;
+                    const errRate = sys.metrics.error_rate_percent;
+
+                    bodyHtml = `
+                        <div class="metric-row">
+                            <div class="metric-header">
+                                <span>JVM Heap Space</span>
+                                <span class="metric-val">${heap} / ${maxHeap} MB (${Math.round(heapPercent)}%)</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${heapPercent}%"></div>
+                            </div>
+                        </div>
+                        <div class="metrics-numerical-grid">
+                            <div class="num-metric-box">
+                                <span class="num-label">Active DB Pool</span>
+                                <span class="num-value">${activeDb} / ${maxDb}</span>
+                            </div>
+                            <div class="num-metric-box">
+                                <span class="num-label">Req Latency</span>
+                                <span class="num-value">${latency} ms</span>
+                            </div>
+                        </div>
+                        <div class="metrics-numerical-grid" style="grid-template-columns: 1fr">
+                            <div class="num-metric-box">
+                                <span class="num-label">HTTP 5xx Rate</span>
+                                <span class="num-value" style="color: ${errRate > 5 ? '#ef4444' : '#fff'}">${errRate}%</span>
+                            </div>
+                        </div>
+                    `;
+                } else if (sys.type === 'confluence') {
+                    const ws = sys.metrics.websocket_connected;
+                    const disk = sys.metrics.attachments_disk_percent;
+
+                    bodyHtml = `
+                        <div class="metric-row">
+                            <div class="metric-header">
+                                <span>Attachments Volume</span>
+                                <span class="metric-val">${disk}%</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${disk}%"></div>
+                            </div>
+                        </div>
+                        <div class="metrics-numerical-grid" style="grid-template-columns: 1fr">
+                            <div class="num-metric-box">
+                                <span class="num-label">Collaborative editor websockets</span>
+                                <span class="num-value" style="color: ${ws === 1 ? '#4ade80' : '#ef4444'}">
+                                    ${ws === 1 ? 'CONNECTED' : 'DISCONNECTED'}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Compile control actions
+                let actionButtons = '';
+                if (sys.type === 'linux') {
+                    actionButtons = `
+                        <button class="btn btn-warning" onclick="sendCmd('${sys.system_id}', 'reboot')">Reboot VM</button>
+                        ${sys.metrics.process_down === 1 
+                            ? `<button class="btn btn-danger" onclick="sendCmd('${sys.system_id}', 'stop_node_exporter')">Kill node_exporter</button>`
+                            : `<button class="btn btn-success" onclick="sendCmd('${sys.system_id}', 'start_node_exporter')">Start node_exporter</button>`
+                        }
+                        ${sys.status === 'HEALTHY' 
+                            ? `<button class="btn btn-danger" onclick="sendCmd('${sys.system_id}', 'inject_fault')">Inject CPU Spike</button>`
+                            : `<button class="btn btn-secondary" onclick="sendCmd('${sys.system_id}', 'clear_fault')">Clear CPU Spike</button>`
+                        }
+                    `;
+                } else if (sys.type === 'jira') {
+                    actionButtons = `
+                        <button class="btn btn-warning" onclick="sendCmd('${sys.system_id}', 'restart_jira')">Restart App</button>
+                        <button class="btn btn-success" onclick="sendCmd('${sys.system_id}', 'gc_cleanup')">Run GC</button>
+                        <button class="btn btn-secondary" onclick="sendCmd('${sys.system_id}', 'reset_simulation')">Reset states</button>
+                        <button class="btn btn-danger" onclick="sendCmd('${sys.system_id}', 'trigger_jvm_leak')">Leak JVM</button>
+                        <button class="btn btn-danger" onclick="sendCmd('${sys.system_id}', 'exhaust_db_pool')">Exhaust JDBC Pool</button>
+                    `;
+                } else if (sys.type === 'confluence') {
+                    actionButtons = `
+                        <button class="btn btn-warning" onclick="sendCmd('${sys.system_id}', 'reboot')">Restart App</button>
+                        <button class="btn btn-success" onclick="sendCmd('${sys.system_id}', 'reconnect_websockets')">Fix Websockets</button>
+                        <button class="btn btn-success" onclick="sendCmd('${sys.system_id}', 'purge_attachments')">Purge Storage</button>
+                        <button class="btn btn-danger" onclick="sendCmd('${sys.system_id}', 'drop_websockets')">Drop WS</button>
+                        <button class="btn btn-danger" onclick="sendCmd('${sys.system_id}', 'fill_disk')">Fill Disk</button>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="system-card-header">
+                        <div class="sys-title">
+                            <span class="sys-name">${sys.name}</span>
+                            <span class="sys-type">${sys.system_id} | Type: ${sys.type}</span>
+                        </div>
+                        <div class="sys-state-dot" style="background-color: ${ledClass}; box-shadow: ${ledGlow}"></div>
+                    </div>
+                    <div class="system-card-body">
+                        <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:10px">
+                            Uptime: ${formatUptime(sys.uptime_seconds)} | Status: <b style="color:#fff">${sys.status}</b>
+                        </div>
+                        ${bodyHtml}
+                    </div>
+                    <div class="system-actions">
+                        ${actionButtons}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function formatUptime(secs) {
+            const d = Math.floor(secs / 86400);
+            const h = Math.floor((secs % 86400) / 3600);
+            const m = Math.floor((secs % 3600) / 60);
+            const s = secs % 60;
+            return `${d}d ${h}h ${m}m ${s}s`;
+        }
+
+        async function sendCmd(sysId, cmdName) {
+            const password = document.getElementById('auth-password').value;
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            headers[controlHeader] = password;
+
+            try {
+                const response = await fetch('/api/command', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        system_id: sysId,
+                        command: cmdName
+                    })
+                });
+                const res = await response.json();
+                if (response.ok) {
+                    addLogLine(sysId, `Command '${cmdName}' accepted successfully: ${res.message}`);
+                    fetchState();
+                } else {
+                    addLogLine(sysId, `Command '${cmdName}' rejected: ${res.error || res.message}`, 'ERROR');
+                }
+            } catch (err) {
+                console.error("Command error:", err);
+                addLogLine(sysId, `Network failure sending command: ${err.message}`, 'ERROR');
+            }
+        }
+
+        async function fetchLogs() {
+            const selector = document.getElementById('log-sys-select');
+            const sysId = selector.value;
+            if (!sysId) return;
+
+            try {
+                const response = await fetch(`/api/logs?system_id=${sysId}&limit=30`);
+                const data = await response.json();
+                if (data.status === 'SUCCESS') {
+                    renderLogs(data.logs);
+                }
+            } catch (err) {
+                console.error("Failed fetching logs:", err);
+            }
+        }
+
+        function renderLogs(logs) {
+            const container = document.getElementById('logs-container');
+            container.innerHTML = '';
+            logs.forEach(log => {
+                const div = document.createElement('div');
+                div.className = 'log-line';
+                div.innerHTML = `
+                    <span class="log-time">[${log.timestamp.split(' ')[1]}]</span>
+                    <span class="log-lvl-${log.level.toLowerCase()}">[${log.level}]</span>
+                    <span class="log-msg">${log.message}</span>
+                `;
+                container.appendChild(div);
+            });
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function addLogLine(sysId, msg, level = 'INFO') {
+            const container = document.getElementById('logs-container');
+            const now = new Date().toISOString().split('T')[1].substring(0,8);
+            const div = document.createElement('div');
+            div.className = 'log-line';
+            div.innerHTML = `
+                <span class="log-time">[${now}]</span>
+                <span class="log-lvl-${level.toLowerCase()}">[LOCAL]</span>
+                <span class="log-msg"><b>${sysId}:</b> ${msg}</span>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearLogsBox() {
+            document.getElementById('logs-container').innerHTML = '';
+        }
+
+        // Setup periodic loops
+        setInterval(fetchState, 2000);
+        setInterval(fetchLogs, 2500);
+
+        // Initial run
+        fetchState();
+    </script>
+</body>
+</html>

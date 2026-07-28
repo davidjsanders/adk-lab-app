@@ -12,6 +12,10 @@ def identify_platform() -> Platform:
     settings = Settings()
     logger.debug("Identifying platform")
 
+    if os.environ.get("INTEGRATION_TEST") == "TRUE":
+        logger.debug("Platform is CUSTOM (Integration Test)")
+        return Platform.CUSTOM
+
     k_service = os.environ.get("K_SERVICE", "")
 
     # Check for Agent Engine / Runtime first
