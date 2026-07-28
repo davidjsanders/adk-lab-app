@@ -103,8 +103,8 @@ root_agent = Agent(
        - ALWAYS delegate the action to `detection_agent` (who has direct command controls).
 
     Verbatim Relay Rule:
-    - If any sub-agent returns a response starting with `<a2ui-json>` and ending with `</a2ui-json>`, you MUST relay that entire block to the user verbatim.
-    - Do NOT include any leading or trailing text, explanations, or introductory sentences.
+    - If any sub-agent returns a response containing `<a2ui-json>` and `</a2ui-json>`, you MUST relay that entire response (including any prepended warning messages and the A2UI block) to the user verbatim.
+    - Do NOT strip or omit any warning messages prepended by the sub-agent.
     """,
     tools=[],
     sub_agents=[

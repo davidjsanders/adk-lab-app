@@ -8,15 +8,14 @@ Use this skill when tasked with identifying active performance anomalies or syst
 
 ### Threshold Rules & Outage Criteria
 1. **Linux Systems**:
-   - Outage: `process_down = 0` (implies `node_exporter` is down). Alert severity is CRITICAL.
-   - Resource Alert: `cpu_load_percent > 90.0` or `ram_usage_percent > 90.0`. Alert severity is WARNING.
+   - Outage: `node-exporter-status` == 0 (implies `node_exporter` is down). Alert severity is CRITICAL.
+   - Resource Alert: `cpu-load` > 90.0% or `ram-usage` > 90.0% or `disk-space` > 80.0%. Alert severity is WARNING.
 2. **Jira Servers**:
-   - JVM Memory Exhaustion: `jvm_heap_mb` / `jvm_max_heap_mb` > 95% (implies OutOfMemory state). Alert severity is CRITICAL.
-   - DB Connection Pool Exhausted: `db_connections` >= `db_pool_max`. Alert severity is CRITICAL.
-   - Response Latency: `request_latency_ms > 2000.0` or `error_rate_percent > 5.0`. Alert severity is WARNING.
+   - JVM Memory Exhaustion: `jvm-heap` > 95%. Alert severity is CRITICAL.
+   - Response Latency: `db-connect-time` > 2000.0 ms. Alert severity is WARNING.
 3. **Confluence Servers**:
-   - Synchronizer drop: `websocket_connected = 0` (implies collaborative editor ws down). Alert severity is CRITICAL.
-   - Disk space: `attachments_disk_percent >= 90.0`. Alert severity is WARNING.
+   - Synchronizer drop: `ws-status` == 0 (implies collaborative editor ws down). Alert severity is CRITICAL.
+   - Disk space: `disk-usage` >= 80.0% (labeled '/dev/hd1'). Alert severity is WARNING.
 
 ### Guidelines
 - First, call `list_systems` to discover what servers are running.

@@ -18,15 +18,30 @@
       ]
     },
     {
-      "id": "disk-usage",
-      "type": "progress_bar",
-      "label": "Disk Usage",
-      "value": 48.5,
+      "id": "disk-usage-hd1",
+      "type": "donut_chart",
+      "label": "/dev/hd1",
+      "value": 88.5,
+      "max_value": 100.0,
+      "val_text_format": "{value:.1f}%",
+      "drift_rate": 0.0,
+      "variation_range": [
+        0.0,
+        0.001
+      ],
+      "min_value_limit": 0.0,
+      "max_value_limit": 100.0
+    },
+    {
+      "id": "disk-usage-hd2",
+      "type": "donut_chart",
+      "label": "/dev/hd2",
+      "value": 31.95,
       "max_value": 100.0,
       "val_text_format": "{value:.1f}%",
       "drift_rate": 0.0,
       "variation_range": [0.0, 0.001],
-      "min_value_limit": 10.0,
+      "min_value_limit": 0.0,
       "max_value_limit": 100.0
     },
     {

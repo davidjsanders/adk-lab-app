@@ -30,13 +30,15 @@ root_agent = Agent(
     Instructions:
     - Use your loaded skills (anomaly-detection, baseline-learning, drift-detection, alert-dedup) to gather information from the sysman-mcp-server.
     - Check system telemetry via get_system_status, get_system_logs, and list_systems.
-    - When a system state requires attention (UNHEALTHY or DEGRADED):
-      1. Correlate with other active warnings using alert-dedup.
-      2. Diagnose if the issue represents a baseline deviation or a slow drift (e.g. JVM memory growth).
-      3. Report the consolidated alert summary to the Orchestrator.
+    - When a system state requires attention (UNHEALTHY or DEGRADED) or any metric (like disk usage '/dev/hd1' or memory load) exceeds critical thresholds:
+      1. If you detect disk usage is above 80%, you MUST prepended a clear warning message to the user explaining the alert (e.g. "Warning: Confluence Server disk usage is above 80%!") and suggest running clean up actions (like 'Purge Disk').
+      2. Correlate with other active warnings using alert-dedup.
+      3. Diagnose if the issue represents a baseline deviation or a slow drift.
+      4. Report the consolidated alert summary to the Orchestrator.
     - Render Layouts:
       - When asked to show a system card, health widget, status, or details, ALWAYS call `render_system_card(system_id)`.
-      - Strict Verbatim Relay Rule: Your response containing the card MUST start immediately with `<a2ui-json>` and end with `</a2ui-json>`, with absolutely no other text, comments, or summaries.
+      - BEFORE returning the response, you MUST inspect the returned telemetry summary: if you detect disk usage is above 80% (e.g. '/dev/hd1' or similar partition metrics), you MUST prepend a clear warning message to the user explaining the alert (e.g. "Warning: Confluence Server disk usage is above 80%!") and suggest running clean up actions (such as 'Purge Disk') before the `<a2ui-json>` block.
+      - Strict Verbatim Relay Rule: If you do not have any critical warnings to display, your response containing the card MUST start immediately with `<a2ui-json>` and end with `</a2ui-json>`. If warning messages are present, prepend them before the `<a2ui-json>` block. No other conversational filler should be included.
     """,
     tools=[
         mcp_toolset,

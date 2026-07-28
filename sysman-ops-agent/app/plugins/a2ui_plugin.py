@@ -17,6 +17,7 @@ class A2UIPlugin(BasePlugin):
 
     def __init__(self, name: str = "a2ui_plugin") -> None:
         super().__init__(name=name)
+        self._pending_cards: dict[str, list[str]] = {}
 
     async def after_tool_callback(
         self,
@@ -37,21 +38,32 @@ class A2UIPlugin(BasePlugin):
         Returns:
             Sanitized or original result.
         """
+        session_id = getattr(tool_context, "session_id", "default")
         text = ""
+        is_dict_content = False
+        
         if isinstance(result, dict) and result.get("content") and isinstance(result["content"], list):
             first_item = result["content"][0]
             if isinstance(first_item, dict):
                 text = first_item.get("text", "")
+                is_dict_content = True
         else:
             text = str(result)
 
         if "<a2ui-json>" in text:
             # Tell ADK runner not to summarize the JSON component tree
             tool_context.actions.skip_summarization = True
-            match = re.search(r"<a2ui-json>(.*?)</a2ui-json>", text, re.DOTALL)
-            if match:
-                clean_output = match.group(1).strip()
-                return f"<a2ui-json>\n{clean_output}\n</a2ui-json>"
+            
+            # Find and extract the A2UI blocks to store them in pending queue
+            matches = re.findall(r"(<a2ui-json>.*?</a2ui-json>)", text, re.DOTALL)
+            if matches:
+                if session_id not in self._pending_cards:
+                    self._pending_cards[session_id] = []
+                self._pending_cards[session_id].extend(matches)
+                
+                # Strip the A2UI blocks from the text to return ONLY the plain text summary to the LLM
+                clean_text = re.sub(r"<a2ui-json>.*?</a2ui-json>", "", text, flags=re.DOTALL).strip()
+                return clean_text
 
         return result
 
@@ -62,12 +74,18 @@ class A2UIPlugin(BasePlugin):
         event: Event,
     ) -> Event | None:
         """Consolidates single or multiple A2UI cards into a unified multi-card surface."""
+        session_id = getattr(invocation_context, "session_id", "default")
+        
         if not event.content or not event.content.parts:
-            return event
+            # Even if there is no event content generated yet, if we have pending cards, we must inject them
+            if session_id in self._pending_cards and self._pending_cards[session_id]:
+                event.content = types.Content(role="model", parts=[])
+            else:
+                return event
 
         extracted_card_payloads: list[list[dict[str, Any]]] = []
 
-        # 1. Collect all A2UI payloads from all tool parts in this turn
+        # 1. Collect all A2UI payloads from event parts (if the agent generated any raw ones)
         for part in event.content.parts:
             text = self._extract_part_text(part)
             if not text:
@@ -81,7 +99,20 @@ class A2UIPlugin(BasePlugin):
                 except Exception as err:
                     logger.error("Error parsing A2UI JSON in on_event_callback: %s", err)
 
-        # 1b. Deduplicate identical card payloads
+        # 2. Append any pending cards stored during the tool execution in this session
+        if session_id in self._pending_cards:
+            for card_str in self._pending_cards[session_id]:
+                for match in re.finditer(r"<a2ui-json>(.*?)</a2ui-json>", card_str, re.DOTALL):
+                    try:
+                        ops = json.loads(match.group(1).strip())
+                        if isinstance(ops, list):
+                            extracted_card_payloads.append(ops)
+                    except Exception as err:
+                        logger.error("Error parsing stored A2UI JSON: %s", err)
+            # Clear pending cards for this session after consuming them
+            del self._pending_cards[session_id]
+
+        # 3. Deduplicate identical card payloads
         unique_payloads: list[list[dict[str, Any]]] = []
         seen_surfaces: set[str] = set()
 
@@ -105,11 +136,7 @@ class A2UIPlugin(BasePlugin):
         if not extracted_card_payloads:
             return event
 
-        # 2. Single Card Case: Relay directly as-is
-        if len(extracted_card_payloads) == 1:
-            return event
-
-        # 3. Multi-Card Case: Strip raw unmerged <a2ui-json> tags from parts
+        # 4. Strip raw unmerged <a2ui-json> tags from event parts
         for part in event.content.parts:
             if hasattr(part, "text") and part.text:
                 part.text = re.sub(r"<a2ui-json>.*?</a2ui-json>", "", part.text, flags=re.DOTALL).strip()
@@ -118,7 +145,14 @@ class A2UIPlugin(BasePlugin):
                 if isinstance(resp, dict) and "result" in resp and isinstance(resp["result"], str):
                     resp["result"] = re.sub(r"<a2ui-json>.*?</a2ui-json>", "", resp["result"], flags=re.DOTALL).strip()
 
-        # 3b. Merge all cards into a single Column container with scoped component IDs
+        # 5. Merge all cards into a single Column container or handle single card case
+        if len(extracted_card_payloads) == 1:
+            card_ops = extracted_card_payloads[0]
+            merged_str = f"<a2ui-json>\n{json.dumps(card_ops, indent=2)}\n</a2ui-json>"
+            event.content.parts.append(types.Part.from_text(text=merged_str))
+            return event
+
+        # Multi-Card Case: Merge all cards into a single Column container with scoped component IDs
         unified_components: list[dict[str, Any]] = []
         card_root_ids: list[str] = []
 
@@ -144,7 +178,7 @@ class A2UIPlugin(BasePlugin):
                     card_root_ids.append(card_root_id)
                     unified_components.extend(prefixed_comps)
 
-        # 4. Insert the parent Column layout holding all card roots
+        # Insert the parent Column layout holding all card roots
         unified_components.insert(
             0,
             {
@@ -164,7 +198,7 @@ class A2UIPlugin(BasePlugin):
             }
         )
 
-        # 5. Build the unified single-surface A2UI operation payload
+        # Build the unified single-surface A2UI operation payload
         unified_payload = [
             {
                 "beginRendering": {
@@ -204,4 +238,3 @@ class A2UIPlugin(BasePlugin):
                         return "\n".join(texts)
                 return json.dumps(resp)
         return ""
-

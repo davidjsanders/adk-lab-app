@@ -114,8 +114,9 @@ def test_mcp_server():
             "arguments": {"system_id": "jira-app-01"}
         }, msg_id=5)
         card_text = card_resp["result"]["content"][0]["text"]
-        print("Card response matches <a2ui-json> tag format:", card_text.startswith("<a2ui-json>"))
-        assert card_text.startswith("<a2ui-json>")
+        print("Card response contains <a2ui-json> tag format:", "<a2ui-json>" in card_text)
+        assert "System Status Summary for 'jira-app-01'" in card_text
+        assert "<a2ui-json>" in card_text
         assert "</a2ui-json>" in card_text
         assert "jira-app-01" in card_text
         
@@ -126,8 +127,9 @@ def test_mcp_server():
             "arguments": {"system_id": "confluence-app-01"}
         }, msg_id=6)
         logs_card_text = logs_card_resp["result"]["content"][0]["text"]
-        print("Logs Card response matches <a2ui-json> tag format:", logs_card_text.startswith("<a2ui-json>"))
-        assert logs_card_text.startswith("<a2ui-json>")
+        print("Logs Card response contains <a2ui-json> tag format:", "<a2ui-json>" in logs_card_text)
+        assert "Diagnostics Logs Summary for 'confluence-app-01'" in logs_card_text
+        assert "<a2ui-json>" in logs_card_text
         assert "</a2ui-json>" in logs_card_text
         assert "confluence-app-01" in logs_card_text
         assert "logs-card-root" in logs_card_text
