@@ -1,0 +1,115 @@
+{
+  "system_id": "confluence-app-01",
+  "type": "confluence",
+  "name": "Confluence System Host",
+  "status": "HEALTHY",
+  "default_icon": "article",
+  "metrics": [
+    {
+      "id": "ws-status",
+      "type": "status_pill",
+      "label": "Collaborative Edit WebSockets",
+      "value": 1.0,
+      "val_text_format": "CONNECTED",
+      "status_rules": [
+        {"operator": "==", "target": 0.0, "status": "critical", "val_text": "DISCONNECTED"},
+        {"operator": "==", "target": 1.0, "status": "healthy", "val_text": "CONNECTED"}
+      ]
+    },
+    {
+      "id": "disk-usage",
+      "type": "progress_bar",
+      "label": "Disk Usage",
+      "value": 48.5,
+      "max_value": 100.0,
+      "val_text_format": "{value:.1f}%",
+      "drift_rate": 0.0,
+      "variation_range": [0.0, 0.001],
+      "min_value_limit": 10.0,
+      "max_value_limit": 100.0
+    },
+    {
+      "id": "active-editors",
+      "type": "donut_chart",
+      "label": "Active Editors",
+      "value": 12.0,
+      "max_value": 50.0,
+      "val_text_format": "{value:.0f} users",
+      "variation_range": [-2.0, 2.0],
+      "min_value_limit": 0.0,
+      "max_value_limit": 50.0
+    },
+    {
+      "id": "jvm-memory",
+      "type": "progress_bar",
+      "label": "JVM Memory Heap",
+      "value": 65.4,
+      "max_value": 100.0,
+      "val_text_format": "{value:.1f}%",
+      "variation_range": [-1.0, 1.5],
+      "min_value_limit": 15.0,
+      "max_value_limit": 95.0
+    },
+    {
+      "id": "db-ping-latency",
+      "type": "range_gauge",
+      "label": "DB Connect Time",
+      "value": 45.0,
+      "max_value": 200.0,
+      "yellow_threshold": 80.0,
+      "red_threshold": 150.0,
+      "val_text_format": "{value:.1f} ms",
+      "variation_range": [-5.0, 5.0],
+      "min_value_limit": 10.0,
+      "max_value_limit": 200.0
+    },
+    {
+      "id": "index-queue",
+      "type": "number",
+      "label": "Search Index Queue",
+      "value": 0.0,
+      "val_text_format": "{value:.0f} entries",
+      "variation_range": [0.0, 5.0],
+      "min_value_limit": 0.0,
+      "max_value_limit": 100.0
+    }
+  ],
+  "actions": [
+    {
+      "id": "btn-drop-ws",
+      "label": "Drop WebSockets",
+      "command": "DROP_WEBSOCKETS",
+      "color": "#EF4444",
+      "effects": {
+        "metrics": {
+          "ws-status": {"set": 0.0}
+        },
+        "log": {"message": "Websocket connection aborted (Error 1006 Connection Drop).", "level": "ERROR"}
+      }
+    },
+    {
+      "id": "btn-reconnect-ws",
+      "label": "Reconnect WebSockets",
+      "command": "RECONNECT_WEBSOCKETS",
+      "color": "#22C55E",
+      "effects": {
+        "metrics": {
+          "ws-status": {"set": 1.0}
+        },
+        "log": {"message": "Synchronizer websocket manually re-established.", "level": "INFO"}
+      }
+    },
+    {
+      "id": "btn-purge",
+      "label": "Purge Disk",
+      "command": "PURGE_ATTACHMENTS",
+      "color": "#EAB308",
+      "effects": {
+        "metrics": {
+          "disk-usage": {"set": 25.0}
+        },
+        "log": {"message": "Manual attachments cleanup completed. Disk space freed.", "level": "INFO"}
+      }
+    }
+  ]
+}

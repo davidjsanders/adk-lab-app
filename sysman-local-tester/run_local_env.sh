@@ -8,7 +8,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # Global ports
-EMULATOR_PORT=8085
+PORT_LINUX_EMULATOR=8081
+PORT_JIRA_EMULATOR=8082
+PORT_CONFLUENCE_EMULATOR=8083
 MCP_PORT=8005
 DETECTION_PORT=8006
 DIAGNOSIS_PORT=8007
@@ -26,32 +28,61 @@ export DETECTION_AGENT_URL="http://127.0.0.1:$DETECTION_PORT"
 export DIAGNOSIS_AGENT_URL="http://127.0.0.1:$DIAGNOSIS_PORT"
 
 # Clean up variables
-EMULATOR_PID=""
+LINUX_EMULATOR_PID=""
+JIRA_EMULATOR_PID=""
+CONFLUENCE_EMULATOR_PID=""
 MCP_PID=""
 DETECTION_PID=""
 DIAGNOSIS_PID=""
 
+# Helper to log to active terminal device directly, avoiding REPL swallow
+log_tty() {
+  if [ -c /dev/tty ]; then
+    echo -e "$1" > /dev/tty
+  else
+    echo -e "$1"
+  fi
+}
+
 cleanup() {
-  echo -e "\n=============================================="
-  echo "Shutting down background services..."
-  echo "=============================================="
+  log_tty "\n=============================================="
+  log_tty "Shutting down background services..."
+  log_tty "=============================================="
   
-  if [ -n "$EMULATOR_PID" ]; then
-    kill "$EMULATOR_PID" 2>/dev/null || true
+  if [ -n "$LINUX_EMULATOR_PID" ]; then
+    log_tty "Stopping Linux Emulator (PID: $LINUX_EMULATOR_PID)..."
+    kill "$LINUX_EMULATOR_PID" 2>/dev/null || true
+  fi
+  if [ -n "$JIRA_EMULATOR_PID" ]; then
+    log_tty "Stopping Jira Emulator (PID: $JIRA_EMULATOR_PID)..."
+    kill "$JIRA_EMULATOR_PID" 2>/dev/null || true
+  fi
+  if [ -n "$CONFLUENCE_EMULATOR_PID" ]; then
+    log_tty "Stopping Confluence Emulator (PID: $CONFLUENCE_EMULATOR_PID)..."
+    kill "$CONFLUENCE_EMULATOR_PID" 2>/dev/null || true
   fi
   if [ -n "$MCP_PID" ]; then
+    log_tty "Stopping MCP Server (PID: $MCP_PID)..."
     kill "$MCP_PID" 2>/dev/null || true
   fi
   if [ -n "$DETECTION_PID" ]; then
+    log_tty "Stopping Detection Agent (PID: $DETECTION_PID)..."
     kill "$DETECTION_PID" 2>/dev/null || true
   fi
   if [ -n "$DIAGNOSIS_PID" ]; then
+    log_tty "Stopping Diagnosis Agent (PID: $DIAGNOSIS_PID)..."
     kill "$DIAGNOSIS_PID" 2>/dev/null || true
   fi
 
+  log_tty "Cleaning up local port bindings (8081, 8082, 8083, 8005, 8006, 8007)..."
+  # Force kill anything remaining on local environment ports
+  fuser -k 8081/tcp 8082/tcp 8083/tcp 8005/tcp 8006/tcp 8007/tcp 2>/dev/null || true
+
   # Wait to allow clean shutdown
   sleep 1
-  echo "All services stopped."
+  log_tty "=============================================="
+  log_tty "All services successfully stopped."
+  log_tty "=============================================="
 }
 
 # Trap exits/interrupts
@@ -64,17 +95,25 @@ echo "=============================================="
 # Ensure logs directory exists
 mkdir -p "$WORKSPACE_DIR/logs"
 
-# 1. Start Emulator
-echo "Starting Emulator on port $EMULATOR_PORT..."
+# 1. Start Emulators
+echo "Starting Linux Emulator on port $PORT_LINUX_EMULATOR..."
 cd "$WORKSPACE_DIR/sysman-emulator"
-PORT=$EMULATOR_PORT CONTROL_PASSWORD="TestPass123!" .venv/bin/python app.py > "$WORKSPACE_DIR/logs/sysman-emulator.log" 2>&1 &
-EMULATOR_PID=$!
+PORT=$PORT_LINUX_EMULATOR EMULATOR_CONFIG_PATH="config/linux_config.json" CONTROL_PASSWORD="TestPass123!" .venv/bin/python app.py > "$WORKSPACE_DIR/logs/sysman-emulator-linux.log" 2>&1 &
+LINUX_EMULATOR_PID=$!
+
+echo "Starting Jira Emulator on port $PORT_JIRA_EMULATOR..."
+PORT=$PORT_JIRA_EMULATOR EMULATOR_CONFIG_PATH="config/jira_config.json" CONTROL_PASSWORD="TestPass123!" .venv/bin/python app.py > "$WORKSPACE_DIR/logs/sysman-emulator-jira.log" 2>&1 &
+JIRA_EMULATOR_PID=$!
+
+echo "Starting Confluence Emulator on port $PORT_CONFLUENCE_EMULATOR..."
+PORT=$PORT_CONFLUENCE_EMULATOR EMULATOR_CONFIG_PATH="config/confluence_config.json" CONTROL_PASSWORD="TestPass123!" .venv/bin/python app.py > "$WORKSPACE_DIR/logs/sysman-emulator-confluence.log" 2>&1 &
+CONFLUENCE_EMULATOR_PID=$!
 
 # 2. Start MCP Server
 echo "Starting MCP Server on port $MCP_PORT..."
 cd "$WORKSPACE_DIR/sysman-mcp-server"
 PORT=$MCP_PORT \
-EMULATOR_URL="http://127.0.0.1:$EMULATOR_PORT" \
+SYSTEM_EMULATORS='{"linux-server-01": "http://127.0.0.1:8081", "jira-app-01": "http://127.0.0.1:8082", "confluence-app-01": "http://127.0.0.1:8083"}' \
 CONTROL_PASSWORD="TestPass123!" \
 CONTROL_HEADER="X-Control-Password" \
 .venv/bin/python server.py > "$WORKSPACE_DIR/logs/sysman-mcp.log" 2>&1 &

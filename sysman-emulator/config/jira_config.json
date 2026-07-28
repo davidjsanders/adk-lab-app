@@ -1,0 +1,131 @@
+{
+  "system_id": "jira-app-01",
+  "type": "jira",
+  "name": "Jira System Host",
+  "status": "HEALTHY",
+  "default_icon": "confirmation_number",
+  "metrics": [
+    {
+      "id": "jvm-heap",
+      "type": "donut_chart",
+      "label": "JVM Heap",
+      "value": 28.2,
+      "max_value": 100.0,
+      "val_text_format": "{value:.1f}%",
+      "drift_rate": 0.0,
+      "variation_range": [-1.0, 1.0],
+      "min_value_limit": 10.0,
+      "max_value_limit": 98.0
+    },
+    {
+      "id": "db-connections",
+      "type": "progress_bar",
+      "label": "JDBC DB Connections",
+      "value": 8.0,
+      "max_value": 50.0,
+      "val_text_format": "{value:.0f} / {max_value:.0f}",
+      "variation_range": [-1.0, 1.0],
+      "min_value_limit": 2.0,
+      "max_value_limit": 50.0
+    },
+    {
+      "id": "request-latency",
+      "type": "range_gauge",
+      "label": "Request Latency",
+      "value": 120.0,
+      "max_value": 300.0,
+      "yellow_threshold": 150.0,
+      "red_threshold": 250.0,
+      "val_text_format": "{value:.1f} ms",
+      "variation_range": [-3.0, 3.0],
+      "min_value_limit": 60.0,
+      "max_value_limit": 300.0
+    },
+    {
+      "id": "error-rate",
+      "type": "status_pill",
+      "label": "5xx Error Rate",
+      "value": 0.04,
+      "val_text_format": "{value:.2f}%",
+      "variation_range": [-0.01, 0.01],
+      "min_value_limit": 0.0,
+      "max_value_limit": 10.0,
+      "status_rules": [
+        {"operator": ">=", "target": 5.0, "status": "critical"},
+        {"operator": ">=", "target": 1.0, "status": "warning"}
+      ]
+    },
+    {
+      "id": "web-sessions",
+      "type": "progress_bar",
+      "label": "Active Web Sessions",
+      "value": 124.0,
+      "max_value": 500.0,
+      "val_text_format": "{value:.0f} / {max_value:.0f}",
+      "variation_range": [-5.0, 5.0],
+      "min_value_limit": 10.0,
+      "max_value_limit": 500.0
+    },
+    {
+      "id": "index-progress",
+      "type": "donut_chart",
+      "label": "Indexing Progress",
+      "value": 92.5,
+      "max_value": 100.0,
+      "val_text_format": "{value:.1f}%",
+      "variation_range": [0.01, 0.05],
+      "min_value_limit": 0.0,
+      "max_value_limit": 100.0
+    },
+    {
+      "id": "db-latency",
+      "type": "range_gauge",
+      "label": "Avg DB Latency",
+      "value": 4.2,
+      "max_value": 50.0,
+      "yellow_threshold": 15.0,
+      "red_threshold": 30.0,
+      "val_text_format": "{value:.1f} ms",
+      "variation_range": [-0.2, 0.3],
+      "min_value_limit": 0.5,
+      "max_value_limit": 50.0
+    },
+    {
+      "id": "gc-overhead",
+      "type": "number",
+      "label": "GC Overhead",
+      "value": 0.12,
+      "val_text_format": "{value:.2f}% CPU",
+      "variation_range": [-0.01, 0.02],
+      "min_value_limit": 0.0,
+      "max_value_limit": 10.0
+    }
+  ],
+  "actions": [
+    {
+      "id": "btn-gc",
+      "label": "Run GC",
+      "command": "GC_CLEANUP",
+      "color": "#38BDF8",
+      "effects": {
+        "metrics": {
+          "jvm-heap": {"set": 15.0, "drift_rate": 0.0}
+        },
+        "log": {"message": "JVM Garbage Collection manual cleanup completed.", "level": "INFO"}
+      }
+    },
+    {
+      "id": "btn-restart",
+      "label": "Restart Jira",
+      "command": "RESTART_JIRA",
+      "color": "#EF4444",
+      "effects": {
+        "set_status": "REBOOTING",
+        "metrics": {
+          "jvm-heap": {"set": 15.0}
+        },
+        "log": {"message": "Triggered system reboot for Jira app server.", "level": "WARN"}
+      }
+    }
+  ]
+}

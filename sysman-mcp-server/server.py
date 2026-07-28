@@ -28,6 +28,27 @@ CONTROL_HEADER = os.getenv("CONTROL_HEADER", "X-Control-Password")
 CONTROL_PASSWORD = os.getenv("CONTROL_PASSWORD", "SysManSecretPass123!")
 
 
+def get_emulator_urls_map() -> Dict[str, str]:
+    """Parses SYSTEM_EMULATORS environment variable mapping system IDs to URLs."""
+    import json
+    val = os.getenv("SYSTEM_EMULATORS", "").strip()
+    if not val:
+        return {}
+    try:
+        return json.loads(val)
+    except Exception as err:
+        logger.error(f"Failed parsing SYSTEM_EMULATORS JSON config: {err}")
+        return {}
+
+
+def get_url_for_system(system_id: str) -> str:
+    """Resolves target emulator base URL for a given system ID."""
+    emulators = get_emulator_urls_map()
+    if system_id in emulators:
+        return emulators[system_id].rstrip("/")
+    return EMULATOR_URL
+
+
 def get_headers() -> Dict[str, str]:
     """Helper to compile headers for emulator request authentication.
 
@@ -50,15 +71,42 @@ def list_systems() -> List[Dict[str, Any]]:
     Raises:
         RuntimeError: If communicating with the emulator service fails.
     """
-    url = f"{EMULATOR_URL}/api/status"
-    try:
-        resp = requests.get(url, timeout=5)
-        resp.raise_for_status()
-        data = resp.json()
-        return data.get("systems", [])
-    except Exception as err:
-        logger.error(f"Failed querying active systems list: {err}")
-        raise RuntimeError(f"Failed querying active systems from emulator at {url}: {err}")
+    emulators = get_emulator_urls_map()
+    if not emulators:
+        # Fallback to single emulator status endpoint
+        url = f"{EMULATOR_URL}/api/status"
+        try:
+            resp = requests.get(url, timeout=5)
+            resp.raise_for_status()
+            data = resp.json()
+            return data.get("systems", [])
+        except Exception as err:
+            logger.error(f"Failed querying active systems list: {err}")
+            raise RuntimeError(f"Failed querying active systems from emulator at {url}: {err}")
+
+    # Query from multiple emulators in configuration map
+    all_systems = []
+    for sys_id, base_url in emulators.items():
+        url = f"{base_url}/api/status"
+        try:
+            resp = requests.get(url, params={"system_id": sys_id}, timeout=3)
+            if resp.status_code == 200:
+                sys_data = resp.json()
+                all_systems.append({
+                    "id": sys_data.get("system_id", sys_id),
+                    "name": sys_data.get("name", sys_id),
+                    "type": sys_data.get("type", "linux"),
+                    "status": sys_data.get("status", "UNKNOWN")
+                })
+        except Exception as err:
+            logger.warning(f"Failed querying emulator at {url} for system {sys_id}: {err}")
+            all_systems.append({
+                "id": sys_id,
+                "name": sys_id,
+                "type": "unknown",
+                "status": "UNKNOWN"
+            })
+    return all_systems
 
 
 @mcp.tool()
@@ -74,7 +122,8 @@ def get_system_status(system_id: str) -> Dict[str, Any]:
     Raises:
         RuntimeError: If status query fails.
     """
-    url = f"{EMULATOR_URL}/api/status"
+    base_url = get_url_for_system(system_id)
+    url = f"{base_url}/api/status"
     try:
         resp = requests.get(url, params={"system_id": system_id}, timeout=5)
         resp.raise_for_status()
@@ -102,7 +151,8 @@ def execute_system_command(system_id: str, command: str) -> Dict[str, Any]:
     Raises:
         RuntimeError: If command execution request fails.
     """
-    url = f"{EMULATOR_URL}/api/command"
+    base_url = get_url_for_system(system_id)
+    url = f"{base_url}/api/command"
     payload = {
         "system_id": system_id,
         "command": command
@@ -131,7 +181,8 @@ def get_system_logs(system_id: str, limit: int = 15) -> List[Dict[str, Any]]:
     Raises:
         RuntimeError: If log query fails.
     """
-    url = f"{EMULATOR_URL}/api/logs"
+    base_url = get_url_for_system(system_id)
+    url = f"{base_url}/api/logs"
     try:
         resp = requests.get(url, params={"system_id": system_id, "limit": limit}, timeout=5)
         resp.raise_for_status()
@@ -281,6 +332,93 @@ def _generate_status_pill(label: str, val_text: str, status: str) -> str:
     return f"data:image/svg+xml;base64,{encoded}"
 
 
+MATERIAL_ICONS = {
+    "dns": "M20,13H4C2.9,13,2,13.9,2,15v4c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2v-4C22,13.9,21.1,13,20,13z M20,19H4v-4h16V19z M20,3H4 C2.9,3,2,3.9,2,5v4c0,1.1,0.9,2,2,2h16c1.1,0,2-0.9,2-2V5C22,3.9,21.1,3,20,3z M20,9H4V5h16V9z",
+    "business_center": "M20 7h-4V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zM10 5h4v2h-4V5zm10 14H4V9h16v10z",
+    "article": "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-4-4H9v-2h6v2zm-2-4H9V9h4v2z",
+    "confirmation_number": "M22 10V6c0-1.11-.9-2-2-2H4c-1.1 0-1.99.89-1.99 2v4c1.1 0 1.99.9 1.99 2s-.89 2-2 2v4c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-4c-1.1 0-2-.9-2-2s.9-2 2-2zm-9 7.5h-2v-2h2v2zm0-4.5h-2v-2h2v2zm0-4.5h-2v-2h2v2z",
+    "computer": "M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"
+}
+
+
+def _generate_material_icon_svg(icon_name: str, fill_color: str = "#38BDF8") -> str:
+    """Generates a Base64-encoded Data URI for a Google Material Design Icon SVG path.
+
+    Args:
+        icon_name: Name of the Google Font icon (e.g. 'dns', 'business_center', 'article').
+        fill_color: Hex color string.
+
+    Returns:
+        Data URI string formatted as data:image/svg+xml;base64,...
+    """
+    import base64
+    path_d = MATERIAL_ICONS.get(icon_name, MATERIAL_ICONS["business_center"])
+    svg = f"""<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="{path_d}" fill="{fill_color}" />
+</svg>"""
+    encoded = base64.b64encode(svg.encode("utf-8")).decode("utf-8")
+    return f"data:image/svg+xml;base64,{encoded}"
+
+
+def _generate_number_widget(label: str, val_text: str) -> str:
+    """Generates a Base64-encoded SVG card showing a prominent numeric value/text.
+
+    Args:
+        label: Description header of the numeric metric.
+        val_text: Display string of the numeric value (e.g. "5 entries", "12 users").
+
+    Returns:
+        Data URI string formatted as data:image/svg+xml;base64,...
+    """
+    import base64
+    label_len = len(label)
+    font_size = 4.0 if label_len > 24 else (5.0 if label_len > 18 else 6.0)
+
+    val_len = len(val_text)
+    val_font_size = 8.0 if val_len > 12 else (10.0 if val_len > 8 else 12.0)
+
+    svg = f"""<svg width="100%" height="100%" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <rect x="2" y="2" width="76" height="76" rx="8" fill="#111827" stroke="#374151" stroke-width="1" />
+  <text x="40" y="20" font-family="sans-serif" font-size="{font_size}" fill="#94A3B8" text-anchor="middle" font-weight="bold">{label}</text>
+  <text x="40" y="52" font-family="sans-serif" font-size="{val_font_size}" fill="#38BDF8" text-anchor="middle" font-weight="bold">{val_text}</text>
+</svg>"""
+    encoded = base64.b64encode(svg.encode("utf-8")).decode("utf-8")
+    return f"data:image/svg+xml;base64,{encoded}"
+
+
+def _generate_traffic_light_svg(status: str) -> str:
+    """Generates a Base64-encoded Data URI for a dynamic traffic light SVG.
+
+    Args:
+        status: The system health status string.
+
+    Returns:
+        Data URI string formatted as data:image/svg+xml;base64,...
+    """
+    import base64
+    # Default dull colors
+    red_color = "#7F1D1D"     # Saturated dull red
+    amber_color = "#78350F"   # Saturated dull amber
+    green_color = "#064E3B"   # Saturated dull green
+
+    # Active bright colors
+    if status == "HEALTHY":
+        green_color = "#00FF66"  # Brighter electric green
+    elif status == "DEGRADED":
+        amber_color = "#F59E0B"
+    else:  # UNHEALTHY, REBOOTING, etc.
+        red_color = "#EF4444"
+
+    svg = f"""<svg width="14" height="36" viewBox="0 0 14 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1" y="1" width="12" height="34" rx="3" fill="#111827" stroke="#374151" stroke-width="1"/>
+  <circle cx="7" cy="7" r="3.2" fill="{red_color}"/>
+  <circle cx="7" cy="18" r="3.2" fill="{amber_color}"/>
+  <circle cx="7" cy="29" r="3.2" fill="{green_color}"/>
+</svg>"""
+    encoded = base64.b64encode(svg.encode("utf-8")).decode("utf-8")
+    return f"data:image/svg+xml;base64,{encoded}"
+
+
 def _build_card_components(system_id: str, surface_id: str) -> list:
     """Compiles the full list of layout and telemetry components for the card.
 
@@ -299,6 +437,7 @@ def _build_card_components(system_id: str, surface_id: str) -> list:
     name = sys.get("name", system_id)
     status = sys.get("status", "UNKNOWN")
     uptime = sys.get("uptime_seconds", 0)
+    icon_name = sys.get("default_icon", "business_center")
 
     # Format Uptime
     d = uptime // 86400
@@ -309,24 +448,20 @@ def _build_card_components(system_id: str, surface_id: str) -> list:
 
     # Resolve status colors
     status_color = "#22C55E"
-    status_icon = "🟢"
     if status == "DEGRADED":
         status_color = "#F59E0B"
-        status_icon = "🟠"
     elif status in ("UNHEALTHY", "REBOOTING", "UNKNOWN"):
         status_color = "#EF4444"
-        status_icon = "🔴"
 
-    header_icons = {
-        "jira": "💼",
-        "confluence": "💼",
-        "linux": "💻"
-    }
     type_labels = {
         "jira": "JIRA APP",
         "confluence": "CONFLUENCE APP",
         "linux": "LINUX VM"
     }
+
+    # Generate the header vector icon Base64 URI
+    header_icon_uri = _generate_material_icon_svg(icon_name, "#38BDF8")
+    traffic_light_uri = _generate_traffic_light_svg(status)
 
     # 2. Base layout structures (no tab container!)
     components = [
@@ -373,7 +508,7 @@ def _build_card_components(system_id: str, surface_id: str) -> list:
             "component": {
                 "Row": {
                     "children": {
-                        "explicitList": ["header-icon", "header-text", "header-status-badge"]
+                        "explicitList": ["header-icon", "header-text", "header-status-group"]
                     },
                     "justify": "spaceBetween",
                     "align": "center"
@@ -383,10 +518,14 @@ def _build_card_components(system_id: str, surface_id: str) -> list:
         {
             "id": "header-icon",
             "component": {
-                "Text": {
-                    "text": {"literalString": header_icons.get(sys_type, "💼")},
-                    "usageHint": "h2"
+                "Image": {
+                    "url": {"literalString": header_icon_uri},
+                    "fit": "contain"
                 }
+            },
+            "style": {
+                "width": "28px",
+                "height": "28px"
             }
         },
         {
@@ -421,13 +560,45 @@ def _build_card_components(system_id: str, surface_id: str) -> list:
             }
         },
         {
-            "id": "header-status-badge",
+            "id": "header-status-group",
+            "component": {
+                "Row": {
+                    "children": {
+                        "explicitList": ["header-status-light", "header-status-text"]
+                    },
+                    "align": "center"
+                }
+            },
+            "style": {
+                "gap": "6px",
+                "width": "110px",
+                "flexShrink": 0
+            }
+        },
+        {
+            "id": "header-status-light",
+            "component": {
+                "Image": {
+                    "url": {"literalString": traffic_light_uri},
+                    "fit": "contain"
+                }
+            },
+            "style": {
+                "width": "14px",
+                "height": "36px"
+            }
+        },
+        {
+            "id": "header-status-text",
             "component": {
                 "Text": {
-                    "text": {"literalString": f"{status_icon} {status}"},
-                    "usageHint": "body",
-                    "style": {"color": status_color, "fontWeight": "700"}
+                    "text": {"literalString": status},
+                    "usageHint": "body1"
                 }
+            },
+            "style": {
+                "color": status_color,
+                "fontWeight": "bold"
             }
         },
         {
@@ -540,6 +711,14 @@ def _build_card_components(system_id: str, surface_id: str) -> list:
         elif m_type == "status_pill":
             status = m_spec.get("status", "healthy")
             svg_data_uri = _generate_status_pill(label, val_text, status)
+            components.append({
+                "id": m_id,
+                "component": {"Image": {"url": {"literalString": svg_data_uri}, "fit": "contain"}}
+            })
+            metrics_children_ids.append(m_id)
+
+        elif m_type == "number":
+            svg_data_uri = _generate_number_widget(label, val_text)
             components.append({
                 "id": m_id,
                 "component": {"Image": {"url": {"literalString": svg_data_uri}, "fit": "contain"}}
