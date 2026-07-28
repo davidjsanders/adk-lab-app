@@ -458,4 +458,4 @@ def health_check() -> Tuple[Response, int]:
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8081"))
     debug_mode = os.getenv("DEBUG", "False").lower() in ("true", "1", "yes")
-    app.run(host="127.0.0.1", port=port, debug=debug_mode)
+    app.run(host="0.0.0.0", port=port, debug=debug_mode)

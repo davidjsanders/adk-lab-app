@@ -56,16 +56,41 @@ class EmulatorClient:
         """
         return self.emulators_map.get(system_id, self.emulator_url)
 
-    def _get_headers(self) -> Dict[str, str]:
-        """Compiles headers for emulator request authentication.
+    def _get_google_id_token(self, audience: str) -> Optional[str]:
+        """Fetches a Google Cloud ID token for the specified audience."""
+        try:
+            import google.auth
+            import google.auth.transport.requests
+            from google.oauth2 import id_token
+
+            credentials, project = google.auth.default()
+            auth_req = google.auth.transport.requests.Request()
+            return id_token.fetch_id_token(auth_req, audience)
+        except Exception as err:
+            logger.warning("Failed fetching Google ID token for audience '%s': %s", audience, err)
+            return None
+
+    def _get_headers(self, target_url: str) -> Dict[str, str]:
+        """Compiles headers for emulator request authentication, attaching ID tokens if cloud deployed.
+
+        Args:
+            target_url: The destination request endpoint URL.
 
         Returns:
-            Dictionary of headers containing control authorization tokens.
+            Dictionary of headers containing control and authentication tokens.
         """
-        return {
+        headers = {
             "Content-Type": "application/json",
             self.control_header: self.control_password,
         }
+        if ".run.app" in target_url:
+            from urllib.parse import urlparse
+            parsed = urlparse(target_url)
+            audience = f"{parsed.scheme}://{parsed.netloc}"
+            token = self._get_google_id_token(audience)
+            if token:
+                headers["Authorization"] = f"Bearer {token}"
+        return headers
 
     def list_systems(self) -> List[SystemMetadata]:
         """Lists all registered virtual systems in the fleet.
@@ -80,7 +105,8 @@ class EmulatorClient:
             # Fallback to single default emulator status endpoint
             url = f"{self.emulator_url}/api/status"
             try:
-                resp = requests.get(url, timeout=5)
+                headers = self._get_headers(url)
+                resp = requests.get(url, headers=headers, timeout=5)
                 resp.raise_for_status()
                 data = resp.json()
                 systems = data.get("systems", [])
@@ -104,7 +130,8 @@ class EmulatorClient:
         for sys_id, base_url in self.emulators_map.items():
             url = f"{base_url}/api/status"
             try:
-                resp = requests.get(url, params={"system_id": sys_id}, timeout=3)
+                headers = self._get_headers(url)
+                resp = requests.get(url, headers=headers, params={"system_id": sys_id}, timeout=3)
                 if resp.status_code == 200:
                     sys_data = resp.json()
                     all_systems.append(
@@ -142,7 +169,8 @@ class EmulatorClient:
         base_url = self._get_url_for_system(system_id)
         url = f"{base_url}/api/status"
         try:
-            resp = requests.get(url, params={"system_id": system_id}, timeout=5)
+            headers = self._get_headers(url)
+            resp = requests.get(url, headers=headers, params={"system_id": system_id}, timeout=5)
             resp.raise_for_status()
             data = resp.json()
             return SystemStatus.model_validate(data)
@@ -167,7 +195,7 @@ class EmulatorClient:
         url = f"{base_url}/api/command"
         payload = {"system_id": system_id, "command": command}
         try:
-            headers = self._get_headers()
+            headers = self._get_headers(url)
             resp = requests.post(url, headers=headers, json=payload, timeout=10)
             resp.raise_for_status()
             return resp.json()
@@ -193,7 +221,8 @@ class EmulatorClient:
         base_url = self._get_url_for_system(system_id)
         url = f"{base_url}/api/logs"
         try:
-            resp = requests.get(url, params={"system_id": system_id, "limit": limit}, timeout=5)
+            headers = self._get_headers(url)
+            resp = requests.get(url, headers=headers, params={"system_id": system_id, "limit": limit}, timeout=5)
             resp.raise_for_status()
             data = resp.json()
             raw_logs = data.get("logs", [])

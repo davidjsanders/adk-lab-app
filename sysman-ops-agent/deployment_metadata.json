@@ -1,0 +1,5 @@
+{
+  "remote_agent_runtime_id": "https://sysman-ops-agent-cta6n7hkya-uc.a.run.app",
+  "deployment_target": "cloud_run",
+  "deployment_timestamp": "2026-07-28T21:13:32Z"
+}

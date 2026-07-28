@@ -1,59 +1,72 @@
 #!/usr/bin/env bash
-# Production deployment script for SysMan MCP Server to Cloud Run from container image.
-# Enforces IAM protection (--no-allow-unauthenticated).
+set -euo pipefail
 
-set -eo pipefail
+# Configuration
+PROJECT_ID="${1:-$(gcloud config get-value project 2>/dev/null || echo "agentspace-argolis-demo")}"
+REGION="us-central1"
+SA_NAME="sysman-ops-sa"
+SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+REGISTRY="us-central1-docker.pkg.dev/${PROJECT_ID}/docker-registry"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+echo "========================================================================="
+echo "Deploying SysMan MCP Server to Cloud Run"
+echo "Project: ${PROJECT_ID} | Region: ${REGION}"
+echo "========================================================================="
 
-if [[ -f ".env" ]]; then
-    set -o allexport
-    source .env
-    set +o allexport
+# 1. Resolve Emulator URLs
+echo "Resolving emulator service URLs..."
+URL_LINUX=$(gcloud run services describe sysman-emulator-linux --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)" 2>/dev/null || echo "")
+URL_JIRA=$(gcloud run services describe sysman-emulator-jira --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)" 2>/dev/null || echo "")
+URL_CONFLUENCE=$(gcloud run services describe sysman-emulator-confluence --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)" 2>/dev/null || echo "")
+
+if [ -z "${URL_LINUX}" ] || [ -z "${URL_JIRA}" ] || [ -z "${URL_CONFLUENCE}" ]; then
+  echo "Error: Emulators (sysman-emulator-linux, sysman-emulator-jira, sysman-emulator-confluence) are not deployed yet."
+  echo "Please deploy them first before deploying the MCP server."
+  exit 1
 fi
 
-PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || echo "agentspace-argolis-demo")}"
-SERVICE_NAME="${SERVICE_NAME:-sysman-mcp-server}"
-REGION="${REGION:-us-central1}"
-REGISTRY_BASE="${REGISTRY_BASE:-us-central1-docker.pkg.dev/agentspace-argolis-demo/docker-registry}"
-IMAGE_TAG="${IMAGE_TAG:-latest}"
-IMAGE_URI="${REGISTRY_BASE}/${SERVICE_NAME}:${IMAGE_TAG}"
+# 2. Build and push image
+echo "Building and pushing MCP container image..."
+gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+MCP_IMAGE="${REGISTRY}/sysman-mcp-server:latest"
+docker build -t "${MCP_IMAGE}" .
+docker push "${MCP_IMAGE}"
 
-EMULATOR_URL="${EMULATOR_URL:-https://sysman-emulator-63466983700.us-central1.run.app}"
-CONTROL_PASSWORD="${CONTROL_PASSWORD:-SysManSecretPass123!}"
-CONTROL_HEADER="${CONTROL_HEADER:-X-Control-Password}"
+# 3. Create env.yaml config
+echo "Creating env.yaml..."
+cat <<EOF > env.yaml
+SYSTEM_EMULATORS: '{"linux-server-01":"${URL_LINUX}","jira-app-01":"${URL_JIRA}","confluence-app-01":"${URL_CONFLUENCE}"}'
+CONTROL_PASSWORD: "TestPass123!"
+CONTROL_HEADER: "X-Control-Password"
+EOF
 
-echo "=========================================================="
-echo " Deploying SysMan MCP Server to Cloud Run"
-echo " Service Name:     $SERVICE_NAME"
-echo " Project ID:       $PROJECT_ID"
-echo " Region:           $REGION"
-echo " Registry Image:   $IMAGE_URI"
-echo " Access Security:  IAM Protected (--no-allow-unauthenticated)"
-echo "=========================================================="
+# 4. Deploy to Cloud Run
+echo "Deploying sysman-mcp-server to Cloud Run..."
+gcloud run deploy sysman-mcp-server \
+  --project="${PROJECT_ID}" \
+  --region="${REGION}" \
+  --image="${MCP_IMAGE}" \
+  --service-account="${SA_EMAIL}" \
+  --no-allow-unauthenticated \
+  --memory="2Gi" \
+  --cpu="1" \
+  --min-instances=1 \
+  --env-vars-file="env.yaml"
 
-REGISTRY_HOST="$(echo "$REGISTRY_BASE" | cut -d'/' -f1)"
-gcloud auth configure-docker "$REGISTRY_HOST" --quiet || true
+URL_MCP=$(gcloud run services describe sysman-mcp-server --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)")
 
-echo "--> Step 1: Building container image..."
-docker build --platform linux/amd64 -t "$IMAGE_URI" -f Dockerfile .
+# 5. Grant invoker permissions on emulators to MCP server identity
+echo "Assigning Invoker roles to service account on emulators..."
+for svc in sysman-emulator-linux sysman-emulator-jira sysman-emulator-confluence; do
+  gcloud run services add-iam-policy-binding "${svc}" \
+    --project="${PROJECT_ID}" \
+    --region="${REGION}" \
+    --member="serviceAccount:${SA_EMAIL}" \
+    --role="roles/run.invoker" \
+    --quiet || true
+done
 
-echo "--> Step 2: Pushing image to registry '$IMAGE_URI'..."
-docker push "$IMAGE_URI"
-
-echo "--> Step 3: Deploying container image to Cloud Run..."
-gcloud run deploy "$SERVICE_NAME" \
-    --image "$IMAGE_URI" \
-    --project "$PROJECT_ID" \
-    --region "$REGION" \
-    --concurrency 80 \
-    --timeout 300 \
-    --no-allow-unauthenticated \
-    --set-env-vars "EMULATOR_URL=$EMULATOR_URL,CONTROL_PASSWORD=$CONTROL_PASSWORD,CONTROL_HEADER=$CONTROL_HEADER"
-
-echo "=========================================================="
-SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)' 2>/dev/null || echo "Unknown")
-echo " SysMan MCP Server Deployment Completed!"
-echo " Service URL: $SERVICE_URL"
-echo "=========================================================="
+echo "========================================================================="
+echo "MCP Server Deployed Successfully!"
+echo "MCP Server URL: ${URL_MCP}"
+echo "========================================================================="

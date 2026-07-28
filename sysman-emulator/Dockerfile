@@ -7,7 +7,7 @@ WORKDIR /app
 COPY requirements.txt .
 
 # Install dependencies globally or into a wheelhouse
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # --- Final Runner Stage ---
 FROM python:3.12.3-slim AS runner
@@ -18,14 +18,14 @@ WORKDIR /app
 RUN pip install --no-cache-dir gunicorn
 
 # Copy installed libraries from builder stage
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application source
 COPY . .
 
 # Setup non-root execution for security hardening
-RUN useradd -u 8888 appuser && chown -R appuser:appuser /app
+RUN useradd -m -u 8888 appuser && chown -R appuser:appuser /app
 USER appuser
 
 # Honor dynamic port binding specified in Cloud Run $PORT

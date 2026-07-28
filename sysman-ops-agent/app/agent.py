@@ -115,6 +115,6 @@ root_agent = Agent(
 
 app = App(
     root_agent=root_agent,
-    name="sysman-ops-agent",
+    name="app",
     plugins=[a2ui_plugin],
 )

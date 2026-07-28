@@ -1,65 +1,108 @@
 #!/usr/bin/env bash
-# Production deployment script for SysMan Operations Agent to Cloud Run.
-# Enforces IAM protection (--no-allow-unauthenticated).
+set -euo pipefail
 
-set -eo pipefail
+# Configuration
+PROJECT_ID="${1:-$(gcloud config get-value project 2>/dev/null || echo "agentspace-argolis-demo")}"
+ACTION="${2:-deploy}" # "deploy" or "publish"
+REGION="us-central1"
+SA_NAME="sysman-ops-sa"
+SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+REGISTRY="us-central1-docker.pkg.dev/${PROJECT_ID}/docker-registry"
+PROJECT_NUMBER=$(gcloud projects describe "${PROJECT_ID}" --format="value(projectNumber)")
+ACTIVE_USER=$(gcloud config get-value account 2>/dev/null || echo "")
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+FAST_MODEL="gemini-3-flash-preview"
+PRO_MODEL="gemini-3.1-pro-preview"
 
-if [[ -f ".env" ]]; then
-    set -o allexport
-    source .env
-    set +o allexport
+echo "========================================================================="
+echo "SysMan Ops Agent Action: ${ACTION} | Project: ${PROJECT_ID}"
+echo "========================================================================="
+
+if [ "${ACTION}" = "deploy" ]; then
+  # 1. Resolve downstream agent URLs
+  echo "Resolving downstream agent URLs..."
+  URL_DETECTION=$(gcloud run services describe sysman-detection-agent --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)" 2>/dev/null || echo "")
+  URL_DIAGNOSIS=$(gcloud run services describe sysman-diagnosis-agent --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)" 2>/dev/null || echo "")
+
+  if [ -z "${URL_DETECTION}" ] || [ -z "${URL_DIAGNOSIS}" ]; then
+    echo "Error: Downstream agents (sysman-detection-agent and/or sysman-diagnosis-agent) are not deployed yet."
+    echo "Please deploy them first before deploying the orchestrator."
+    exit 1
+  fi
+
+  # 2. Deploy to Cloud Run using agents-cli
+  echo "Deploying sysman-ops-agent using agents-cli..."
+  agents-cli deploy \
+    --project="${PROJECT_ID}" \
+    --region="${REGION}" \
+    --service-account="${SA_EMAIL}" \
+    --memory="2Gi" \
+    --cpu="2" \
+    --min-instances=1 \
+    --no-confirm-project \
+    --update-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},GOOGLE_GENAI_USE_VERTEXAI=True,DETECTION_AGENT_URL=${URL_DETECTION},DIAGNOSIS_AGENT_URL=${URL_DIAGNOSIS},FAST_MODEL=${FAST_MODEL},PRO_MODEL=${PRO_MODEL}"
 fi
 
-PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || echo "agentspace-argolis-demo")}"
-SERVICE_NAME="${SERVICE_NAME:-sysman-ops-agent}"
-REGION="${REGION:-us-central1}"
-REGISTRY_BASE="${REGISTRY_BASE:-us-central1-docker.pkg.dev/agentspace-argolis-demo/docker-registry}"
-IMAGE_TAG="${IMAGE_TAG:-latest}"
-IMAGE_URI="${REGISTRY_BASE}/${SERVICE_NAME}:${IMAGE_TAG}"
+# Resolve URL_OPS
+URL_OPS=$(gcloud run services describe sysman-ops-agent --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)")
 
-MCP_SERVER_URL="${MCP_SERVER_URL:-https://sysman-mcp-server-63466983700.us-central1.run.app}"
-FAST_MODEL="${FAST_MODEL:-gemini-3-flash-preview}"
-PRO_MODEL="${PRO_MODEL:-gemini-3.1-pro-preview}"
-DETECTION_SKILLS="${DETECTION_SKILLS:-anomaly-detection,baseline-learning,drift-detection,alert-dedup,jira-ops,confluence-ops}"
+if [ "${ACTION}" = "deploy" ]; then
+  # 5. Grant invoker permissions on downstream agents to orchestrator
+  echo "Granting invoker permissions to downstream agents..."
+  for svc in sysman-detection-agent sysman-diagnosis-agent; do
+    gcloud run services add-iam-policy-binding "${svc}" \
+      --project="${PROJECT_ID}" \
+      --region="${REGION}" \
+      --member="serviceAccount:${SA_EMAIL}" \
+      --role="roles/run.invoker" \
+      --quiet || true
+  done
 
-# Optional Datastore params
-VERTEX_AI_SEARCH_PROJECT="${VERTEX_AI_SEARCH_PROJECT:-}"
-VERTEX_AI_SEARCH_LOCATION="${VERTEX_AI_SEARCH_LOCATION:-global}"
-VERTEX_AI_SEARCH_DATA_STORE_ID="${VERTEX_AI_SEARCH_DATA_STORE_ID:-}"
+  # Grant active user and platform invoker permissions
+  DISCOVERY_ENGINE_SA="service-${PROJECT_NUMBER}@gcp-sa-discoveryengine.iam.gserviceaccount.com"
+  gcloud run services add-iam-policy-binding sysman-ops-agent \
+    --project="${PROJECT_ID}" \
+    --region="${REGION}" \
+    --member="serviceAccount:${DISCOVERY_ENGINE_SA}" \
+    --role="roles/run.invoker" \
+    --quiet || true
 
-echo "=========================================================="
-echo " Deploying SysMan Operations Agent to Cloud Run"
-echo " Service Name:     $SERVICE_NAME"
-echo " Project ID:       $PROJECT_ID"
-echo " Region:           $REGION"
-echo " Registry Image:   $IMAGE_URI"
-echo " Access Security:  IAM Protected (--no-allow-unauthenticated)"
-echo "=========================================================="
+  if [ -n "${ACTIVE_USER}" ]; then
+    gcloud run services add-iam-policy-binding sysman-ops-agent \
+      --project="${PROJECT_ID}" \
+      --region="${REGION}" \
+      --member="user:${ACTIVE_USER}" \
+      --role="roles/run.invoker" \
+      --quiet || true
+  fi
 
-REGISTRY_HOST="$(echo "$REGISTRY_BASE" | cut -d'/' -f1)"
-gcloud auth configure-docker "$REGISTRY_HOST" --quiet || true
+  # 6. Save deployment metadata
+  echo "Writing deployment_metadata.json..."
+  cat <<EOF > deployment_metadata.json
+{
+  "remote_agent_runtime_id": "${URL_OPS}",
+  "deployment_target": "cloud_run",
+  "deployment_timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+EOF
+fi
 
-echo "--> Step 1: Building container image..."
-docker build --platform linux/amd64 -t "$IMAGE_URI" -f Dockerfile .
+# 7. Register with Gemini Enterprise
+GEMINI_APP="${GEMINI_ENTERPRISE_APP_ID:-projects/${PROJECT_NUMBER}/locations/global/collections/default_collection/engines/agentspace-exemplar_1755693787640}"
+if [ -n "${GEMINI_APP}" ]; then
+  if [ "${ACTION}" = "deploy" ]; then
+    echo "Waiting 60 seconds for Cloud Run routing and discovery stabilization before registering..."
+    sleep 60
+  fi
+  echo "Registering with Gemini Enterprise..."
+  agents-cli publish gemini-enterprise \
+    --registration-type a2a \
+    --agent-card-url "${URL_OPS}/a2a/app/.well-known/agent-card.json" \
+    --gemini-enterprise-app-id "${GEMINI_APP}" \
+    --deployment-target cloud_run || echo "Warning: Gemini Enterprise registration skipped."
+fi
 
-echo "--> Step 2: Pushing image to registry '$IMAGE_URI'..."
-docker push "$IMAGE_URI"
-
-echo "--> Step 3: Deploying container image to Cloud Run..."
-gcloud run deploy "$SERVICE_NAME" \
-    --image "$IMAGE_URI" \
-    --project "$PROJECT_ID" \
-    --region "$REGION" \
-    --concurrency 40 \
-    --timeout 300 \
-    --no-allow-unauthenticated \
-    --set-env-vars "MCP_SERVER_URL=${MCP_SERVER_URL},FAST_MODEL=${FAST_MODEL},PRO_MODEL=${PRO_MODEL},DETECTION_SKILLS=${DETECTION_SKILLS},VERTEX_AI_SEARCH_PROJECT=${VERTEX_AI_SEARCH_PROJECT},VERTEX_AI_SEARCH_LOCATION=${VERTEX_AI_SEARCH_LOCATION},VERTEX_AI_SEARCH_DATA_STORE_ID=${VERTEX_AI_SEARCH_DATA_STORE_ID},GOOGLE_GENAI_USE_VERTEXAI=True"
-
-echo "=========================================================="
-SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)' 2>/dev/null || echo "Unknown")
-echo " SysMan Operations Agent Deployment Completed!"
-echo " Service URL: $SERVICE_URL"
-echo "=========================================================="
+echo "========================================================================="
+echo "Action ${ACTION} Complete!"
+echo "Orchestrator URL: ${URL_OPS}"
+echo "========================================================================="

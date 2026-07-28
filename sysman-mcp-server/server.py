@@ -185,6 +185,6 @@ if __name__ == "__main__":
             mcp.run(transport=transport)
         else:
             port = int(os.getenv("PORT", "8002"))
-            mcp.run(transport=transport, host="127.0.0.1", port=port)
+            mcp.run(transport=transport, host="0.0.0.0", port=port)
     except (KeyboardInterrupt, SystemExit):
         logger.info("FastMCP server shut down cleanly.")

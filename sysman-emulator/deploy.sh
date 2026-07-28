@@ -1,59 +1,91 @@
 #!/usr/bin/env bash
-# Production deployment script for SysMan Emulator to Cloud Run from container image.
-# Enforces IAM protection (--no-allow-unauthenticated).
+set -euo pipefail
 
-set -eo pipefail
+# Configuration
+PROJECT_ID="${1:-$(gcloud config get-value project 2>/dev/null || echo "agentspace-argolis-demo")}"
+REGION="us-central1"
+SA_NAME="sysman-ops-sa"
+SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
+REGISTRY="us-central1-docker.pkg.dev/${PROJECT_ID}/docker-registry"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+echo "========================================================================="
+echo "Deploying SysMan Emulators (Linux, Jira, Confluence) to Cloud Run"
+echo "Project: ${PROJECT_ID} | Region: ${REGION}"
+echo "========================================================================="
 
-if [[ -f ".env" ]]; then
-    set -o allexport
-    source .env
-    set +o allexport
+# 1. Create Dedicated Service Account if it doesn't exist
+echo "Step 1: Setting up Service Account ${SA_EMAIL}..."
+if ! gcloud iam service-accounts describe "${SA_EMAIL}" --project="${PROJECT_ID}" >/dev/null 2>&1; then
+  gcloud iam service-accounts create "${SA_NAME}" \
+    --project="${PROJECT_ID}" \
+    --display-name="SysMan Suite Service Account"
+else
+  echo "Service Account already exists."
 fi
 
-PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || echo "agentspace-argolis-demo")}"
-SERVICE_NAME="${SERVICE_NAME:-sysman-emulator}"
-REGION="${REGION:-us-central1}"
-REGISTRY_BASE="${REGISTRY_BASE:-us-central1-docker.pkg.dev/agentspace-argolis-demo/docker-registry}"
-IMAGE_TAG="${IMAGE_TAG:-latest}"
-IMAGE_URI="${REGISTRY_BASE}/${SERVICE_NAME}:${IMAGE_TAG}"
+# 2. Grant IAM role
+echo "Step 2: Assigning logging.logWriter role..."
+gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/logging.logWriter" \
+  --condition=None >/dev/null 2>&1 || true
 
-CONTROL_PASSWORD="${CONTROL_PASSWORD:-SysManSecretPass123!}"
-CONTROL_HEADER="${CONTROL_HEADER:-X-Control-Password}"
-SYSTEMS_CONFIG_PATH="${SYSTEMS_CONFIG_PATH:-}"
+# 3. Build and push image
+echo "Step 3: Building and pushing emulator container image..."
+gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+EMULATOR_IMAGE="${REGISTRY}/sysman-emulator:latest"
+docker build -t "${EMULATOR_IMAGE}" .
+docker push "${EMULATOR_IMAGE}"
 
-echo "=========================================================="
-echo " Deploying SysMan Emulator Service to Cloud Run"
-echo " Service Name:     $SERVICE_NAME"
-echo " Project ID:       $PROJECT_ID"
-echo " Region:           $REGION"
-echo " Registry Image:   $IMAGE_URI"
-echo " Access Security:  IAM Protected (--no-allow-unauthenticated)"
-echo "=========================================================="
+# 4. Deploy to Cloud Run
+# Deploy Linux Emulator
+echo "Deploying sysman-emulator-linux..."
+gcloud run deploy sysman-emulator-linux \
+  --project="${PROJECT_ID}" \
+  --region="${REGION}" \
+  --image="${EMULATOR_IMAGE}" \
+  --service-account="${SA_EMAIL}" \
+  --no-allow-unauthenticated \
+  --memory="2Gi" \
+  --cpu="1" \
+  --min-instances=1 \
+  --set-env-vars="EMULATOR_CONFIG_PATH=config/linux_config.json,CONTROL_PASSWORD=TestPass123!"
 
-REGISTRY_HOST="$(echo "$REGISTRY_BASE" | cut -d'/' -f1)"
-gcloud auth configure-docker "$REGISTRY_HOST" --quiet || true
+URL_LINUX=$(gcloud run services describe sysman-emulator-linux --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)")
 
-echo "--> Step 1: Building container image..."
-docker build --platform linux/amd64 -t "$IMAGE_URI" -f Dockerfile .
+# Deploy Jira Emulator
+echo "Deploying sysman-emulator-jira..."
+gcloud run deploy sysman-emulator-jira \
+  --project="${PROJECT_ID}" \
+  --region="${REGION}" \
+  --image="${EMULATOR_IMAGE}" \
+  --service-account="${SA_EMAIL}" \
+  --no-allow-unauthenticated \
+  --memory="2Gi" \
+  --cpu="1" \
+  --min-instances=1 \
+  --set-env-vars="EMULATOR_CONFIG_PATH=config/jira_config.json,CONTROL_PASSWORD=TestPass123!"
 
-echo "--> Step 2: Pushing image to registry '$IMAGE_URI'..."
-docker push "$IMAGE_URI"
+URL_JIRA=$(gcloud run services describe sysman-emulator-jira --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)")
 
-echo "--> Step 3: Deploying container image to Cloud Run..."
-gcloud run deploy "$SERVICE_NAME" \
-    --image "$IMAGE_URI" \
-    --project "$PROJECT_ID" \
-    --region "$REGION" \
-    --concurrency 80 \
-    --timeout 300 \
-    --no-allow-unauthenticated \
-    --set-env-vars "CONTROL_PASSWORD=$CONTROL_PASSWORD,CONTROL_HEADER=$CONTROL_HEADER,SYSTEMS_CONFIG_PATH=$SYSTEMS_CONFIG_PATH"
+# Deploy Confluence Emulator
+echo "Deploying sysman-emulator-confluence..."
+gcloud run deploy sysman-emulator-confluence \
+  --project="${PROJECT_ID}" \
+  --region="${REGION}" \
+  --image="${EMULATOR_IMAGE}" \
+  --service-account="${SA_EMAIL}" \
+  --no-allow-unauthenticated \
+  --memory="2Gi" \
+  --cpu="1" \
+  --min-instances=1 \
+  --set-env-vars="EMULATOR_CONFIG_PATH=config/confluence_config.json,CONTROL_PASSWORD=TestPass123!"
 
-echo "=========================================================="
-SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)' 2>/dev/null || echo "Unknown")
-echo " SysMan Emulator Deployment Completed!"
-echo " Service URL: $SERVICE_URL"
-echo "=========================================================="
+URL_CONFLUENCE=$(gcloud run services describe sysman-emulator-confluence --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)")
+
+echo "========================================================================="
+echo "SysMan Emulators Deployed Successfully!"
+echo "Linux Emulator: ${URL_LINUX}"
+echo "Jira Emulator: ${URL_JIRA}"
+echo "Confluence Emulator: ${URL_CONFLUENCE}"
+echo "========================================================================="
