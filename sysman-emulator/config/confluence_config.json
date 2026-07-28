@@ -122,7 +122,7 @@
       "color": "#EAB308",
       "effects": {
         "metrics": {
-          "disk-usage": {"set": 25.0}
+          "disk-usage-hd1": {"set": 25.0}
         },
         "log": {"message": "Manual attachments cleanup completed. Disk space freed.", "level": "INFO"}
       }

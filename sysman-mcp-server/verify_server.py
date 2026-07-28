@@ -3,6 +3,7 @@ import time
 import json
 import sys
 import os
+import re
 
 def send_json_rpc(proc, method, params=None, msg_id=1):
     req = {
@@ -133,6 +134,18 @@ def test_mcp_server():
         assert "</a2ui-json>" in logs_card_text
         assert "confluence-app-01" in logs_card_text
         assert "logs-card-root" in logs_card_text
+        
+        # 9. Call tool render_system_card for confluence-app-01 to inspect its layout structure
+        print("Calling render_system_card for confluence-app-01...")
+        conf_card_resp = send_json_rpc(mcp_proc, "tools/call", {
+            "name": "render_system_card",
+            "arguments": {"system_id": "confluence-app-01"}
+        }, msg_id=7)
+        conf_card_text = conf_card_resp["result"]["content"][0]["text"]
+        # Print the extracted JSON block to see if there are syntax errors or missing IDs
+        match = re.search(r"<a2ui-json>(.*?)</a2ui-json>", conf_card_text, re.DOTALL)
+        if match:
+            print("Confluence Card JSON:\n", match.group(1))
         
         print("\nAll MCP Server integration tests passed successfully!")
         

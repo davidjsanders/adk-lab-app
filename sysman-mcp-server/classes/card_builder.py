@@ -281,6 +281,7 @@ class CardBuilder:
                         "component": {
                             "Image": {"url": {"literalString": svg_data_uri}, "fit": "contain"}
                         },
+                        "style": {"width": "80px", "height": "80px"},
                     }
                 )
                 metrics_children_ids.append(m_id)
@@ -293,6 +294,7 @@ class CardBuilder:
                         "component": {
                             "Image": {"url": {"literalString": svg_data_uri}, "fit": "contain"}
                         },
+                        "style": {"width": "80px", "height": "80px"},
                     }
                 )
                 metrics_children_ids.append(m_id)
@@ -310,6 +312,7 @@ class CardBuilder:
                         "component": {
                             "Image": {"url": {"literalString": svg_data_uri}, "fit": "contain"}
                         },
+                        "style": {"width": "80px", "height": "80px"},
                     }
                 )
                 metrics_children_ids.append(m_id)
@@ -323,6 +326,7 @@ class CardBuilder:
                         "component": {
                             "Image": {"url": {"literalString": svg_data_uri}, "fit": "contain"}
                         },
+                        "style": {"width": "80px", "height": "80px"},
                     }
                 )
                 metrics_children_ids.append(m_id)
@@ -335,6 +339,7 @@ class CardBuilder:
                         "component": {
                             "Image": {"url": {"literalString": svg_data_uri}, "fit": "contain"}
                         },
+                        "style": {"width": "80px", "height": "80px"},
                     }
                 )
                 metrics_children_ids.append(m_id)
