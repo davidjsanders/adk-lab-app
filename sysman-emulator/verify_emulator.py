@@ -77,7 +77,8 @@ def test_emulator():
         linux_status = json.loads(resp.read().decode('utf-8'))
         print("Linux Node status after command:", linux_status["status"], linux_status["metrics"])
         assert linux_status["status"] == "UNHEALTHY"
-        assert linux_status["metrics"]["process_down"] == 0
+        node_exp_status = next(m for m in linux_status["metrics"] if m["id"] == "node-exporter-status")
+        assert node_exp_status["value"] == 0
         
         print("\nAll integration tests passed successfully!")
         

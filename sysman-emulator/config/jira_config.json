@@ -2,6 +2,7 @@
   "system_id": "jira-app-01",
   "type": "jira",
   "name": "Jira System Host",
+  "description": "Jira Software project tracking application server, managing SQL connections and transaction queues.",
   "status": "HEALTHY",
   "default_icon": "confirmation_number",
   "metrics": [

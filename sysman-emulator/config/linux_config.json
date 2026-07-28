@@ -2,6 +2,7 @@
   "system_id": "linux-server-01",
   "type": "linux",
   "name": "Linux Core Host",
+  "description": "Core Enterprise Linux virtual machine VM hosting node exporter resource monitoring agents.",
   "status": "HEALTHY",
   "default_icon": "computer",
   "metrics": [

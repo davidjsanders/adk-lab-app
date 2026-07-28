@@ -2,6 +2,7 @@
   "system_id": "confluence-app-01",
   "type": "confluence",
   "name": "Confluence System Host",
+  "description": "Confluence Team Collaboration Workspace host, running websocket listeners and search indexing tasks.",
   "status": "HEALTHY",
   "default_icon": "article",
   "metrics": [

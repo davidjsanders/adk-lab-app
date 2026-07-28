@@ -1,0 +1,101 @@
+{
+  "version": "v0.8",
+  "surfaceUpdate": {
+    "surfaceId": "my-dashboard-surface",
+    "components": [
+      {
+        "id": "root-tabs-pane",
+        "component": {
+          "Tabs": {
+            "tabItems": [
+              {
+                "title": { "literalString": "Overview" },
+                "child": "overview-panel"
+              },
+              {
+                "title": { "literalString": "Metrics" },
+                "child": "metrics-panel"
+              },
+              {
+                "title": { "literalString": "System Logs" },
+                "child": "logs-panel"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "id": "overview-panel",
+        "component": {
+          "Column": {
+            "children": ["overview-header-text", "overview-body-text"]
+          }
+        }
+      },
+      {
+        "id": "overview-header-text",
+        "component": {
+          "Text": {
+            "text": { "literalString": "Overview" }
+          }
+        }
+      },
+      {
+        "id": "overview-body-text",
+        "component": {
+          "Text": {
+            "text": { "literalString": "This is the primary summary view for your agentic workflow." }
+          }
+        }
+      },
+      {
+        "id": "metrics-panel",
+        "component": {
+          "Column": {
+            "children": ["metrics-header-text", "metrics-placeholder-text"]
+          }
+        }
+      },
+      {
+        "id": "metrics-header-text",
+        "component": {
+          "Text": {
+            "text": { "literalString": "Real-time Metrics" }
+          }
+        }
+      },
+      {
+        "id": "metrics-placeholder-text",
+        "component": {
+          "Text": {
+            "text": { "literalString": "Metrics dashboard components go here (e.g., Progress Indicator or Cards)." }
+          }
+        }
+      },
+      {
+        "id": "logs-panel",
+        "component": {
+          "Column": {
+            "children": ["logs-header-text", "logs-body-text"]
+          }
+        }
+      },
+      {
+        "id": "logs-header-text",
+        "component": {
+          "Text": {
+            "text": { "literalString": "System Diagnostics" }
+          }
+        }
+      },
+      {
+        "id": "logs-body-text",
+        "component": {
+          "Text": {
+            "text": { "literalString": "[INFO] Agent connection initialized...\n[SUCCESS] A2UI surface parsed with zero schema warnings." }
+          }
+        }
+      }
+    ]
+  }
+}

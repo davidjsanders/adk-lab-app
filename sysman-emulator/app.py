@@ -38,6 +38,7 @@ class ConfigDrivenSystemState:
         self.system_type: str = config["type"]
         self.name: str = config["name"]
         self.status: str = config.get("status", "HEALTHY")
+        self.description: str = config.get("description", "")
         self.start_time: float = time.time()
         self.logs: List[Dict[str, Any]] = []
         self.last_update: float = time.time()
@@ -194,6 +195,7 @@ class ConfigDrivenSystemState:
             "type": self.system_type,
             "name": self.name,
             "status": self.status,
+            "description": self.description,
             "uptime_seconds": self.uptime_seconds,
             "default_icon": self.default_icon,
             "logs": self.logs[-15:],

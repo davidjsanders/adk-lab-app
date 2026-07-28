@@ -80,6 +80,7 @@ def test_mcp_server():
         assert "get_system_status" in tool_names
         assert "execute_system_command" in tool_names
         assert "render_system_card" in tool_names
+        assert "render_system_logs_card" in tool_names
         
         # 5. Call tool list_systems
         print("Calling list_systems tool...")
@@ -102,7 +103,8 @@ def test_mcp_server():
         }, msg_id=4)
         status_text = status_resp["result"]["content"][0]["text"]
         status_data = json.loads(status_text)
-        print("Linux Node CPU:", status_data["metrics"]["cpu_load_percent"])
+        cpu_metric = next((m for m in status_data["metrics"] if m.get("id") == "cpu_load_percent"), None)
+        print("Linux Node CPU:", cpu_metric["value"] if cpu_metric else "N/A")
         assert status_data["status"] == "HEALTHY"
         
         # 7. Call tool render_system_card for jira-app-01
@@ -116,6 +118,19 @@ def test_mcp_server():
         assert card_text.startswith("<a2ui-json>")
         assert "</a2ui-json>" in card_text
         assert "jira-app-01" in card_text
+        
+        # 8. Call tool render_system_logs_card for confluence-app-01
+        print("Calling render_system_logs_card for confluence-app-01...")
+        logs_card_resp = send_json_rpc(mcp_proc, "tools/call", {
+            "name": "render_system_logs_card",
+            "arguments": {"system_id": "confluence-app-01"}
+        }, msg_id=6)
+        logs_card_text = logs_card_resp["result"]["content"][0]["text"]
+        print("Logs Card response matches <a2ui-json> tag format:", logs_card_text.startswith("<a2ui-json>"))
+        assert logs_card_text.startswith("<a2ui-json>")
+        assert "</a2ui-json>" in logs_card_text
+        assert "confluence-app-01" in logs_card_text
+        assert "logs-card-root" in logs_card_text
         
         print("\nAll MCP Server integration tests passed successfully!")
         
