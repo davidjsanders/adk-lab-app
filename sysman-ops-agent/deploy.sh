@@ -88,7 +88,7 @@ EOF
 fi
 
 # 7. Register with Gemini Enterprise
-GEMINI_APP="${GEMINI_ENTERPRISE_APP_ID:-projects/${PROJECT_NUMBER}/locations/global/collections/default_collection/engines/agentspace-exemplar_1755693787640}"
+GEMINI_APP="${GEMINI_ENTERPRISE_APP_ID:-projects/${PROJECT_NUMBER}/locations/us/collections/default_collection/engines/agentspace-exemplar_1755693787640}"
 if [ -n "${GEMINI_APP}" ]; then
   if [ "${ACTION}" = "deploy" ]; then
     echo "Waiting 60 seconds for Cloud Run routing and discovery stabilization before registering..."

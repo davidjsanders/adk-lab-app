@@ -5,6 +5,7 @@ from google.adk.agents.remote_a2a_agent import RemoteA2aAgent, AGENT_CARD_WELL_K
 from google.adk.apps import App
 from app.classes.global_gemini import GlobalGemini
 from app.config import settings
+from app.helpers.auth import get_authenticated_client
 from app.plugins.a2ui_plugin import A2UIPlugin
 
 logging.basicConfig(level=logging.INFO)
@@ -28,7 +29,8 @@ if detection_url:
     detection_agent = RemoteA2aAgent(
         name="detection_agent",
         description="Specialized monitoring and anomaly detection agent that reviews telemetry, metrics and alert trends.",
-        agent_card=detection_url
+        agent_card=detection_url,
+        httpx_client=get_authenticated_client(detection_url)
     )
 else:
     try:
@@ -60,7 +62,8 @@ if diagnosis_url:
     diagnosis_agent = RemoteA2aAgent(
         name="diagnosis_agent",
         description="Specialized troubleshooting agent that queries official runbooks and recovery documentation.",
-        agent_card=diagnosis_url
+        agent_card=diagnosis_url,
+        httpx_client=get_authenticated_client(diagnosis_url)
     )
 else:
     try:
