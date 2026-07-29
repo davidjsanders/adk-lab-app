@@ -1,0 +1,21 @@
+.gcloudignore
+.git
+.gitignore
+
+# Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local configuration
+.env
+.saved_chats/
+.google-agents-cli/
+.adk/

@@ -2,6 +2,7 @@ import httpx
 from google.adk.tools.mcp_tool import McpToolset
 from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
 from app.config import settings
+from app.helpers.auth import get_authenticated_client
 
 
 def mcp_httpx_factory(**kwargs) -> httpx.AsyncClient:
@@ -13,9 +14,8 @@ def mcp_httpx_factory(**kwargs) -> httpx.AsyncClient:
     Returns:
         AsyncClient.
     """
-    if "timeout" not in kwargs:
-        kwargs["timeout"] = httpx.Timeout(45.0)
-    return httpx.AsyncClient(**kwargs)
+    timeout = kwargs.get("timeout") or httpx.Timeout(45.0)
+    return get_authenticated_client(settings.mcp_server_url, timeout=timeout)
 
 
 # Initialize McpToolset with StreamableHTTPConnectionParams
@@ -25,3 +25,4 @@ mcp_toolset = McpToolset(
         httpx_client_factory=mcp_httpx_factory,
     )
 )
+

@@ -25,4 +25,5 @@ RUN useradd -m -u 8888 appuser && chown -R appuser:appuser /app
 USER appuser
 
 ENV PORT=8080
-CMD exec gunicorn --bind "0.0.0.0:${PORT}" --workers 2 --threads 4 --worker-class uvicorn.workers.UvicornWorker app.fast_api_app:app
+CMD exec gunicorn --bind "0.0.0.0:${PORT}" --workers 2 --threads 4 --timeout 120 --worker-class uvicorn.workers.UvicornWorker app.fast_api_app:app
+

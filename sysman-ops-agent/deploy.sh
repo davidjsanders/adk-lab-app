@@ -19,19 +19,14 @@ echo "SysMan Ops Agent Action: ${ACTION} | Project: ${PROJECT_ID}"
 echo "========================================================================="
 
 if [ "${ACTION}" = "deploy" ]; then
-  # 1. Resolve downstream agent URLs
-  echo "Resolving downstream agent URLs..."
-  URL_DETECTION=$(gcloud run services describe sysman-detection-agent --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)" 2>/dev/null || echo "")
-  URL_DIAGNOSIS=$(gcloud run services describe sysman-diagnosis-agent --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)" 2>/dev/null || echo "")
-
-  if [ -z "${URL_DETECTION}" ] || [ -z "${URL_DIAGNOSIS}" ]; then
-    echo "Error: Downstream agents (sysman-detection-agent and/or sysman-diagnosis-agent) are not deployed yet."
-    echo "Please deploy them first before deploying the orchestrator."
-    exit 1
-  fi
+  # 1. Construct downstream and local agent URLs deterministically
+  echo "Constructing agent URLs..."
+  URL_DETECTION="https://sysman-detection-agent-${PROJECT_NUMBER}.${REGION}.run.app"
+  URL_DIAGNOSIS="https://sysman-diagnosis-agent-${PROJECT_NUMBER}.${REGION}.run.app"
+  URL_OPS="https://sysman-ops-agent-${PROJECT_NUMBER}.${REGION}.run.app"
 
   # 2. Deploy to Cloud Run using agents-cli
-  echo "Deploying sysman-ops-agent using agents-cli..."
+  echo "Deploying sysman-ops-agent using agents-cli with APP_URL=${URL_OPS}..."
   agents-cli deploy \
     --project="${PROJECT_ID}" \
     --region="${REGION}" \
@@ -40,11 +35,14 @@ if [ "${ACTION}" = "deploy" ]; then
     --cpu="2" \
     --min-instances=1 \
     --no-confirm-project \
-    --update-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},GOOGLE_GENAI_USE_VERTEXAI=True,DETECTION_AGENT_URL=${URL_DETECTION},DIAGNOSIS_AGENT_URL=${URL_DIAGNOSIS},FAST_MODEL=${FAST_MODEL},PRO_MODEL=${PRO_MODEL}"
+    --update-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},GOOGLE_GENAI_USE_VERTEXAI=True,DETECTION_AGENT_URL=${URL_DETECTION},DIAGNOSIS_AGENT_URL=${URL_DIAGNOSIS},FAST_MODEL=${FAST_MODEL},PRO_MODEL=${PRO_MODEL},APP_URL=${URL_OPS}"
+
+
 fi
 
 # Resolve URL_OPS
-URL_OPS=$(gcloud run services describe sysman-ops-agent --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)")
+URL_OPS="https://sysman-ops-agent-${PROJECT_NUMBER}.${REGION}.run.app"
+
 
 if [ "${ACTION}" = "deploy" ]; then
   # 5. Grant invoker permissions on downstream agents to orchestrator

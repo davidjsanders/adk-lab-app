@@ -1,0 +1,529 @@
+<a2ui-json>
+[
+  {
+    "beginRendering": {
+      "surfaceId": "sysman_card_jira_app_01_1785337122993",
+      "root": "card-root"
+    }
+  },
+  {
+    "surfaceUpdate": {
+      "surfaceId": "sysman_card_jira_app_01_1785337122993",
+      "components": [
+        {
+          "id": "card-root",
+          "component": {
+            "Card": {
+              "child": "main-column",
+              "style": {
+                "backgroundColor": "#0B131E",
+                "borderRadius": "12px",
+                "padding": "12px"
+              }
+            }
+          }
+        },
+        {
+          "id": "main-column",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": [
+                  "header-row",
+                  "divider-1",
+                  "description-text",
+                  "details-row",
+                  "divider-2",
+                  "metrics-title-text",
+                  "metrics-column",
+                  "divider-3",
+                  "actions-row"
+                ]
+              },
+              "align": "stretch"
+            }
+          },
+          "style": {
+            "margin": "0px",
+            "padding": "0px",
+            "gap": "6px"
+          }
+        },
+        {
+          "id": "header-row",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": [
+                  "header-icon",
+                  "header-text",
+                  "header-status-group"
+                ]
+              },
+              "justify": "spaceBetween",
+              "align": "center"
+            }
+          }
+        },
+        {
+          "id": "header-icon",
+          "component": {
+            "Image": {
+              "url": {
+                "literalString": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cGF0aCBkPSJNMjIgMTBWNmMwLTEuMTEtLjktMi0yLTJINGMtMS4xIDAtMS45OS44OS0xLjk5IDJ2NGMxLjEgMCAxLjk5LjkgMS45OSAycy0uODkgMi0yIDJ2NGMwIDEuMS45IDIgMiAyaDE2YzEuMSAwIDItLjkgMi0ydi00Yy0xLjEgMC0yLS45LTItMnMuOS0yIDItMnptLTkgNy41aC0ydi0yaDJ2MnptMC00LjVoLTJ2LTJoMnYyem0wLTQuNWgtMnYtMmgydjJ6IiBmaWxsPSIjMzhCREY4IiAvPgo8L3N2Zz4="
+              },
+              "fit": "contain"
+            }
+          },
+          "style": {
+            "width": "28px",
+            "height": "28px"
+          }
+        },
+        {
+          "id": "header-text",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": [
+                  "header-name",
+                  "header-id"
+                ]
+              }
+            }
+          },
+          "style": {
+            "fillWidth": true,
+            "paddingLeft": "8px"
+          }
+        },
+        {
+          "id": "header-name",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Jira System Host"
+              },
+              "usageHint": "h3",
+              "style": {
+                "color": "#FFFFFF",
+                "fontWeight": "700"
+              }
+            }
+          }
+        },
+        {
+          "id": "header-id",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "ID: jira-app-01 | Type: JIRA APP"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#38BDF8"
+              }
+            }
+          }
+        },
+        {
+          "id": "header-status-group",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": [
+                  "header-status-light",
+                  "header-status-text"
+                ]
+              },
+              "align": "center"
+            }
+          },
+          "style": {
+            "gap": "6px",
+            "width": "110px",
+            "flexShrink": 0
+          }
+        },
+        {
+          "id": "header-status-light",
+          "component": {
+            "Image": {
+              "url": {
+                "literalString": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTQiIGhlaWdodD0iMzYiIHZpZXdCb3g9IjAgMCAxNCAzNiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8cmVjdCB4PSIxIiB5PSIxIiB3aWR0aD0iMTIiIGhlaWdodD0iMzQiIHJ4PSIzIiBmaWxsPSIjMTExODI3IiBzdHJva2U9IiMzNzQxNTEiIHN0cm9rZS13aWR0aD0iMSIvPgogIDxjaXJjbGUgY3g9IjciIGN5PSI3IiByPSIzLjIiIGZpbGw9IiM3RjFEMUQiLz4KICA8Y2lyY2xlIGN4PSI3IiBjeT0iMTgiIHI9IjMuMiIgZmlsbD0iIzc4MzUwRiIvPgogIDxjaXJjbGUgY3g9IjciIGN5PSIyOSIgcj0iMy4yIiBmaWxsPSIjMDBGRjY2Ii8+Cjwvc3ZnPg=="
+              },
+              "fit": "contain"
+            }
+          },
+          "style": {
+            "width": "14px",
+            "height": "36px"
+          }
+        },
+        {
+          "id": "header-status-text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "HEALTHY"
+              },
+              "usageHint": "body1"
+            }
+          },
+          "style": {
+            "color": "#22C55E",
+            "fontWeight": "bold"
+          }
+        },
+        {
+          "id": "divider-1",
+          "component": {
+            "Divider": {
+              "axis": "horizontal"
+            }
+          }
+        },
+        {
+          "id": "description-text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Jira Software project tracking application server, managing SQL connections and transaction queues."
+              },
+              "usageHint": "body",
+              "style": {
+                "color": "#94A3B8",
+                "fontStyle": "italic"
+              }
+            }
+          }
+        },
+        {
+          "id": "details-row",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": [
+                  "details-uptime-lbl",
+                  "details-uptime-val"
+                ]
+              },
+              "justify": "spaceBetween"
+            }
+          }
+        },
+        {
+          "id": "details-uptime-lbl",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "System Uptime: "
+              },
+              "usageHint": "body",
+              "style": {
+                "color": "#94A3B8"
+              }
+            }
+          }
+        },
+        {
+          "id": "details-uptime-val",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "0d 1h 56m 35s"
+              },
+              "usageHint": "body",
+              "style": {
+                "color": "#32CD32"
+              }
+            }
+          }
+        },
+        {
+          "id": "divider-2",
+          "component": {
+            "Divider": {
+              "axis": "horizontal"
+            }
+          }
+        },
+        {
+          "id": "metrics-title-text",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "System Telemetry Metrics"
+              },
+              "usageHint": "body",
+              "style": {
+                "color": "#FFFFFF",
+                "fontWeight": "bold"
+              }
+            }
+          }
+        },
+        {
+          "id": "metrics-column",
+          "component": {
+            "Column": {
+              "children": {
+                "explicitList": [
+                  "metrics-row-0",
+                  "metrics-row-1"
+                ]
+              },
+              "align": "stretch"
+            }
+          },
+          "style": {
+            "gap": "6px"
+          }
+        },
+        {
+          "id": "divider-3",
+          "component": {
+            "Divider": {
+              "axis": "horizontal"
+            }
+          }
+        },
+        {
+          "id": "actions-row",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": [
+                  "btn-gc",
+                  "btn-restart"
+                ]
+              },
+              "justify": "spaceAround"
+            }
+          }
+        },
+        {
+          "id": "jvm-heap",
+          "component": {
+            "Image": {
+              "url": {
+                "literalString": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgODAgODAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9Ijc2IiBoZWlnaHQ9Ijc2IiByeD0iOCIgZmlsbD0iIzExMTgyNyIgc3Ryb2tlPSIjMzc0MTUxIiBzdHJva2Utd2lkdGg9IjEiIC8+CiAgPGNpcmNsZSBjeD0iNDAiIGN5PSI0NCIgcj0iMTgiIGZpbGw9IiMwQjEzMUUiIC8+CiAgPGNpcmNsZSBjeD0iNDAiIGN5PSI0NCIgcj0iMTgiIGZpbGw9InRyYW5zcGFyZW50IiBzdHJva2U9IiNFRjQ0NDQiIHN0cm9rZS13aWR0aD0iNC41IiAvPgogIDxjaXJjbGUgY3g9IjQwIiBjeT0iNDQiIHI9IjE4IiBmaWxsPSJ0cmFuc3BhcmVudCIgc3Ryb2tlPSIjMjJDNTVFIiBzdHJva2Utd2lkdGg9IjQuNSIgc3Ryb2tlLWRhc2hhcnJheT0iODYuNDk3NjM0NTQyMzcxMTcgMjYuNTk5MzY1NDU3NjI4ODM1IiBzdHJva2UtZGFzaG9mZnNldD0iMjguMjciIC8+CiAgPHRleHQgeD0iNDAiIHk9IjE1IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI2LjAiIGZpbGw9IiM5NEEzQjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj5KVk0gSGVhcDwvdGV4dD4KICA8dGV4dCB4PSI0MCIgeT0iNDYuNSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNyIgZmlsbD0iI0ZGRkZGRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC13ZWlnaHQ9ImJvbGQiPjIzLjUlPC90ZXh0Pgo8L3N2Zz4="
+              },
+              "fit": "contain"
+            }
+          },
+          "style": {
+            "width": "80px",
+            "height": "80px"
+          }
+        },
+        {
+          "id": "db-connections",
+          "component": {
+            "Image": {
+              "url": {
+                "literalString": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgODAgODAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9Ijc2IiBoZWlnaHQ9Ijc2IiByeD0iOCIgZmlsbD0iIzExMTgyNyIgc3Ryb2tlPSIjMzc0MTUxIiBzdHJva2Utd2lkdGg9IjEiIC8+CiAgPHRleHQgeD0iNDAiIHk9IjE4IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI1LjAiIGZpbGw9IiM5NEEzQjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj5KREJDIERCIENvbm5lY3Rpb25zPC90ZXh0PgogIDxyZWN0IHg9IjEwIiB5PSIzNCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjciIHJ4PSIzLjUiIGZpbGw9IiMxRjI5MzciIC8+CiAgPHJlY3QgeD0iMTAiIHk9IjM0IiB3aWR0aD0iNC44NTAwNDg5NjEwOTM5NjYiIGhlaWdodD0iNyIgcng9IjMuNSIgZmlsbD0iIzM4QkRGOCIgLz4KICA8dGV4dCB4PSI0MCIgeT0iNTgiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjcuNSIgZmlsbD0iI0ZGRkZGRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC13ZWlnaHQ9ImJvbGQiPjggLyA1MDwvdGV4dD4KPC9zdmc+"
+              },
+              "fit": "contain"
+            }
+          },
+          "style": {
+            "width": "80px",
+            "height": "80px"
+          }
+        },
+        {
+          "id": "request-latency",
+          "component": {
+            "Image": {
+              "url": {
+                "literalString": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgODAgODAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9Ijc2IiBoZWlnaHQ9Ijc2IiByeD0iOCIgZmlsbD0iIzExMTgyNyIgc3Ryb2tlPSIjMzc0MTUxIiBzdHJva2Utd2lkdGg9IjEiIC8+CiAgPHRleHQgeD0iNDAiIHk9IjE4IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI2LjAiIGZpbGw9IiM5NEEzQjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj5SZXF1ZXN0IExhdGVuY3k8L3RleHQ+CiAgCiAgPHJlY3QgeD0iMTAiIHk9IjM4IiB3aWR0aD0iMzAuMCIgaGVpZ2h0PSI2IiBmaWxsPSIjMjJDNTVFIiByeD0iMyIgLz4KICA8cmVjdCB4PSI0MC4wIiB5PSIzOCIgd2lkdGg9IjIwLjAwMDAwMDAwMDAwMDAwNCIgaGVpZ2h0PSI2IiBmaWxsPSIjRUFCMzA4IiAvPgogIDxyZWN0IHg9IjYwLjAwMDAwMDAwMDAwMDAxIiB5PSIzOCIgd2lkdGg9IjkuOTk5OTk5OTk5OTk5OTk1IiBoZWlnaHQ9IjYiIGZpbGw9IiNFRjQ0NDQiIHJ4PSIzIiAvPgogIAogIDxwb2x5Z29uIHBvaW50cz0iMzQuNDAwNzM0MjMwNTcxOTEsMzYgMzEuNDAwNzM0MjMwNTcxOTEzLDMwIDM3LjQwMDczNDIzMDU3MTkxLDMwIiBmaWxsPSIjRkZGRkZGIiAvPgogIDx0ZXh0IHg9IjQwIiB5PSI1OCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNy41IiBmaWxsPSIjRkZGRkZGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXdlaWdodD0iYm9sZCI+MTIyLjAgbXM8L3RleHQ+Cjwvc3ZnPg=="
+              },
+              "fit": "contain"
+            }
+          },
+          "style": {
+            "width": "80px",
+            "height": "80px"
+          }
+        },
+        {
+          "id": "error-rate",
+          "component": {
+            "Image": {
+              "url": {
+                "literalString": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgODAgODAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9Ijc2IiBoZWlnaHQ9Ijc2IiByeD0iOCIgZmlsbD0iIzExMTgyNyIgc3Ryb2tlPSIjMzc0MTUxIiBzdHJva2Utd2lkdGg9IjEiIC8+CiAgPHRleHQgeD0iNDAiIHk9IjE4IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI2LjAiIGZpbGw9IiM5NEEzQjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj41eHggRXJyb3IgUmF0ZTwvdGV4dD4KICAKICA8cmVjdCB4PSIyNSIgeT0iMjgiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCIgcng9IjE1IiBmaWxsPSIjMDY0RTNCIiBzdHJva2U9IiMyMkM1NUUiIHN0cm9rZS13aWR0aD0iMSIgLz4KICA8c3ZnIHg9IjMzIiB5PSIzNiIgd2lkdGg9IjE0IiBoZWlnaHQ9IjE0IiB2aWV3Qm94PSIwIDAgMjQgMjQiPgogICAgPHBhdGggZD0iTTUgMTNsNCA0TDE5IDciIHN0cm9rZT0iIzg2RUZBQyIgc3Ryb2tlLXdpZHRoPSIzLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIgZmlsbD0ibm9uZSIgLz4KICA8L3N2Zz4KICAKICA8dGV4dCB4PSI0MCIgeT0iNjgiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjciIGZpbGw9IiM4NkVGQUMiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj4wLjAyJTwvdGV4dD4KPC9zdmc+"
+              },
+              "fit": "contain"
+            }
+          },
+          "style": {
+            "width": "80px",
+            "height": "80px"
+          }
+        },
+        {
+          "id": "web-sessions",
+          "component": {
+            "Image": {
+              "url": {
+                "literalString": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgODAgODAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9Ijc2IiBoZWlnaHQ9Ijc2IiByeD0iOCIgZmlsbD0iIzExMTgyNyIgc3Ryb2tlPSIjMzc0MTUxIiBzdHJva2Utd2lkdGg9IjEiIC8+CiAgPHRleHQgeD0iNDAiIHk9IjE4IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI1LjAiIGZpbGw9IiM5NEEzQjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj5BY3RpdmUgV2ViIFNlc3Npb25zPC90ZXh0PgogIDxyZWN0IHg9IjEwIiB5PSIzNCIgd2lkdGg9IjYwIiBoZWlnaHQ9IjciIHJ4PSIzLjUiIGZpbGw9IiMxRjI5MzciIC8+CiAgPHJlY3QgeD0iMTAiIHk9IjM0IiB3aWR0aD0iNTguNzcyODE1MTU2OTI3Njg1IiBoZWlnaHQ9IjciIHJ4PSIzLjUiIGZpbGw9IiMzOEJERjgiIC8+CiAgPHRleHQgeD0iNDAiIHk9IjU4IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI3LjUiIGZpbGw9IiNGRkZGRkYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj45OCAvIDUwMDwvdGV4dD4KPC9zdmc+"
+              },
+              "fit": "contain"
+            }
+          },
+          "style": {
+            "width": "80px",
+            "height": "80px"
+          }
+        },
+        {
+          "id": "index-progress",
+          "component": {
+            "Image": {
+              "url": {
+                "literalString": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgODAgODAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9Ijc2IiBoZWlnaHQ9Ijc2IiByeD0iOCIgZmlsbD0iIzExMTgyNyIgc3Ryb2tlPSIjMzc0MTUxIiBzdHJva2Utd2lkdGg9IjEiIC8+CiAgPGNpcmNsZSBjeD0iNDAiIGN5PSI0NCIgcj0iMTgiIGZpbGw9IiMwQjEzMUUiIC8+CiAgPGNpcmNsZSBjeD0iNDAiIGN5PSI0NCIgcj0iMTgiIGZpbGw9InRyYW5zcGFyZW50IiBzdHJva2U9IiNFRjQ0NDQiIHN0cm9rZS13aWR0aD0iNC41IiAvPgogIDxjaXJjbGUgY3g9IjQwIiBjeT0iNDQiIHI9IjE4IiBmaWxsPSJ0cmFuc3BhcmVudCIgc3Ryb2tlPSIjMjJDNTVFIiBzdHJva2Utd2lkdGg9IjQuNSIgc3Ryb2tlLWRhc2hhcnJheT0iOC4wNDQzODUwNDgwMjU5NDQgMTA1LjA1MjYxNDk1MTk3NDA2IiBzdHJva2UtZGFzaG9mZnNldD0iMjguMjciIC8+CiAgPHRleHQgeD0iNDAiIHk9IjE1IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI2LjAiIGZpbGw9IiM5NEEzQjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj5JbmRleGluZyBQcm9ncmVzczwvdGV4dD4KICA8dGV4dCB4PSI0MCIgeT0iNDYuNSIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNyIgZmlsbD0iI0ZGRkZGRiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZm9udC13ZWlnaHQ9ImJvbGQiPjkyLjklPC90ZXh0Pgo8L3N2Zz4="
+              },
+              "fit": "contain"
+            }
+          },
+          "style": {
+            "width": "80px",
+            "height": "80px"
+          }
+        },
+        {
+          "id": "db-latency",
+          "component": {
+            "Image": {
+              "url": {
+                "literalString": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgODAgODAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9Ijc2IiBoZWlnaHQ9Ijc2IiByeD0iOCIgZmlsbD0iIzExMTgyNyIgc3Ryb2tlPSIjMzc0MTUxIiBzdHJva2Utd2lkdGg9IjEiIC8+CiAgPHRleHQgeD0iNDAiIHk9IjE4IiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI2LjAiIGZpbGw9IiM5NEEzQjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj5BdmcgREIgTGF0ZW5jeTwvdGV4dD4KICAKICA8cmVjdCB4PSIxMCIgeT0iMzgiIHdpZHRoPSIxOC4wIiBoZWlnaHQ9IjYiIGZpbGw9IiMyMkM1NUUiIHJ4PSIzIiAvPgogIDxyZWN0IHg9IjI4LjAiIHk9IjM4IiB3aWR0aD0iMTguMCIgaGVpZ2h0PSI2IiBmaWxsPSIjRUFCMzA4IiAvPgogIDxyZWN0IHg9IjQ2LjAiIHk9IjM4IiB3aWR0aD0iMjQuMCIgaGVpZ2h0PSI2IiBmaWxsPSIjRUY0NDQ0IiByeD0iMyIgLz4KICAKICA8cG9seWdvbiBwb2ludHM9IjE2LjEzMjU4ODI1ODEwMzYzNSwzNiAxMy4xMzI1ODgyNTgxMDM2MzUsMzAgMTkuMTMyNTg4MjU4MTAzNjM1LDMwIiBmaWxsPSIjRkZGRkZGIiAvPgogIDx0ZXh0IHg9IjQwIiB5PSI1OCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNy41IiBmaWxsPSIjRkZGRkZGIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXdlaWdodD0iYm9sZCI+NS4xIG1zPC90ZXh0Pgo8L3N2Zz4="
+              },
+              "fit": "contain"
+            }
+          },
+          "style": {
+            "width": "80px",
+            "height": "80px"
+          }
+        },
+        {
+          "id": "gc-overhead",
+          "component": {
+            "Image": {
+              "url": {
+                "literalString": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB2aWV3Qm94PSIwIDAgODAgODAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3QgeD0iMiIgeT0iMiIgd2lkdGg9Ijc2IiBoZWlnaHQ9Ijc2IiByeD0iOCIgZmlsbD0iIzExMTgyNyIgc3Ryb2tlPSIjMzc0MTUxIiBzdHJva2Utd2lkdGg9IjEiIC8+CiAgPHRleHQgeD0iNDAiIHk9IjIwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSI2LjAiIGZpbGw9IiM5NEEzQjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj5HQyBPdmVyaGVhZDwvdGV4dD4KICA8dGV4dCB4PSI0MCIgeT0iNTIiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjEwLjAiIGZpbGw9IiMzOEJERjgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtd2VpZ2h0PSJib2xkIj4wLjI0JSBDUFU8L3RleHQ+Cjwvc3ZnPg=="
+              },
+              "fit": "contain"
+            }
+          },
+          "style": {
+            "width": "80px",
+            "height": "80px"
+          }
+        },
+        {
+          "id": "metrics-row-0",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": [
+                  "jvm-heap",
+                  "db-connections",
+                  "request-latency",
+                  "error-rate"
+                ]
+              },
+              "justify": "spaceBetween",
+              "align": "center"
+            }
+          },
+          "style": {
+            "fillWidth": true,
+            "gap": "8px"
+          }
+        },
+        {
+          "id": "metrics-row-1",
+          "component": {
+            "Row": {
+              "children": {
+                "explicitList": [
+                  "web-sessions",
+                  "index-progress",
+                  "db-latency",
+                  "gc-overhead"
+                ]
+              },
+              "justify": "spaceBetween",
+              "align": "center"
+            }
+          },
+          "style": {
+            "fillWidth": true,
+            "gap": "8px"
+          }
+        },
+        {
+          "id": "btn-gc-txt",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Run GC"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#38BDF8"
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-gc",
+          "component": {
+            "Button": {
+              "child": "btn-gc-txt",
+              "action": {
+                "name": "execute_system_command",
+                "parameters": {
+                  "system_id": "jira-app-01",
+                  "command": "GC_CLEANUP"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-restart-txt",
+          "component": {
+            "Text": {
+              "text": {
+                "literalString": "Restart Jira"
+              },
+              "usageHint": "caption",
+              "style": {
+                "color": "#EF4444"
+              }
+            }
+          }
+        },
+        {
+          "id": "btn-restart",
+          "component": {
+            "Button": {
+              "child": "btn-restart-txt",
+              "action": {
+                "name": "execute_system_command",
+                "parameters": {
+                  "system_id": "jira-app-01",
+                  "command": "RESTART_JIRA"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+]
+</a2ui-json>

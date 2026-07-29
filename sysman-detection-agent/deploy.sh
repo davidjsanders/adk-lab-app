@@ -26,19 +26,26 @@ if [ -z "${URL_MCP}" ]; then
   exit 1
 fi
 
-# 2. Deploy to Cloud Run using agents-cli
-echo "Deploying sysman-detection-agent using agents-cli..."
+# 2. Resolve project number and construct deterministic URL
+echo "Resolving project number..."
+PROJECT_NUMBER=$(gcloud projects describe "${PROJECT_ID}" --format="value(projectNumber)")
+URL_DETECTION="https://sysman-detection-agent-${PROJECT_NUMBER}.${REGION}.run.app"
+
+# Deploy to Cloud Run using agents-cli
+echo "Deploying sysman-detection-agent using agents-cli with APP_URL=${URL_DETECTION}..."
 agents-cli deploy \
   --project="${PROJECT_ID}" \
   --region="${REGION}" \
   --service-account="${SA_EMAIL}" \
   --memory="2Gi" \
-  --cpu="1" \
+  --cpu="2" \
   --min-instances=1 \
   --no-confirm-project \
-  --update-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},GOOGLE_GENAI_USE_VERTEXAI=True,MCP_SERVER_URL=${URL_MCP},FAST_MODEL=${FAST_MODEL},PRO_MODEL=${PRO_MODEL}"
+  --update-env-vars="GOOGLE_CLOUD_PROJECT=${PROJECT_ID},GOOGLE_CLOUD_LOCATION=${REGION},GOOGLE_GENAI_USE_VERTEXAI=True,MCP_SERVER_URL=${URL_MCP},FAST_MODEL=${FAST_MODEL},PRO_MODEL=${PRO_MODEL},APP_URL=${URL_DETECTION}"
 
-URL_DETECTION=$(gcloud run services describe sysman-detection-agent --project="${PROJECT_ID}" --region="${REGION}" --format="value(status.url)")
+
+
+
 
 # 5. Grant invoker permissions on MCP server to detection agent identity
 echo "Granting detection agent invoker permissions on MCP server..."

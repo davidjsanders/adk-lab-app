@@ -98,15 +98,6 @@ def render_system_card(system_id: str) -> str:
     try:
         status = client.get_system_status(system_id)
         
-        # Build LLM-readable text summary of the system telemetry
-        metrics_summary = [f"{m.id} ({m.label}): {m.val_text or str(m.value or 0)}" for m in status.metrics]
-        summary = (
-            f"System Status Summary for '{system_id}' ({status.name}):\n"
-            f"- Health Status: {status.status}\n"
-            f"- Uptime: {status.uptime_seconds}s\n"
-            f"- Telemetry: {', '.join(metrics_summary)}\n"
-        )
-
         builder = CardBuilder(status, surface_id)
         components = builder.build()
         payload = [
@@ -123,7 +114,8 @@ def render_system_card(system_id: str) -> str:
                 }
             }
         ]
-        return f"{summary}\n<a2ui-json>\n{json.dumps(payload, indent=2)}\n</a2ui-json>"
+        return f"<a2ui-json>\n{json.dumps(payload, indent=2)}\n</a2ui-json>"
+
     except Exception as err:
         logger.error(f"Failed rendering system card: {err}")
         raise RuntimeError(f"Failed rendering system card for {system_id}") from err
@@ -145,13 +137,6 @@ def render_system_logs_card(system_id: str) -> str:
     try:
         status = client.get_system_status(system_id)
         
-        # Build LLM-readable logs summary
-        log_lines = [f"[{log.level}] {log.timestamp}: {log.message}" for log in status.logs]
-        summary = (
-            f"Diagnostics Logs Summary for '{system_id}' ({status.name}):\n"
-            f"{''.join(f'  {line}\n' for line in log_lines)}"
-        )
-
         builder = CardBuilder(status, surface_id)
         components = builder.build_logs_card()
         payload = [
@@ -168,7 +153,8 @@ def render_system_logs_card(system_id: str) -> str:
                 }
             }
         ]
-        return f"{summary}\n<a2ui-json>\n{json.dumps(payload, indent=2)}\n</a2ui-json>"
+        return f"<a2ui-json>\n{json.dumps(payload, indent=2)}\n</a2ui-json>"
+
     except Exception as err:
         logger.error(f"Failed rendering system logs card: {err}")
         raise RuntimeError(f"Failed rendering system logs card for {system_id}") from err

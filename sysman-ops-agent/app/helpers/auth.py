@@ -18,13 +18,16 @@ class GoogleCloudRunAuth(httpx.Auth):
         yield request
 
 
-def get_authenticated_client(service_url: str) -> httpx.AsyncClient:
+def get_authenticated_client(service_url: str, timeout: httpx.Timeout | None = None) -> httpx.AsyncClient:
     """Returns an httpx.AsyncClient pre-configured with Google ID token auth for Cloud Run."""
     parsed = urlparse(service_url)
-    audience = f"{parsed.scheme}://{parsed.netloc}"
+    audience = f"{parsed.scheme}://{parsed.hostname}"
+    resolved_timeout = timeout or httpx.Timeout(120.0)
+
     if "127.0.0.1" in audience or "localhost" in audience:
-        return httpx.AsyncClient(timeout=httpx.Timeout(60.0))
+        return httpx.AsyncClient(timeout=resolved_timeout)
     return httpx.AsyncClient(
         auth=GoogleCloudRunAuth(audience),
-        timeout=httpx.Timeout(60.0)
+        timeout=resolved_timeout
     )
+
