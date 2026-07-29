@@ -1,11 +1,14 @@
+import asyncio
 import os
 from urllib.parse import urlparse
 from google.adk.a2a.utils.agent_to_a2a import to_a2a
+from google.adk.a2a.utils.agent_card_builder import AgentCardBuilder
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.adk.artifacts.in_memory_artifact_service import InMemoryArtifactService
 from google.adk.memory.in_memory_memory_service import InMemoryMemoryService
 from app.agent import root_agent, app as adk_app
+from app.app_utils.a2a import _default_capabilities
 
 runner = Runner(
     app=adk_app,
@@ -26,12 +29,25 @@ else:
     host = "127.0.0.1"
     port = 8006
 
+resolved_app_url = app_url or f"{protocol}://{host}:{port}"
+if not resolved_app_url.endswith("/"):
+    resolved_app_url = f"{resolved_app_url}/"
+
+agent_card = asyncio.run(AgentCardBuilder(
+    agent=root_agent,
+    capabilities=_default_capabilities(),
+    rpc_url=resolved_app_url,
+    agent_version=os.getenv("AGENT_VERSION", "0.0.1"),
+).build())
+
 # Convert the ADK Agent to an A2A Starlette app
 app = to_a2a(
     agent=root_agent,
     runner=runner,
     host=host,
     port=port,
-    protocol=protocol
+    protocol=protocol,
+    agent_card=agent_card
 )
+
 

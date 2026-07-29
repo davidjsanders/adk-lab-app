@@ -46,35 +46,35 @@ should_run() {
 # 1. Deploy Emulators
 if should_run "emulators" "${START_STEP}"; then
   echo -e "\n>>> Deploying Emulators..."
-  cd "${WORKSPACE_DIR}/sysman-emulator"
+  cd "${WORKSPACE_DIR}/sysman-v1/sysman-emulator"
   ./deploy.sh "${PROJECT_ID}"
 fi
 
 # 2. Deploy MCP Server
 if should_run "mcp" "${START_STEP}"; then
   echo -e "\n>>> Deploying MCP Server..."
-  cd "${WORKSPACE_DIR}/sysman-mcp-server"
+  cd "${WORKSPACE_DIR}/sysman-v1/sysman-mcp-server"
   ./deploy.sh "${PROJECT_ID}"
 fi
 
 # 3. Deploy Downstream Agent: Detection
 if should_run "detection" "${START_STEP}"; then
   echo -e "\n>>> Deploying Detection Agent..."
-  cd "${WORKSPACE_DIR}/sysman-detection-agent"
+  cd "${WORKSPACE_DIR}/sysman-v1/sysman-detection-agent"
   ./deploy.sh "${PROJECT_ID}"
 fi
 
 # 4. Deploy Downstream Agent: Diagnosis
 if should_run "diagnosis" "${START_STEP}"; then
   echo -e "\n>>> Deploying Diagnosis Agent..."
-  cd "${WORKSPACE_DIR}/sysman-diagnosis-agent"
+  cd "${WORKSPACE_DIR}/sysman-v1/sysman-diagnosis-agent"
   ./deploy.sh "${PROJECT_ID}"
 fi
 
 # 5. Deploy Orchestrator Agent: Ops
 if should_run "ops" "${START_STEP}"; then
   echo -e "\n>>> Deploying Orchestrator Agent..."
-  cd "${WORKSPACE_DIR}/sysman-ops-agent"
+  cd "${WORKSPACE_DIR}/sysman-v1/sysman-ops-agent"
   
   action="deploy"
   if [ "${START_STEP}" = "publish" ]; then

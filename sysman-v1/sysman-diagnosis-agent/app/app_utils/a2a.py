@@ -41,9 +41,6 @@ if TYPE_CHECKING:
     from google.adk.agents import BaseAgent
     from google.adk.runners import Runner
 
-from a2a_agent.helpers.identify_platform import identify_platform
-from a2a_agent.models.platform import Platform
-
 # URI advertised on the agent card describing the executor extension shipped
 # by ADK. Kept as a module-level constant so callers can override or extend
 # the capabilities list when needed.
@@ -54,10 +51,8 @@ _ADK_AGENT_EXECUTOR_EXTENSION_URI = (
 
 def _default_capabilities() -> AgentCapabilities:
     """Returns the default A2A capabilities used by scaffolded projects."""
-    platform = identify_platform()
-    is_streaming = platform != Platform.GOOGLE_CLOUD_AGENT_ENGINE
     return AgentCapabilities(
-        streaming=is_streaming,
+        streaming=True,
         extensions=[
             AgentExtension(
                 uri="https://a2ui.org/a2a-extension/a2ui/v0.8",
@@ -74,6 +69,7 @@ def _default_capabilities() -> AgentCapabilities:
             ),
         ],
     )
+
 
 
 

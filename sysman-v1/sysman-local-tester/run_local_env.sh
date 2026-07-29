@@ -97,7 +97,7 @@ mkdir -p "$WORKSPACE_DIR/logs"
 
 # 1. Start Emulators
 echo "Starting Linux Emulator on port $PORT_LINUX_EMULATOR..."
-cd "$WORKSPACE_DIR/sysman-emulator"
+cd "$WORKSPACE_DIR/sysman-v1/sysman-emulator"
 PORT=$PORT_LINUX_EMULATOR EMULATOR_CONFIG_PATH="config/linux_config.json" CONTROL_PASSWORD="TestPass123!" .venv/bin/python app.py > "$WORKSPACE_DIR/logs/sysman-emulator-linux.log" 2>&1 &
 LINUX_EMULATOR_PID=$!
 
@@ -111,7 +111,7 @@ CONFLUENCE_EMULATOR_PID=$!
 
 # 2. Start MCP Server
 echo "Starting MCP Server on port $MCP_PORT..."
-cd "$WORKSPACE_DIR/sysman-mcp-server"
+cd "$WORKSPACE_DIR/sysman-v1/sysman-mcp-server"
 PORT=$MCP_PORT \
 SYSTEM_EMULATORS='{"linux-server-01": "http://127.0.0.1:8081", "jira-app-01": "http://127.0.0.1:8082", "confluence-app-01": "http://127.0.0.1:8083"}' \
 CONTROL_PASSWORD="TestPass123!" \
@@ -124,13 +124,13 @@ sleep 2
 
 # 3. Start Detection Agent
 echo "Starting Detection Agent A2A service on port $DETECTION_PORT..."
-cd "$WORKSPACE_DIR/sysman-detection-agent"
+cd "$WORKSPACE_DIR/sysman-v1/sysman-detection-agent"
 .venv/bin/python -m uvicorn app.fast_api_app:app --port $DETECTION_PORT > "$WORKSPACE_DIR/logs/sysman-detection.log" 2>&1 &
 DETECTION_PID=$!
 
 # 4. Start Diagnosis Agent
 echo "Starting Diagnosis Agent A2A service on port $DIAGNOSIS_PORT..."
-cd "$WORKSPACE_DIR/sysman-diagnosis-agent"
+cd "$WORKSPACE_DIR/sysman-v1/sysman-diagnosis-agent"
 .venv/bin/python -m uvicorn app.fast_api_app:app --port $DIAGNOSIS_PORT > "$WORKSPACE_DIR/logs/sysman-diagnosis.log" 2>&1 &
 DIAGNOSIS_PID=$!
 
@@ -142,5 +142,5 @@ echo "=============================================="
 echo " All services running. Launching Orchestrator Playground..."
 echo "=============================================="
 
-cd "$WORKSPACE_DIR/sysman-ops-agent"
+cd "$WORKSPACE_DIR/sysman-v1/sysman-ops-agent"
 agents-cli playground

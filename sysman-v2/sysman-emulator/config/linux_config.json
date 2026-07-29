@@ -1,0 +1,116 @@
+{
+  "system_id": "linux-server-01",
+  "type": "linux",
+  "name": "Linux Core Host",
+  "description": "Core Enterprise Linux virtual machine VM hosting node exporter resource monitoring agents.",
+  "status": "HEALTHY",
+  "default_icon": "computer",
+  "metrics": [
+    {
+      "id": "cpu-load",
+      "type": "donut_chart",
+      "label": "CPU Usage",
+      "value": 22.5,
+      "max_value": 100.0,
+      "val_text_format": "{value:.1f}%",
+      "variation_range": [-2.0, 2.0],
+      "min_value_limit": 5.0,
+      "max_value_limit": 95.0
+    },
+    {
+      "id": "ram-usage",
+      "type": "progress_bar",
+      "label": "RAM Usage",
+      "value": 45.0,
+      "max_value": 100.0,
+      "val_text_format": "{value:.1f}%",
+      "variation_range": [-0.5, 0.5],
+      "min_value_limit": 10.0,
+      "max_value_limit": 95.0
+    },
+    {
+      "id": "disk-space",
+      "type": "progress_bar",
+      "label": "Root Disk Space",
+      "value": 58.2,
+      "max_value": 100.0,
+      "val_text_format": "{value:.1f}%",
+      "variation_range": [0.0001, 0.001],
+      "min_value_limit": 10.0,
+      "max_value_limit": 100.0
+    },
+    {
+      "id": "node-exporter-status",
+      "type": "status_pill",
+      "label": "node_exporter",
+      "value": 1.0,
+      "val_text_format": "RUNNING",
+      "status_rules": [
+        {"operator": "==", "target": 0.0, "status": "critical", "val_text": "STOPPED"},
+        {"operator": "==", "target": 1.0, "status": "healthy", "val_text": "RUNNING"}
+      ]
+    },
+    {
+      "id": "gateway-ping",
+      "type": "range_gauge",
+      "label": "Gateway Ping",
+      "value": 12.5,
+      "max_value": 100.0,
+      "yellow_threshold": 45.0,
+      "red_threshold": 75.0,
+      "val_text_format": "{value:.1f} ms",
+      "variation_range": [-1.0, 1.5],
+      "min_value_limit": 2.0,
+      "max_value_limit": 100.0
+    },
+    {
+      "id": "ssh-sessions",
+      "type": "number",
+      "label": "Active SSH Connections",
+      "value": 2.0,
+      "val_text_format": "{value:.0f} users",
+      "variation_range": [-1.0, 1.0],
+      "min_value_limit": 0.0,
+      "max_value_limit": 10.0
+    }
+  ],
+  "actions": [
+    {
+      "id": "btn-reboot",
+      "label": "Reboot VM",
+      "command": "REBOOT",
+      "color": "#EF4444",
+      "effects": {
+        "set_status": "REBOOTING",
+        "metrics": {
+          "node-exporter-status": {"set": 0.0}
+        },
+        "log": {"message": "Triggered system reboot for Linux VM server.", "level": "WARN"}
+      }
+    },
+    {
+      "id": "btn-stop-exporter",
+      "label": "Stop exporter",
+      "command": "STOP_NODE_EXPORTER",
+      "color": "#EAB308",
+      "effects": {
+        "metrics": {
+          "node-exporter-status": {"set": 0.0}
+        },
+        "log": {"message": "Service node_exporter stopped by admin control.", "level": "WARN"}
+      }
+    },
+    {
+      "id": "btn-start-exporter",
+      "label": "Start exporter",
+      "command": "START_NODE_EXPORTER",
+      "color": "#22C55E",
+      "effects": {
+        "metrics": {
+          "node-exporter-status": {"set": 1.0}
+        },
+        "log": {"message": "Service node_exporter started successfully.", "level": "INFO"}
+      }
+    }
+  ]
+}

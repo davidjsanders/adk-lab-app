@@ -34,15 +34,15 @@ from a2a.utils.constants import (
     EXTENDED_AGENT_CARD_PATH,
 )
 from google.adk.a2a.executor.a2a_agent_executor import A2aAgentExecutor
+from google.adk.a2a.executor.config import A2aAgentExecutorConfig
 from google.adk.a2a.utils.agent_card_builder import AgentCardBuilder
+
+from app.helpers.a2ui_interceptor import a2ui_converter_interceptor
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
     from google.adk.agents import BaseAgent
     from google.adk.runners import Runner
-
-from a2a_agent.helpers.identify_platform import identify_platform
-from a2a_agent.models.platform import Platform
 
 # URI advertised on the agent card describing the executor extension shipped
 # by ADK. Kept as a module-level constant so callers can override or extend
@@ -54,10 +54,8 @@ _ADK_AGENT_EXECUTOR_EXTENSION_URI = (
 
 def _default_capabilities() -> AgentCapabilities:
     """Returns the default A2A capabilities used by scaffolded projects."""
-    platform = identify_platform()
-    is_streaming = platform != Platform.GOOGLE_CLOUD_AGENT_ENGINE
     return AgentCapabilities(
-        streaming=is_streaming,
+        streaming=True,
         extensions=[
             AgentExtension(
                 uri="https://a2ui.org/a2a-extension/a2ui/v0.8",
@@ -74,7 +72,6 @@ def _default_capabilities() -> AgentCapabilities:
             ),
         ],
     )
-
 
 
 async def attach_a2a_routes(
@@ -108,8 +105,14 @@ async def attach_a2a_routes(
         agent_version=resolved_agent_version,
     ).build()
 
+    executor_config = A2aAgentExecutorConfig(
+        execute_interceptors=[
+            a2ui_converter_interceptor,
+        ]
+    )
+
     request_handler = DefaultRequestHandler(
-        agent_executor=A2aAgentExecutor(runner=runner),
+        agent_executor=A2aAgentExecutor(runner=runner, config=executor_config),
         task_store=task_store,
     )
 
