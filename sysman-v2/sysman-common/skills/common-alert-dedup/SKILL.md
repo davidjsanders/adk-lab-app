@@ -1,8 +1,16 @@
 ---
-name: alert-dedup
-description: Group and deduplicate multiple alerts originating from the same root-cause failure (e.g. Jira and Confluence both failing due to DB outage).
-agent_types: ["Linux", "Jira", "Confluence"]
-categories: ["Linux", "on-prem", "SaaS"]
+name: common-alert-dedup
+description: Group and deduplicate multiple alerts originating from the same root-cause
+  failure (e.g. Jira and Confluence both failing due to DB outage).
+agent_types:
+- Linux
+- Jira
+- Confluence
+categories:
+- Linux
+- on-prem
+- SaaS
+license: Apache 2.0
 ---
 # Alert Deduplication and Correlation Skill
 

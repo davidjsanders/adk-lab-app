@@ -2,7 +2,7 @@ import logging
 import os
 from google.adk.apps import App
 from app.classes.orchestrator import Orchestrator
-from app.classes.specialist import SpecialistAgent
+from app.classes.specialist_agent import SpecialistAgent
 from app.config import settings
 from app.plugins.a2ui_plugin import A2UIPlugin
 

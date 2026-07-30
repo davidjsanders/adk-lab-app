@@ -1,8 +1,16 @@
 ---
-name: drift-detection
-description: Scan syslog and metrics history to detect slow, gradual trends over time (such as JVM memory leaks or disk space fill).
-agent_types: ["Linux", "Jira", "Confluence"]
-categories: ["Linux", "on-prem", "SaaS"]
+name: common-drift-detection
+description: Scan syslog and metrics history to detect slow, gradual trends over time
+  (such as JVM memory leaks or disk space fill).
+agent_types:
+- Linux
+- Jira
+- Confluence
+categories:
+- Linux
+- on-prem
+- SaaS
+license: Apache 2.0
 ---
 # Drift Detection Skill
 

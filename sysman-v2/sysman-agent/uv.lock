@@ -793,7 +793,7 @@ wheels = [
 
 [[package]]
 name = "google-adk"
-version = "2.4.0"
+version = "2.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiosqlite" },
@@ -821,12 +821,16 @@ dependencies = [
     { name = "watchdog" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2a/a1/6048b1c22817859bafc1101f8ba26f704233d9acb07e715dff5fb41b9b55/google_adk-2.4.0.tar.gz", hash = "sha256:5a2996b288d591deefcb277eeeeb7da838d72056675763bfef52ad3b36975dde", size = 3566788, upload-time = "2026-07-07T19:46:14.802Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d7/8b/d014c98e987ed3a95ac3740d2b5c8e8e891bfd88c3ac2253fca9547f3b1f/google_adk-2.5.0.tar.gz", hash = "sha256:55b88cac9d5072d511fd3224e5f334e57fb2b0ae567507e531e03fdfb60c82c2", size = 3608134, upload-time = "2026-07-16T20:43:06.464Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fd/ab/12ec18054990ac69f37dae8327f5d8d5e04557bada0d8d725afd872d3020/google_adk-2.4.0-py3-none-any.whl", hash = "sha256:fba91f1a693e5fc2fd13dc40d625562bd52e44a7baaeecedb01811a68063d847", size = 4123277, upload-time = "2026-07-07T19:46:13.026Z" },
+    { url = "https://files.pythonhosted.org/packages/52/fe/699d21edebd1305b6d23fd570140cf0cf921f34f66e4611d840684717c3a/google_adk-2.5.0-py3-none-any.whl", hash = "sha256:d247ca3639921a54a86feb797a88d08c1d2c9a60c3f5ff2805e49beb29a9cb8d", size = 4169976, upload-time = "2026-07-16T20:43:04.647Z" },
 ]
 
 [package.optional-dependencies]
+agent-identity = [
+    { name = "google-cloud-agentidentitycredentials" },
+    { name = "google-cloud-iamconnectorcredentials" },
+]
 gcp = [
     { name = "google-cloud-aiplatform", extra = ["agent-engines"] },
     { name = "google-cloud-bigquery" },
@@ -909,6 +913,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/70/18/90c7fac516e63cf2058166fce0c88c353647c677b51cc036c09c49bb5cbb/google_auth_oauthlib-1.4.0.tar.gz", hash = "sha256:18b5e28880eb8eba9065c436becdc0ee8e4b59117a73a510679c82f70cd363d2", size = 21675, upload-time = "2026-05-07T08:03:47.816Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/37/d3/d7dff0d58a9e9244b48044bfb6a898bfcc8ecc42e0031d1bebc695344725/google_auth_oauthlib-1.4.0-py3-none-any.whl", hash = "sha256:251314f213a9ee46a5ae73988e84fd7cca8bb68e7ecf4bfd45940f9e7f51d070", size = 19261, upload-time = "2026-05-07T08:02:13.798Z" },
+]
+
+[[package]]
+name = "google-cloud-agentidentitycredentials"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "google-api-core", extra = ["grpc"] },
+    { name = "google-auth" },
+    { name = "grpcio" },
+    { name = "proto-plus" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e3/52/991e1beea8032775ba2cda18b75ebde934807729d8b12cfad1dc8c595a36/google_cloud_agentidentitycredentials-0.1.0.tar.gz", hash = "sha256:50c03675ae1578b87d0085abefbdb1723516befef65a96e07975d2916a64a86b", size = 53263, upload-time = "2026-06-09T17:44:34.111Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/31/96/6069ce3b381b992de2dc85c7ee1be6fde2cc7d04980825dd7f1bdd5ee47f/google_cloud_agentidentitycredentials-0.1.0-py3-none-any.whl", hash = "sha256:8fa5233e52df8a4ed1c70bf51bb752ce3ff6a819a448add235e6ce223e69e027", size = 55613, upload-time = "2026-06-09T17:44:32.763Z" },
 ]
 
 [[package]]
@@ -1102,6 +1122,22 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a3/13/d6c3f207c8147768f4b56406c1534bdda034be76712bd960a048412f7001/google_cloud_iam-2.24.0.tar.gz", hash = "sha256:199a2512723abec10a49d581e638ccdf5b8a9671e1d5d6ff3ffeaa727075435f", size = 559063, upload-time = "2026-06-22T23:21:31.061Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3b/74/31220c86789d4591aa493652656b83a428dcdd46f62b518e2118f98f76bd/google_cloud_iam-2.24.0-py3-none-any.whl", hash = "sha256:29d52032f774b4d3c01b6d8e1f4a8d029ae61c3bdba60ddac402866be11159db", size = 514860, upload-time = "2026-06-22T23:19:15.287Z" },
+]
+
+[[package]]
+name = "google-cloud-iamconnectorcredentials"
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "google-api-core", extra = ["grpc"] },
+    { name = "google-auth" },
+    { name = "grpcio" },
+    { name = "proto-plus" },
+    { name = "protobuf" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/56/01/9678b0f674e6beb18cc76dfa3d0a9da5b7eb433567bd68a08a8fe2a9d604/google_cloud_iamconnectorcredentials-0.1.1.tar.gz", hash = "sha256:269438ce79f5826e09e45919022881291da8e22293d009d5bd9dd346448d4ddb", size = 55341, upload-time = "2026-06-22T23:21:32.405Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ab/21/e30bcd57445883e9c7452431346891fd76eae4a03d2e6fc0ee088131a70f/google_cloud_iamconnectorcredentials-0.1.1-py3-none-any.whl", hash = "sha256:0f69103a80eb8df5a52d1c595e51927d83e3383d35515f1d07bc88ed67fee6bc", size = 57609, upload-time = "2026-06-22T23:19:16.866Z" },
 ]
 
 [[package]]
@@ -3646,7 +3682,7 @@ dependencies = [
     { name = "asyncpg" },
     { name = "fastapi" },
     { name = "gcsfs" },
-    { name = "google-adk", extra = ["gcp", "otel-gcp"] },
+    { name = "google-adk", extra = ["agent-identity", "gcp", "otel-gcp"] },
     { name = "google-cloud-aiplatform", extra = ["evaluation"] },
     { name = "google-cloud-discoveryengine" },
     { name = "google-cloud-logging" },
@@ -3668,7 +3704,7 @@ requires-dist = [
     { name = "asyncpg", specifier = ">=0.30.0,<1.0.0" },
     { name = "fastapi", specifier = ">=0.115.8,<1.0.0" },
     { name = "gcsfs", specifier = ">=2024.11.0" },
-    { name = "google-adk", extras = ["gcp", "otel-gcp"], specifier = ">=2.2.0,<3.0.0" },
+    { name = "google-adk", extras = ["gcp", "otel-gcp", "agent-identity"], specifier = ">=2.5.0,<3.0.0" },
     { name = "google-cloud-aiplatform", extras = ["evaluation"], specifier = ">=1.156.0" },
     { name = "google-cloud-discoveryengine", specifier = ">=0.11.0" },
     { name = "google-cloud-logging", specifier = ">=3.12.0,<4.0.0" },

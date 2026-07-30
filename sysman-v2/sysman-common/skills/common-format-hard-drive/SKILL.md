@@ -1,8 +1,14 @@
 ---
-name: format-hard-drive
+name: common-format-hard-drive
 description: Format a hard drive or disk partition.
-agent_types: ["Linux", "Jira", "Confluence"]
-categories: ["Linux", "on-prem"]
+agent_types:
+- Linux
+- Jira
+- Confluence
+categories:
+- Linux
+- on-prem
+license: Apache 2.0
 ---
 # Format Hard Drive Skill
 

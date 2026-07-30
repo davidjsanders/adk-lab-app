@@ -1,8 +1,12 @@
 ---
-name: pausing-indexing
+name: common-pausing-indexing
 description: Pause content search indexing to relieve database or CPU pressure.
-agent_types: ["Confluence"]
-categories: ["SaaS", "on-prem"]
+agent_types:
+- Confluence
+categories:
+- SaaS
+- on-prem
+license: Apache 2.0
 ---
 # Pausing Indexing Skill
 

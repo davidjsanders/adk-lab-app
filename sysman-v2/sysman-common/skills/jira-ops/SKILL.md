@@ -1,6 +1,8 @@
 ---
 name: jira-ops
-description: Operator rules for Atlassian Jira server, including DB pool scaling, Garbage Collection triggers, and JVM restarts.
+description: Operator rules for Atlassian Jira server, including DB pool scaling,
+  Garbage Collection triggers, and JVM restarts.
+license: Apache 2.0
 ---
 # Atlassian Jira Server Operations
 

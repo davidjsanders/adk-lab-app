@@ -1,8 +1,12 @@
 ---
-name: restarting-jira
+name: jira-restarting
 description: Restart Atlassian Jira application services.
-agent_types: ["Jira"]
-categories: ["SaaS", "on-prem"]
+agent_types:
+- Jira
+categories:
+- SaaS
+- on-prem
+license: Apache 2.0
 ---
 # Restarting Jira Skill
 

@@ -1,8 +1,12 @@
 ---
-name: reducing-memory-heap-usage
+name: common-reducing-memory-heap-usage
 description: Diagnose and reduce Java JVM memory heap usage.
-agent_types: ["Jira"]
-categories: ["SaaS", "on-prem"]
+agent_types:
+- Jira
+categories:
+- SaaS
+- on-prem
+license: Apache 2.0
 ---
 # Reducing Memory Heap Usage Skill
 

@@ -1,8 +1,15 @@
 ---
-name: rotate-logs
+name: common-rotate-logs
 description: Rotate, truncate, or prune system and application log files.
-agent_types: ["Linux", "Jira", "Confluence"]
-categories: ["Linux", "on-prem", "SaaS"]
+agent_types:
+- Linux
+- Jira
+- Confluence
+categories:
+- Linux
+- on-prem
+- SaaS
+license: Apache 2.0
 ---
 # Rotate Logs Skill
 

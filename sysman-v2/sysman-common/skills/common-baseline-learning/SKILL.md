@@ -1,8 +1,16 @@
 ---
-name: baseline-learning
-description: Evaluate metrics relative to historical or standard baseline ranges (e.g. Jira normal active DB connection count is 5-20).
-agent_types: ["Linux", "Jira", "Confluence"]
-categories: ["Linux", "on-prem", "SaaS"]
+name: common-baseline-learning
+description: Evaluate metrics relative to historical or standard baseline ranges (e.g.
+  Jira normal active DB connection count is 5-20).
+agent_types:
+- Linux
+- Jira
+- Confluence
+categories:
+- Linux
+- on-prem
+- SaaS
+license: Apache 2.0
 ---
 # Baseline Learning Skill
 

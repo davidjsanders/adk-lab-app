@@ -1,6 +1,8 @@
 ---
 name: confluence-ops
-description: Operator rules for Atlassian Confluence server, including attachments storage purges, collaborative websockets reconnects, and system restarts.
+description: Operator rules for Atlassian Confluence server, including attachments
+  storage purges, collaborative websockets reconnects, and system restarts.
+license: Apache 2.0
 ---
 # Atlassian Confluence Server Operations
 

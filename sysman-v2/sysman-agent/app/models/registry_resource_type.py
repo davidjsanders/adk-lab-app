@@ -20,7 +20,7 @@ from enum import Enum
 class RegistryResourceType(Enum):
     """Enum representing the different types of resources in the Agent Registry."""
 
-    AGENT = "agent"
-    MCP = "mcp"
-    ENDPOINT = "endpoint"
-    SKILL = "skill"
+    AGENT = "agents"
+    MCP = "mcpServers"
+    ENDPOINT = "endpoints"
+    SKILL = "skills"

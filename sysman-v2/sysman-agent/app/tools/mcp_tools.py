@@ -18,6 +18,7 @@ def mcp_httpx_factory(**kwargs) -> httpx.AsyncClient:
     return httpx.AsyncClient(**kwargs)
 
 
+print(f"DEBUG: settings.mcp_server_url = {settings.mcp_server_url}")
 # Initialize McpToolset with StreamableHTTPConnectionParams
 mcp_toolset = McpToolset(
     connection_params=StreamableHTTPConnectionParams(

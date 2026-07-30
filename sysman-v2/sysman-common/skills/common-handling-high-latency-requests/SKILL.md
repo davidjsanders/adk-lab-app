@@ -1,8 +1,13 @@
 ---
-name: handling-high-latency-requests
+name: common-handling-high-latency-requests
 description: Troubleshoot and remediate high latency or response timeouts.
-agent_types: ["Jira", "Confluence"]
-categories: ["SaaS", "on-prem"]
+agent_types:
+- Jira
+- Confluence
+categories:
+- SaaS
+- on-prem
+license: Apache 2.0
 ---
 # Handling High Latency Requests Skill
 

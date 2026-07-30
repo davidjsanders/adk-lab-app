@@ -7,6 +7,8 @@
 *   **Acknowledge Uncertainty:** If multiple implementations exist or a task is ambiguous, list 2-3 logical paths, explain the tradeoffs, and ask for guidance before writing any code.
 *   **Simplicity First:** Write the absolute minimum code required to solve the immediate problem. Do not introduce speculative abstractions or helper methods for "future use."
 *   **Surgical Changes:** Modify only the files and lines necessary for the task. Do not reformat or clean up adjacent files unless explicitly requested.
+*   **PEP-8 Import Guidelines:** All imports must reside at the top of python files in PEP-8 format, unless they are lazy-loaded within code blocks (which must be explicitly documented with explanatory rationale comments).
+
 
 ### 2. Validation & Feedback Loops
 *   **Verify, Don't Assume:** You must always run local validation checks or tests before declaring a task finished. 

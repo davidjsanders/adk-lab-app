@@ -1,8 +1,16 @@
 ---
-name: anomaly-detection
-description: Query metrics from systems and detect threshold breaches (e.g. CPU load > 90%, process_down == 0).
-agent_types: ["Linux", "Jira", "Confluence"]
-categories: ["Linux", "on-prem", "SaaS"]
+name: common-anomaly-detection
+description: Query metrics from systems and detect threshold breaches (e.g. CPU load
+  > 90%, process_down == 0).
+agent_types:
+- Linux
+- Jira
+- Confluence
+categories:
+- Linux
+- on-prem
+- SaaS
+license: Apache 2.0
 ---
 # Anomaly Detection Skill
 

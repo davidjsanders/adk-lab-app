@@ -59,3 +59,5 @@ Ask the user: Option A (simple single-project) or Option B (full CI/CD pipeline 
 - **Run Python with `uv`**: `uv run python script.py`. Run `agents-cli install` first.
 - **Stop on repeated errors**: If the same error appears 3+ times, fix the root cause instead of retrying.
 - **Terraform conflicts** (Error 409): Use `terraform import` instead of retrying creation.
+- **Python imports**: All imports must be placed at the top of the file in PEP-8 format, unless they are lazy-loaded within a function/method (which must be explicitly documented with a comment explaining the delay rationale).
+

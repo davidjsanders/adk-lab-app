@@ -71,6 +71,11 @@ class Settings(BaseSettings):
         default="",
         validation_alias="IMPERSONATE_SA"
     )
+    skills_cache_dir: Optional[str] = Field(
+        default=".skills_cache",
+        validation_alias="SKILLS_CACHE_DIR"
+    )
+
 
 
     # Vertex AI Search (for Diagnosis Agent)

@@ -15,8 +15,11 @@ if settings.impersonate_sa:
     # Only impersonate in local workstation development environments
     if not os.getenv("K_SERVICE") and not os.getenv("APP_URL"):
         original_default = google.auth.default
+        cache = []
         def impersonated_default(*args, **kwargs):
-            base_creds, project = original_default(*args, **kwargs)
+            if not cache:
+                cache.append(original_default(*args, **kwargs))
+            base_creds, project = cache[0]
             impersonated_creds = Credentials(
                 source_credentials=base_creds,
                 target_principal=settings.impersonate_sa,

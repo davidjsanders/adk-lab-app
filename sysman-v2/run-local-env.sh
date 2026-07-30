@@ -16,6 +16,11 @@ JIRA_AGENT_PORT=8006
 CONFLUENCE_AGENT_PORT=8007
 LINUX_AGENT_PORT=8008
 
+# Clean up any stale port bindings from previous runs first
+echo "Cleaning up any stale port bindings (8081, 8082, 8083, 8005, 8006, 8007, 8008, 8080)..."
+fuser -k 8081/tcp 8082/tcp 8083/tcp 8005/tcp 8006/tcp 8007/tcp 8008/tcp 8080/tcp >/dev/null 2>&1 || true
+sleep 2
+
 # Active models & credentials
 export GOOGLE_CLOUD_PROJECT="${GOOGLE_CLOUD_PROJECT:-agentspace-argolis-demo}"
 export GOOGLE_CLOUD_LOCATION="${GOOGLE_CLOUD_LOCATION:-us-central1}"
@@ -29,6 +34,16 @@ export MCP_SERVER_URL="http://127.0.0.1:$MCP_PORT"
 export JIRA_AGENT_URL="http://127.0.0.1:$JIRA_AGENT_PORT/a2a/app"
 export CONFLUENCE_AGENT_URL="http://127.0.0.1:$CONFLUENCE_AGENT_PORT/a2a/app"
 export LINUX_AGENT_URL="http://127.0.0.1:$LINUX_AGENT_PORT/a2a/app"
+
+# Bypassing google-auth's gcloud fallback logic by copying ADC to a custom path
+DEFAULT_ADC_PATH="$HOME/.config/gcloud/application_default_credentials.json"
+TEMP_ADC_PATH="$WORKSPACE_DIR/logs/adc_temp.json"
+
+if [ -f "$DEFAULT_ADC_PATH" ]; then
+  mkdir -p "$WORKSPACE_DIR/logs"
+  cp "$DEFAULT_ADC_PATH" "$TEMP_ADC_PATH"
+  export GOOGLE_APPLICATION_CREDENTIALS="$TEMP_ADC_PATH"
+fi
 
 # Clean up variables
 LINUX_EMULATOR_PID=""
@@ -82,8 +97,9 @@ cleanup() {
     kill "$LINUX_AGENT_PID" 2>/dev/null || true
   fi
 
-  log_tty "Cleaning up local port bindings (8081, 8082, 8083, 8005, 8006, 8007, 8008)..."
-  fuser -k 8081/tcp 8082/tcp 8083/tcp 8005/tcp 8006/tcp 8007/tcp 8008/tcp 2>/dev/null || true
+  log_tty "Cleaning up local port bindings (8081, 8082, 8083, 8005, 8006, 8007, 8008, 8080)..."
+  fuser -k 8081/tcp 8082/tcp 8083/tcp 8005/tcp 8006/tcp 8007/tcp 8008/tcp 8080/tcp >/dev/null 2>&1 || true
+  rm -f "$WORKSPACE_DIR/logs/adc_temp.json" 2>/dev/null || true
 
   sleep 1
   log_tty "=============================================="
@@ -148,8 +164,28 @@ echo "Starting Linux Agent on port $LINUX_AGENT_PORT..."
 cd "$WORKSPACE_DIR/sysman-v2/sysman-agent"
 PORT=$LINUX_AGENT_PORT AGENT_ROLE="Linux" AGENT_CATEGORIES="Linux" uv run python -m uvicorn app.fast_api_app:app --host 127.0.0.1 --port $LINUX_AGENT_PORT > "$WORKSPACE_DIR/logs/sysman-v2-agent-linux.log" 2>&1 &
 LINUX_AGENT_PID=$!
+# 4. Wait for Specialist Agents to be fully loaded and ready
+wait_for_agent() {
+  local url=$1
+  local name=$2
+  local timeout=30
+  local count=0
+  echo -n "Waiting for $name ($url) to be ready..."
+  while ! curl -s --fail "$url/.well-known/agent-card.json" >/dev/null; do
+    sleep 1
+    count=$((count + 1))
+    if [ $count -ge $timeout ]; then
+      echo " TIMEOUT!"
+      exit 1
+    fi
+    echo -n "."
+  done
+  echo " READY!"
+}
 
-
+wait_for_agent "$JIRA_AGENT_URL" "Jira Agent"
+wait_for_agent "$CONFLUENCE_AGENT_URL" "Confluence Agent"
+wait_for_agent "$LINUX_AGENT_URL" "Linux Agent"
 
 echo "=============================================="
 echo " All services running. Launching Orchestrator Playground..."

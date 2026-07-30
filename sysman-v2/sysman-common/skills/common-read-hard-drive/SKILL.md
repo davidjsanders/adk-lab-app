@@ -1,8 +1,15 @@
 ---
-name: read-hard-drive
+name: common-read-hard-drive
 description: Read hard drive statistics and disk space metrics for the system.
-agent_types: ["Linux", "Jira", "Confluence"]
-categories: ["Linux", "on-prem", "SaaS"]
+agent_types:
+- Linux
+- Jira
+- Confluence
+categories:
+- Linux
+- on-prem
+- SaaS
+license: Apache 2.0
 ---
 # Read Hard Drive Skill
 

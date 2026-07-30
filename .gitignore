@@ -15,6 +15,10 @@ service_account.json
 credentials.json
 secrets.json
 .secrets/
+adc_temp.json
+.skills_cache/
+**/.skills_cache/
+
 
 # Python & Virtual Environments
 .venv/
