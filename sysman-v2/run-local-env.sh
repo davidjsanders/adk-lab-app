@@ -152,17 +152,17 @@ export SKILLS_DIR="$WORKSPACE_DIR/sysman-v2/sysman-common/skills"
 
 echo "Starting Jira Agent on port $JIRA_AGENT_PORT..."
 cd "$WORKSPACE_DIR/sysman-v2/sysman-agent"
-PORT=$JIRA_AGENT_PORT AGENT_ROLE="Jira" AGENT_CATEGORIES="SaaS,on-prem" uv run python -m uvicorn app.fast_api_app:app --host 127.0.0.1 --port $JIRA_AGENT_PORT > "$WORKSPACE_DIR/logs/sysman-v2-agent-jira.log" 2>&1 &
+PORT=$JIRA_AGENT_PORT AGENT_ROLE="specialist" AGENT_CONFIG_FILE="jira-prd.json" uv run python -m uvicorn app.fast_api_app:app --host 127.0.0.1 --port $JIRA_AGENT_PORT > "$WORKSPACE_DIR/logs/sysman-v2-agent-jira.log" 2>&1 &
 JIRA_AGENT_PID=$!
 
 echo "Starting Confluence Agent on port $CONFLUENCE_AGENT_PORT..."
 cd "$WORKSPACE_DIR/sysman-v2/sysman-agent"
-PORT=$CONFLUENCE_AGENT_PORT AGENT_ROLE="Confluence" AGENT_CATEGORIES="SaaS,on-prem" uv run python -m uvicorn app.fast_api_app:app --host 127.0.0.1 --port $CONFLUENCE_AGENT_PORT > "$WORKSPACE_DIR/logs/sysman-v2-agent-confluence.log" 2>&1 &
+PORT=$CONFLUENCE_AGENT_PORT AGENT_ROLE="specialist" AGENT_CONFIG_FILE="confluence-prd.json" uv run python -m uvicorn app.fast_api_app:app --host 127.0.0.1 --port $CONFLUENCE_AGENT_PORT > "$WORKSPACE_DIR/logs/sysman-v2-agent-confluence.log" 2>&1 &
 CONFLUENCE_AGENT_PID=$!
 
 echo "Starting Linux Agent on port $LINUX_AGENT_PORT..."
 cd "$WORKSPACE_DIR/sysman-v2/sysman-agent"
-PORT=$LINUX_AGENT_PORT AGENT_ROLE="Linux" AGENT_CATEGORIES="Linux" uv run python -m uvicorn app.fast_api_app:app --host 127.0.0.1 --port $LINUX_AGENT_PORT > "$WORKSPACE_DIR/logs/sysman-v2-agent-linux.log" 2>&1 &
+PORT=$LINUX_AGENT_PORT AGENT_ROLE="specialist" AGENT_CONFIG_FILE="linux-prd.json" uv run python -m uvicorn app.fast_api_app:app --host 127.0.0.1 --port $LINUX_AGENT_PORT > "$WORKSPACE_DIR/logs/sysman-v2-agent-linux.log" 2>&1 &
 LINUX_AGENT_PID=$!
 # 4. Wait for Specialist Agents to be fully loaded and ready
 wait_for_agent() {

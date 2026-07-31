@@ -27,9 +27,10 @@ from app.callbacks.specialist_state_loader import specialist_state_loader
 from app.classes.global_gemini import GlobalGemini
 from app.config import settings
 from app.classes.skills_cache import SkillCache
-from app.tools.mcp_tools import mcp_toolset
+# from app.tools.mcp_tools import mcp_toolset
 from ..models.agent_categories import AgentCategories
 from ..models.specialist_agent_config import SpecialistAgentConfig
+from .mcp_helper import McpHelper
 
 
 # Configure module logger
@@ -47,6 +48,14 @@ class SpecialistAgent(Agent):
             config: SpecialistAgentConfig instance containing agent configuration.
         """
         agent_name = config.name.lower().replace(' ', '_')
+        # 1. Get tools
+        mcp_tools = []
+        if config.mcp_servers:
+            mcp_helper = McpHelper(
+                settings=settings,
+                mcp_servers=config.mcp_servers
+            )
+            mcp_tools = mcp_helper.get_toolset()
 
         # 2. Discover and fetch matching skills via the cache manager.
         # cache = SkillCache(role=agent_name, cache_setting=settings.skills_cache_dir)
@@ -60,7 +69,7 @@ class SpecialistAgent(Agent):
             description=config.description,
             instruction=config.instruction,
             tools=[
-                mcp_toolset,
+                *mcp_tools,
                 # system_skills,
             ],
             before_agent_callback=partial(specialist_state_loader, target_systems=config.target_systems),

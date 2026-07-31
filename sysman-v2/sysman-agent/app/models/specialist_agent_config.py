@@ -33,3 +33,8 @@ class SpecialistAgentConfig(BaseModel):
         alias="target-systems",
         description="List of target system IDs assigned to this specialist agent"
     )
+    mcp_servers: List[str] = Field(
+        default_factory=list,
+        alias="mcp-servers",
+        description="List of MCP server names referenced/used by this specialist agent"
+    )

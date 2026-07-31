@@ -1,0 +1,108 @@
+{
+  "tools": [
+    {
+      "name": "list_systems",
+      "description": "Lists all registered virtual systems in the fleet.\n\nReturns:\n    List of SystemMetadata models containing system details.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_system_status",
+      "description": "Queries detailed status, metrics, and health of a specific system.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "system_id": {
+            "type": "string",
+            "description": "Unique string ID of the target system (e.g. 'linux-server-01')."
+          }
+        },
+        "required": [
+          "system_id"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "execute_system_command",
+      "description": "Sends lifecycle restarts, Garbage Collection, websocket reconnects or fault injections.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "system_id": {
+            "type": "string",
+            "description": "Target system ID."
+          },
+          "command": {
+            "type": "string",
+            "description": "Command keyword to execute.\nValid values:\n- For Linux: 'REBOOT', 'STOP_NODE_EXPORTER', 'START_NODE_EXPORTER', 'INJECT_FAULT', 'CLEAR_FAULT'\n- For Jira: 'RESTART_JIRA', 'GC_CLEANUP', 'EXPAND_DB_POOL', 'EXHAUST_DB_POOL', 'TRIGGER_JVM_LEAK', 'RESET_SIMULATION'\n- For Confluence: 'REBOOT', 'RECONNECT_WEBSOCKETS', 'PURGE_ATTACHMENTS', 'DROP_WEBSOCKETS', 'FILL_DISK', 'RESET_SIMULATION'"
+          }
+        },
+        "required": [
+          "system_id",
+          "command"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "get_system_logs",
+      "description": "Retrieves recent syslog or application logs for the requested system.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "system_id": {
+            "type": "string",
+            "description": "Target system ID."
+          },
+          "limit": {
+            "default": 15,
+            "type": "integer",
+            "description": "Number of recent log lines to retrieve (default: 15)."
+          }
+        },
+        "required": [
+          "system_id"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "render_system_card",
+      "description": "Renders a native A2UI v0.8 interactive system operations status card.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "system_id": {
+            "type": "string",
+            "description": "Unique string ID of target system."
+          }
+        },
+        "required": [
+          "system_id"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "name": "render_system_logs_card",
+      "description": "Renders a native A2UI v0.8 interactive diagnostics logs card for the target system.",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "system_id": {
+            "type": "string",
+            "description": "Unique string ID of target system."
+          }
+        },
+        "required": [
+          "system_id"
+        ],
+        "type": "object"
+      }
+    }
+  ]
+}
