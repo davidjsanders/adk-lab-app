@@ -1,0 +1,19 @@
+{
+  "id": "logs-console",
+  "component": {
+    "Column": {
+      "children": {
+        "explicitList": "{{logs_children}}"
+      },
+      "align": "stretch"
+    }
+  },
+  "style": {
+    "backgroundColor": "#020617",
+    "borderRadius": "6px",
+    "padding": "8px",
+    "gap": "4px",
+    "height": "350px",
+    "overflowY": "auto"
+  }
+}

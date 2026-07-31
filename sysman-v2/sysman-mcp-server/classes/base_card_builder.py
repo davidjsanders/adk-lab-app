@@ -80,7 +80,7 @@ class BaseCardBuilder(ABC):
             return "#EF4444"
         return "#22C55E"
 
-    def _load_template(self, filename: str, placeholders: Dict[str, str]) -> Any:
+    def _load_template(self, filename: str, placeholders: Dict[str, Any]) -> Any:
         """Loads a JSON template file and performs simple string substitution for placeholders.
 
         Args:
@@ -98,7 +98,10 @@ class BaseCardBuilder(ABC):
 
         content = self._TEMPLATE_CACHE[filename]
         for key, val in placeholders.items():
-            content = content.replace(f"{{{{{key}}}}}", str(val))
+            if isinstance(val, (list, dict)):
+                content = content.replace(f'"{{{{{key}}}}}"', json.dumps(val))
+            else:
+                content = content.replace(f"{{{{{key}}}}}", str(val))
 
         return json.loads(content)
 

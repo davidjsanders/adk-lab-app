@@ -17,24 +17,37 @@
 from typing import Any, Dict, List
 
 from .base_card_builder import BaseCardBuilder
-from helpers.generate_donut_chart import generate_donut_chart
-from helpers.generate_horizontal_bar import generate_horizontal_bar
-from helpers.generate_range_gauge import generate_range_gauge
-from helpers.generate_status_pill import generate_status_pill
 from helpers.generate_material_icon_svg import generate_material_icon_svg
-from helpers.generate_number_widget import generate_number_widget
 from helpers.generate_traffic_light_svg import generate_traffic_light_svg
+from helpers.generate_metrics_components import generate_metrics_components
+from helpers.generate_action_components import generate_action_components
+from helpers.generate_log_components import generate_log_components
 from helpers.clean_payload import clean_payload
 
 
 class CardBuilderV08(BaseCardBuilder):
-    """Constructs layout and telemetry components for interactive A2UI status cards using v0.8 schema."""
+    """Concrete A2UI v0.8 card builder implementation.
+
+    This builder decouples UI structure declarations from business logic by loading static layout
+    JSON templates from the `templates/` directory. Placeholders (e.g. `{{name}}`) in templates
+    are dynamically replaced at load time.
+
+    The builder delegates low-level metric loops, button packaging, and console logs generation
+    to specialized helpers.
+    """
 
     def build(self) -> List[Dict[str, Any]]:
-        """Assembles and returns list of A2UI components representing the system.
+        """Assembles and returns a complete list of A2UI components representing the system.
+
+        This method orchestrates card generation by:
+        1. Loading the base card container shell from `v08_card_base.json`.
+        2. Delegating metric chart generation to `generate_metrics_components`.
+        3. Dynamically binding grid rows to the parent column container.
+        4. Delegating action control buttons generation to `generate_action_components`.
+        5. Binding action buttons to the action row container.
 
         Returns:
-            List of dictionary components compliant with A2UI v0.8 specification.
+            List of dictionary components compliant with the A2UI v0.8 specification.
         """
         system_id = self.status.system_id
         sys_type = self.status.type
@@ -47,10 +60,11 @@ class CardBuilderV08(BaseCardBuilder):
         uptime_str = self._format_uptime(uptime)
         status_color = self._resolve_status_color(status)
 
-        # Generate SVGs
+        # Generate SVGs for status card widgets
         header_icon_uri = generate_material_icon_svg(icon_name, "#38BDF8")
         traffic_light_uri = generate_traffic_light_svg(status)
 
+        # Step 1: Load base card container structure with basic system details
         components = self._load_template(
             "v08_card_base.json",
             {
@@ -66,95 +80,26 @@ class CardBuilderV08(BaseCardBuilder):
             },
         )
 
-        # Dynamic metrics content generation
-        metrics_children_ids = []
-        for m_spec in self.status.metrics:
-            m_id = m_spec.id
-            m_type = m_spec.type
-            label = m_spec.label
-            value = m_spec.value or 0.0
-            val_text = m_spec.val_text or str(value)
+        # Step 2: Generate system metrics components and group them into grid rows
+        metric_components, grid_rows_ids = generate_metrics_components(
+            self.status.metrics, self._load_template
+        )
+        components.extend(metric_components)
 
-            svg_data_uri = None
-            if m_type == "donut_chart":
-                svg_data_uri = generate_donut_chart(value, label)
-            elif m_type == "progress_bar":
-                svg_data_uri = generate_horizontal_bar(value, label, val_text)
-            elif m_type == "range_gauge":
-                max_value = m_spec.max_value or 100.0
-                yellow_threshold = m_spec.yellow_threshold or 50.0
-                red_threshold = m_spec.red_threshold or 80.0
-                svg_data_uri = generate_range_gauge(
-                    value, max_value, label, val_text, yellow_threshold, red_threshold
-                )
-            elif m_type == "status_pill":
-                pill_status = m_spec.status or "healthy"
-                svg_data_uri = generate_status_pill(label, val_text, pill_status)
-            elif m_type == "number":
-                svg_data_uri = generate_number_widget(label, val_text)
-
-            if svg_data_uri:
-                components.append(
-                    self._load_template("metric_image.json", {"m_id": m_id, "svg_data_uri": svg_data_uri})
-                )
-                metrics_children_ids.append(m_id)
-            else:
-                fallback_txt_id = f"{m_id}-fallback-txt"
-                components.append(
-                    self._load_template(
-                        "metric_text.json",
-                        {"fallback_txt_id": fallback_txt_id, "label": label, "val_text": val_text},
-                    )
-                )
-                metrics_children_ids.append(fallback_txt_id)
-
-        # Lay out metrics in a 4-column grid (up to 4 per row)
-        grid_rows_ids = []
-        for i in range(0, len(metrics_children_ids), 4):
-            row_id = f"metrics-row-{i//4}"
-            row_children = metrics_children_ids[i : i + 4]
-            components.append(
-                {
-                    "id": row_id,
-                    "component": {
-                        "Row": {
-                            "children": {"explicitList": row_children},
-                            "justify": "spaceBetween",
-                            "align": "center",
-                        }
-                    },
-                    "style": {"fillWidth": True, "gap": "8px"},
-                }
-            )
-            grid_rows_ids.append(row_id)
-
-        # Bind grid rows to metrics-column Column children
+        # Step 3: Explicit Layout Data Binding - parent container nodes in A2UI must
+        # explicitly register the IDs of their children inside the `explicitList` property.
+        # Here we bind the generated grid row IDs to the parent 'metrics-column' component.
         for comp in components:
             if comp["id"] == "metrics-column":
                 comp["component"]["Column"]["children"]["explicitList"] = grid_rows_ids
 
-        # Generate action buttons dynamically
-        actions_children_ids = []
-        for a_spec in self.status.actions:
-            a_id = a_spec.id
-            label = a_spec.label
-            command = a_spec.command
-            color = a_spec.color or "#00FF00"
-            components.extend(
-                self._load_template(
-                    "action_button.json",
-                    {
-                        "a_id": a_id,
-                        "label": label,
-                        "color": color,
-                        "system_id": system_id,
-                        "command": command,
-                    },
-                )
-            )
-            actions_children_ids.append(a_id)
+        # Step 4: Generate action buttons dynamically
+        action_components, actions_children_ids = generate_action_components(
+            self.status.actions, system_id, self._load_template
+        )
+        components.extend(action_components)
 
-        # Bind actions-row children
+        # Step 5: Bind action buttons to the bottom 'actions-row' Row container
         for comp in components:
             if comp["id"] == "actions-row":
                 comp["component"]["Row"]["children"]["explicitList"] = actions_children_ids
@@ -162,10 +107,15 @@ class CardBuilderV08(BaseCardBuilder):
         return clean_payload(components)
 
     def build_logs_card(self) -> List[Dict[str, Any]]:
-        """Assembles and returns list of A2UI components representing a dedicated logs viewer.
+        """Assembles and returns a list of A2UI components representing a dedicated logs viewer.
+
+        This method orchestrates log card generation by:
+        1. Loading the base log card container shell from `v08_logs_card_base.json`.
+        2. Resolving log entries and colorizing levels (DEBUG, INFO, etc.) via helper.
+        3. Appending the scrollable log console stream window to the main column.
 
         Returns:
-            List of dictionary components compliant with A2UI v0.8 specification.
+            List of dictionary components compliant with the A2UI v0.8 specification.
         """
         system_id = self.status.system_id
         name = self.status.name
@@ -174,10 +124,11 @@ class CardBuilderV08(BaseCardBuilder):
 
         status_color = self._resolve_status_color(status)
 
-        # Generate SVGs
+        # Generate status SVGs for the header
         header_icon_uri = generate_material_icon_svg(icon_name, "#38BDF8")
         traffic_light_uri = generate_traffic_light_svg(status)
 
+        # Step 1: Load base logs container structure
         components = self._load_template(
             "v08_logs_card_base.json",
             {
@@ -190,48 +141,15 @@ class CardBuilderV08(BaseCardBuilder):
             },
         )
 
-        # Generate recent logs console content dynamically
-        logs_children = []
-        for index, log in enumerate(self.status.logs):
-            log_id = f"log-line-{index}"
-            level_str = f"[{log.level}]"
-            log_text = f"{log.timestamp} {level_str:<9} {log.message}"
+        # Step 2: Generate log level colored stream components
+        log_components, logs_children = generate_log_components(
+            self.status.logs, self._load_template
+        )
+        components.extend(log_components)
 
-            # Style console output color
-            color = "#86EFAC"  # default soft green for INFO
-            if log.level == "WARNING":
-                color = "#FDE68A"  # soft yellow
-            elif log.level == "ERROR":
-                color = "#FCA5A5"  # soft red
-            elif log.level == "DEBUG":
-                color = "#94A3B8"  # gray
-
-            components.append(
-                self._load_template(
-                    "log_line.json",
-                    {
-                        "log_id": log_id,
-                        "log_text": log_text,
-                        "color": color,
-                    },
-                )
-            )
-            logs_children.append(log_id)
-
-        # Logs console component (350px for dedicated logs viewer)
+        # Step 3: Append the scrollable console window containing all generated log components
         components.append(
-            {
-                "id": "logs-console",
-                "component": {"Column": {"children": {"explicitList": logs_children}, "align": "stretch"}},
-                "style": {
-                    "backgroundColor": "#020617",  # deep console background slate-950
-                    "borderRadius": "6px",
-                    "padding": "8px",
-                    "gap": "4px",
-                    "height": "350px",  # Higher height limit for readability on dedicated cards
-                    "overflowY": "auto",  # Enable scrollbar if logs exceed limit
-                },
-            }
+            self._load_template("logs_console.json", {"logs_children": logs_children})
         )
 
         return clean_payload(components)

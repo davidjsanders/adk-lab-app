@@ -1,0 +1,16 @@
+{
+  "id": "{{row_id}}",
+  "component": {
+    "Row": {
+      "children": {
+        "explicitList": "{{row_children}}"
+      },
+      "justify": "spaceBetween",
+      "align": "center"
+    }
+  },
+  "style": {
+    "fillWidth": true,
+    "gap": "8px"
+  }
+}
