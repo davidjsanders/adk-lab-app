@@ -38,3 +38,7 @@ class SpecialistAgentConfig(BaseModel):
         alias="mcp-servers",
         description="List of MCP server names referenced/used by this specialist agent"
     )
+    skills: List[str] = Field(
+        default_factory=list,
+        description="List of skill names or search filters assigned to this specialist agent"
+    )

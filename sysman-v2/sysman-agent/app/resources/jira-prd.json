@@ -14,5 +14,9 @@
   ],
   "mcp-servers": [
     "common-manager"
+  ],
+  "skills": [
+    "common-",
+    "jira-"
   ]
 }

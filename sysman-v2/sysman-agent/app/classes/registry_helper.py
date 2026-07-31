@@ -253,31 +253,7 @@ class RegistryHelper:
                     )
 
                 case RegistryResourceType.SKILL:
-                    registered_name = self._full_resource_id(
-                        registered_name,
-                        RegistryResourceType.SKILL
-                    )
-                    logger.debug("Looking up skill: %s", registered_name)
-
-                    # Extract project_id and location from the fully-qualified name if present.
-                    # This is necessary because GCPSkillRegistry does not support cross-region
-                    # queries in get_skill() natively, so we must initialize it with the region
-                    # parsed from the fully-qualified resource name.
-                    project_id = self.project_id
-                    location = self.location
-                    if registered_name.startswith("projects/"):
-                        parts = registered_name.split("/")
-                        if len(parts) >= 4 and parts[0] == "projects" and parts[2] == "locations":
-                            project_id = parts[1]
-                            location = parts[3]
-
-                    # Load skill from the parsed target location using patched client
-                    skill_reg = PatchedGCPSkillRegistry(
-                        project_id=project_id,
-                        location=location
-                    )
-                    short_name = self._short_resource_id(registered_name)
-                    return self._run_async(skill_reg.get_skill(name=short_name))
+                    return self._run_async(self.get_skill_async(registered_name))
                 case _:
                     raise ValueError(f"Unknown resource type: {resource_type}")
         except RuntimeError as e:
@@ -307,6 +283,39 @@ class RegistryHelper:
                 e
             )
             raise e
+
+    async def get_skill_async(
+        self,
+        registered_name: str,
+    ) -> Optional[Skill]:
+        """Asynchronously retrieve a skill from the registry.
+
+        Args:
+            registered_name: The resource ID or fully qualified resource name.
+
+        Returns:
+            The resolved Skill instance, or None if not found.
+        """
+        registered_name = self._full_resource_id(
+            registered_name,
+            RegistryResourceType.SKILL
+        )
+        logger.debug("Looking up skill: %s", registered_name)
+
+        project_id = self.project_id
+        location = self.location
+        if registered_name.startswith("projects/"):
+            parts = registered_name.split("/")
+            if len(parts) >= 4 and parts[0] == "projects" and parts[2] == "locations":
+                project_id = parts[1]
+                location = parts[3]
+
+        skill_reg = PatchedGCPSkillRegistry(
+            project_id=project_id,
+            location=location
+        )
+        short_name = self._short_resource_id(registered_name)
+        return await skill_reg.get_skill(name=short_name)
 
     def _find_tool(self, results: dict, key_str: str) -> List[Dict[str, Any]]:
         """Extract list items from search results dictionary safely.
