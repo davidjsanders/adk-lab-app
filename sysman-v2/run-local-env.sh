@@ -193,4 +193,4 @@ echo "=============================================="
 
 # Launch playground for the default role (Orchestrator) with service account impersonation
 cd "$WORKSPACE_DIR/sysman-v2/sysman-agent"
-IMPERSONATE_SA="sysman-ops-sa@agentspace-argolis-demo.iam.gserviceaccount.com" AGENT_ROLE="Orchestrator" uv run agents-cli playground
+IMPERSONATE_SA="sysman-ops-sa@agentspace-argolis-demo.iam.gserviceaccount.com" AGENT_ROLE="orchestrator" AGENT_CONFIG_FILE="orchestrator-prd.json" uv run agents-cli playground

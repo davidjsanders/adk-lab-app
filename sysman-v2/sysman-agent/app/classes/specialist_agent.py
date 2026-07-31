@@ -26,7 +26,6 @@ from google.adk.tools.skill_toolset import SkillToolset
 from app.callbacks.specialist_state_loader import specialist_state_loader
 from app.classes.global_gemini import GlobalGemini
 from app.config import settings
-from app.classes.skills_cache import SkillCache
 # from app.tools.mcp_tools import mcp_toolset
 from ..models.agent_categories import AgentCategories
 from ..models.specialist_agent_config import SpecialistAgentConfig
@@ -59,14 +58,14 @@ class SpecialistAgent(Agent):
             )
             mcp_tools = mcp_helper.get_toolset()
 
-        # 2. Discover and fetch matching skills via the cache manager.
-        system_skills = []
+        agent_tools = [*mcp_tools]
         if config.skills:
             skills_helper = SkillsHelper(
                 settings=settings,
                 skills=config.skills
             )
             system_skills = SkillToolset(skills=skills_helper.get_skills())
+            agent_tools.append(system_skills)
 
         # 3. Initialize the ADK Agent
         super().__init__(
@@ -74,10 +73,7 @@ class SpecialistAgent(Agent):
             model=GlobalGemini(model=settings.fast_model),
             description=config.description,
             instruction=config.instruction,
-            tools=[
-                *mcp_tools,
-                system_skills,
-            ],
+            tools=agent_tools,
             before_agent_callback=partial(specialist_state_loader, target_systems=config.target_systems),
         )
 
