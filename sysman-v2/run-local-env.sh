@@ -165,6 +165,14 @@ cd "$WORKSPACE_DIR/sysman-v2/sysman-agent"
 PORT=$LINUX_AGENT_PORT AGENT_ROLE="specialist" AGENT_CONFIG_FILE="linux-prd.json" uv run python -m uvicorn app.fast_api_app:app --host 127.0.0.1 --port $LINUX_AGENT_PORT > "$WORKSPACE_DIR/logs/sysman-v2-agent-linux.log" 2>&1 &
 LINUX_AGENT_PID=$!
 # 4. Wait for Specialist Agents to be fully loaded and ready
+echo ""
+echo "--------------------------------------------------------------------------------"
+echo "NOTE: Waiting for sub-agents to be ready is a local fallback requirement."
+echo "In local testing, the Orchestrator eagerly fetches Agent Cards via HTTP"
+echo "from the sub-agents' endpoints. In production, they are resolved via the"
+echo "Agent Registry control plane, removing this startup order dependency."
+echo "--------------------------------------------------------------------------------"
+echo ""
 wait_for_agent() {
   local url=$1
   local name=$2

@@ -1,0 +1,8 @@
+<svg width="100%" height="100%" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+  <rect x="2" y="2" width="76" height="76" rx="8" fill="#111827" stroke="#374151" stroke-width="1" />
+  <circle cx="40" cy="44" r="18" fill="#0B131E" />
+  <circle cx="40" cy="44" r="18" fill="transparent" stroke="#EF4444" stroke-width="4.5" />
+  <circle cx="40" cy="44" r="18" fill="transparent" stroke="#22C55E" stroke-width="4.5" stroke-dasharray="{{DASH_ARRAY_FREE}} {{DASH_ARRAY_PERCENTAGE}}" stroke-dashoffset="28.27" />
+  <text x="40" y="15" font-family="sans-serif" font-size="{{FONT_SIZE}}" fill="#94A3B8" text-anchor="middle" font-weight="bold">{{LABEL}}</text>
+  <text x="40" y="46.5" font-family="sans-serif" font-size="7" fill="#FFFFFF" text-anchor="middle" font-weight="bold">{{PERCENTAGE}}%</text>
+</svg>
