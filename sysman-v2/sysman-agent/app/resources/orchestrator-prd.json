@@ -6,5 +6,12 @@
   "categories": [],
   "target-systems": [],
   "mcp-servers": [],
-  "skills": []
+  "skills": [
+    "orchestrator"
+  ],
+  "subagents": [
+    "sysman_jira_agent",
+    "sysman_confluence_agent",
+    "sysman_linux_agent"
+  ]
 }

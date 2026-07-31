@@ -42,3 +42,7 @@ class SpecialistAgentConfig(BaseModel):
         default_factory=list,
         description="List of skill names or search filters assigned to this specialist agent"
     )
+    subagents: List[str] = Field(
+        default_factory=list,
+        description="List of sub-agent names to resolve and coordinate"
+    )

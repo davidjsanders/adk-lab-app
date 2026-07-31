@@ -26,11 +26,11 @@ from google.adk.tools.skill_toolset import SkillToolset
 from app.callbacks.specialist_state_loader import specialist_state_loader
 from app.classes.global_gemini import GlobalGemini
 from app.config import settings
-# from app.tools.mcp_tools import mcp_toolset
 from ..models.agent_categories import AgentCategories
 from ..models.specialist_agent_config import SpecialistAgentConfig
 from .mcp_helper import McpHelper
 from .skills_helper import SkillsHelper
+from .subagent_helper import SubagentHelper
 
 
 # Configure module logger
@@ -49,6 +49,8 @@ class SpecialistAgent(Agent):
         """
         agent_name = config.name.lower().replace(' ', '_')
         mcp_tools = []
+        agent_tools = []
+        sub_agents = []
 
         # 1. Get tools
         if config.mcp_servers:
@@ -67,6 +69,13 @@ class SpecialistAgent(Agent):
             system_skills = SkillToolset(skills=skills_helper.get_skills())
             agent_tools.append(system_skills)
 
+        if config.subagents:
+            subagent_helper = SubagentHelper(
+                settings=settings,
+                subagents=config.subagents
+            )
+            sub_agents = subagent_helper.get_subagents()
+
         # 3. Initialize the ADK Agent
         super().__init__(
             name=f"sysman_{agent_name}_agent",
@@ -74,6 +83,6 @@ class SpecialistAgent(Agent):
             description=config.description,
             instruction=config.instruction,
             tools=agent_tools,
+            sub_agents=sub_agents,
             before_agent_callback=partial(specialist_state_loader, target_systems=config.target_systems),
         )
-

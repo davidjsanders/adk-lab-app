@@ -12,5 +12,6 @@
   ],
   "mcp-servers": [
     "common-manager"
-  ]
+  ],
+  "subagents": []
 }
