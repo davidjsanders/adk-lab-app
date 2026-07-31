@@ -35,7 +35,7 @@ def verify_server():
     )
     
     # Wait for emulator to be ready
-    time.sleep(2.5)
+    time.sleep(5.0)
     
     mcp_proc = None
     try:
@@ -133,12 +133,23 @@ def verify_server():
         assert "confluence-app-01" in logs_card_text
         assert "logs-card-root" in logs_card_text
         
-        # 9. Call tool render_system_card for confluence-app-01 to inspect its layout structure
+        # 9. Call tool execute_system_command for linux-server-01
+        print("Calling execute_system_command for linux-server-01...")
+        cmd_resp = send_json_rpc(mcp_proc, "tools/call", {
+            "name": "execute_system_command",
+            "arguments": {"system_id": "linux-server-01", "command": "REBOOT"}
+        }, msg_id=7)
+        cmd_text = cmd_resp["result"]["content"][0]["text"]
+        cmd_data = json.loads(cmd_text)
+        print("Command execution response:", cmd_data)
+        assert cmd_data["status"] == "SUCCESS"
+        
+        # 10. Call tool render_system_card for confluence-app-01 to inspect its layout structure
         print("Calling render_system_card for confluence-app-01...")
         conf_card_resp = send_json_rpc(mcp_proc, "tools/call", {
             "name": "render_system_card",
             "arguments": {"system_id": "confluence-app-01"}
-        }, msg_id=7)
+        }, msg_id=8)
         conf_card_text = conf_card_resp["result"]["content"][0]["text"]
         # Print the extracted JSON block to see if there are syntax errors or missing IDs
         match = re.search(r"<a2ui-json>(.*?)</a2ui-json>", conf_card_text, re.DOTALL)

@@ -70,18 +70,28 @@ class EmulatorClient:
             logger.warning("Failed fetching Google ID token for audience '%s': %s", audience, err)
             return None
 
-    def _get_headers(self, target_url: str) -> Dict[str, str]:
+    def _get_headers(self, target_url: str, system_id: Optional[str] = None) -> Dict[str, str]:
         """Compiles headers for emulator request authentication, attaching ID tokens if cloud deployed.
 
         Args:
             target_url: The destination request endpoint URL.
+            system_id: Target system ID to resolve dynamic credentials from Secret Manager.
 
         Returns:
             Dictionary of headers containing control and authentication tokens.
         """
+        header_name = self.control_header
+        password = self.control_password
+
+        if system_id:
+            secret_data = self._fetch_secret_credentials(system_id)
+            if secret_data:
+                header_name = secret_data.get("header", header_name)
+                password = secret_data.get("password", password)
+
         headers = {
             "Content-Type": "application/json",
-            self.control_header: self.control_password,
+            header_name: password,
         }
         if ".run.app" in target_url:
             from urllib.parse import urlparse
@@ -91,6 +101,49 @@ class EmulatorClient:
             if token:
                 headers["Authorization"] = f"Bearer {token}"
         return headers
+
+    def _fetch_secret_credentials(self, system_id: str) -> Optional[Dict[str, Any]]:
+        """Retrieves control password and header name configurations from Google Cloud Secret Manager.
+
+        Args:
+            system_id: The ID of the emulator node.
+
+        Returns:
+            Dictionary containing 'password' and 'header', or None if retrieval fails.
+        """
+        try:
+            from google.cloud import secretmanager
+            import google.auth
+
+            credentials, project_id = google.auth.default()
+            if not project_id:
+                return None
+
+            impersonated_sa = os.getenv("IMPERSONATE_SA")
+            if impersonated_sa:
+                from google.auth import impersonated_credentials
+                creds = impersonated_credentials.Credentials(
+                    source_credentials=credentials,
+                    target_principal=impersonated_sa,
+                    target_scopes=["https://www.googleapis.com/auth/cloud-platform"],
+                )
+            else:
+                creds = credentials
+
+            client = secretmanager.SecretManagerServiceClient(credentials=creds)
+            secret_id = f"sysman-emulator-{system_id}"
+            name = f"projects/{project_id}/secrets/{secret_id}/versions/latest"
+
+            response = client.access_secret_version(request={"name": name})
+            payload = response.payload.data.decode("UTF-8")
+            return json.loads(payload)
+        except Exception as err:
+            logger.warning(
+                "Failed fetching secret 'sysman-emulator-%s' from Secret Manager: %s. Using default env fallback.",
+                system_id,
+                err,
+            )
+            return None
 
     def list_systems(self) -> List[SystemMetadata]:
         """Lists all registered virtual systems in the fleet.
@@ -130,7 +183,7 @@ class EmulatorClient:
         for sys_id, base_url in self.emulators_map.items():
             url = f"{base_url}/api/status"
             try:
-                headers = self._get_headers(url)
+                headers = self._get_headers(url, system_id=sys_id)
                 resp = requests.get(url, headers=headers, params={"system_id": sys_id}, timeout=3)
                 if resp.status_code == 200:
                     sys_data = resp.json()
@@ -169,7 +222,7 @@ class EmulatorClient:
         base_url = self._get_url_for_system(system_id)
         url = f"{base_url}/api/status"
         try:
-            headers = self._get_headers(url)
+            headers = self._get_headers(url, system_id=system_id)
             resp = requests.get(url, headers=headers, params={"system_id": system_id}, timeout=5)
             resp.raise_for_status()
             data = resp.json()
@@ -195,7 +248,7 @@ class EmulatorClient:
         url = f"{base_url}/api/command"
         payload = {"system_id": system_id, "command": command}
         try:
-            headers = self._get_headers(url)
+            headers = self._get_headers(url, system_id=system_id)
             resp = requests.post(url, headers=headers, json=payload, timeout=10)
             resp.raise_for_status()
             return resp.json()
@@ -221,7 +274,7 @@ class EmulatorClient:
         base_url = self._get_url_for_system(system_id)
         url = f"{base_url}/api/logs"
         try:
-            headers = self._get_headers(url)
+            headers = self._get_headers(url, system_id=system_id)
             resp = requests.get(url, headers=headers, params={"system_id": system_id, "limit": limit}, timeout=5)
             resp.raise_for_status()
             data = resp.json()

@@ -5,14 +5,15 @@ syslog details, and control commands, loading custom system definitions
 from a Secret Manager mounted JSON configuration file.
 """
 
-from datetime import datetime, timezone
 import json
 import logging
 import os
-import random
-import time
+import uuid
 from typing import Any, Dict, List, Optional, Tuple, Union
 from dotenv import load_dotenv
+
+from classes import ConfigDrivenSystemState
+from helpers import register_secrets_to_secret_manager
 from flask import Flask, jsonify, render_template, request, Response
 
 load_dotenv()
@@ -26,187 +27,21 @@ logger = logging.getLogger("sysman-emulator")
 # Config path for Secret Manager mounted volume
 SYSTEMS_CONFIG_PATH = os.getenv("SYSTEMS_CONFIG_PATH", "")
 CONTROL_HEADER = os.getenv("CONTROL_HEADER", "X-Control-Password")
-CONTROL_PASSWORD = os.getenv("CONTROL_PASSWORD", "SysManSecretPass123!")
+CONTROL_PASSWORD = str(uuid.uuid4())
 
 
-class ConfigDrivenSystemState:
-    """Manages baseline telemetry, uptime, syslog entries, dynamic metrics variation, and command effects based on JSON configurations."""
 
-    def __init__(self, config: Dict[str, Any]) -> None:
-        """Initializes system baseline state from a JSON configuration block."""
-        self.system_id: str = config["system_id"]
-        self.system_type: str = config["type"]
-        self.name: str = config["name"]
-        self.status: str = config.get("status", "HEALTHY")
-        self.description: str = config.get("description", "")
-        self.start_time: float = time.time()
-        self.logs: List[Dict[str, Any]] = []
-        self.last_update: float = time.time()
-        
-        # Loaded dynamic definitions
-        self.default_icon: str = config.get("default_icon", "business_center")
-        self.metrics: List[Dict[str, Any]] = config.get("metrics", [])
-        self.actions: List[Dict[str, Any]] = config.get("actions", [])
-        
-        # Reboot sequence state
-        self.reboot_started_at: Optional[float] = None
-        self.reboot_duration: float = 5.0
-        
-        self.add_log(f"Config-driven system {self.name} ({self.system_id}) initialized.")
-
-    def add_log(self, message: str, level: str = "INFO") -> None:
-        """Appends a timestamped log to the syslog stream."""
-        now = datetime.now(timezone.utc)
-        self.logs.append({
-            "timestamp": now.strftime("%Y-%m-%d %H:%M:%S UTC"),
-            "timestamp_iso": now.isoformat(),
-            "timestamp_epoch": time.time(),
-            "level": level.upper(),
-            "message": message,
-        })
-        if len(self.logs) > 100:
-            self.logs.pop(0)
-
-    @property
-    def uptime_seconds(self) -> int:
-        """Calculates current uptime."""
-        return int(time.time() - self.start_time)
-
-    def update_metrics(self) -> None:
-        """Updates internal state and metrics by simulating dynamic drifts and variations."""
-        now = time.time()
-        elapsed = now - self.last_update
-        self.last_update = now
-
-        # 1. Handle reboot transition sequence
-        if self.status == "REBOOTING":
-            if self.reboot_started_at and (now - self.reboot_started_at >= self.reboot_duration):
-                self.status = "HEALTHY"
-                self.reboot_started_at = None
-                self.add_log("System boot completed. Services restored.")
-                # Reset metric statuses to healthy baseline
-                for m in self.metrics:
-                    if m["id"] == "node-exporter-status":
-                        m["value"] = 1.0
-                    elif m["id"] == "ws-status":
-                        m["value"] = 1.0
-            return
-
-        # 2. Iterate and update dynamic metric values
-        for m in self.metrics:
-            # Apply systematic drifts (e.g. JVM memory leaks)
-            drift = m.get("drift_rate", 0.0)
-            if drift != 0.0:
-                m["value"] += drift
-
-            # Apply random variations
-            var_range = m.get("variation_range")
-            if var_range and len(var_range) == 2:
-                m["value"] += random.uniform(var_range[0], var_range[1])
-
-            # Enforce clamp boundaries
-            min_lim = m.get("min_value_limit")
-            max_lim = m.get("max_value_limit")
-            if min_lim is not None:
-                m["value"] = max(min_lim, m["value"])
-            if max_lim is not None:
-                m["value"] = min(max_lim, m["value"])
-
-            # Compute val_text using format template
-            fmt = m.get("val_text_format", "{value}")
-            try:
-                m["val_text"] = fmt.format(value=m["value"], max_value=m.get("max_value", 0.0))
-            except Exception:
-                m["val_text"] = str(m["value"])
-
-            # Evaluate status rules and alerts
-            if "status_rules" in m:
-                matched_rule = False
-                for rule in m["status_rules"]:
-                    operator = rule.get("operator", "==")
-                    target = rule.get("target")
-                    rule_status = rule.get("status", "healthy")
-                    rule_text = rule.get("val_text")
-                    
-                    val = m["value"]
-                    match = False
-                    if operator == "==":
-                        match = abs(val - target) < 0.001
-                    elif operator == ">=":
-                        match = val >= target
-                    elif operator == "<=":
-                        match = val <= target
-                    elif operator == ">":
-                        match = val > target
-                    elif operator == "<":
-                        match = val < target
-                    
-                    if match:
-                        m["status"] = rule_status
-                        if rule_text:
-                            m["val_text"] = rule_text
-                        matched_rule = True
-                        break
-                if not matched_rule:
-                    m["status"] = "healthy"
-
-    def execute_command(self, command: str, params: Dict[str, Any]) -> Tuple[Dict[str, Any], int]:
-        """Runs an administrative system action and updates the internal state metrics accordingly."""
-        self.update_metrics()
-        
-        # Locate matching command structure
-        target_action = None
-        for act in self.actions:
-            if act["command"] == command:
-                target_action = act
-                break
-        
-        if not target_action:
-            return {"error": f"Command '{command}' not recognized for this system"}, 400
-
-        effects = target_action.get("effects", {})
-        
-        # Apply configured effects
-        if "set_status" in effects:
-            self.status = effects["set_status"]
-            if self.status == "REBOOTING":
-                self.reboot_started_at = time.time()
-
-        if "metrics" in effects:
-            for m_id, change in effects["metrics"].items():
-                for m in self.metrics:
-                    if m["id"] == m_id:
-                        if "set" in change:
-                            m["value"] = change["set"]
-                        if "drift_rate" in change:
-                            m["drift_rate"] = change["drift_rate"]
-
-        if "log" in effects:
-            log_conf = effects["log"]
-            self.add_log(log_conf.get("message", "Action executed."), log_conf.get("level", "INFO"))
-
-        return {"status": "SUCCESS", "message": f"Command '{command}' executed successfully"}, 200
-
-    def to_dict(self) -> Dict[str, Any]:
-        """Serializes current config-driven state."""
-        self.update_metrics()
-        return {
-            "system_id": self.system_id,
-            "type": self.system_type,
-            "name": self.name,
-            "status": self.status,
-            "description": self.description,
-            "uptime_seconds": self.uptime_seconds,
-            "default_icon": self.default_icon,
-            "logs": self.logs[-15:],
-            "metrics": self.metrics,
-            "actions": self.actions
-        }
 
 
 # --- System Discovery and Initialization ---
 SYSTEM_REGISTRY: Dict[str, ConfigDrivenSystemState] = {}
 EMULATOR_CONFIG_PATH = os.getenv("EMULATOR_CONFIG_PATH", "").strip()
+
+# Map of system ID to dynamic control password
+CONTROL_PASSWORDS: Dict[str, str] = {}
+
+
+
 
 
 def load_topology() -> None:
@@ -282,6 +117,11 @@ def load_topology() -> None:
 
 # Perform initialization at module import time
 load_topology()
+CONTROL_PASSWORDS = register_secrets_to_secret_manager(
+    list(SYSTEM_REGISTRY.keys()),
+    CONTROL_PASSWORD,
+    CONTROL_HEADER
+)
 
 
 @app.before_request
@@ -423,15 +263,16 @@ def execute_command() -> Union[Response, Tuple[Response, int]]:
     Returns:
         JSON execution status.
     """
-    req_auth = request.headers.get(CONTROL_HEADER, "")
-    if not req_auth or req_auth != CONTROL_PASSWORD:
-        logger.warning(f"Unauthorized command execution attempt from {request.remote_addr}")
-        return jsonify({"error": "Unauthorized", "message": "Invalid or missing auth header"}), 401
-
     payload = request.get_json(silent=True) or {}
     sys_id = payload.get("system_id", "").strip()
     command = payload.get("command", "").strip()
     params = payload.get("parameters", {})
+
+    expected_pass = CONTROL_PASSWORDS.get(sys_id, CONTROL_PASSWORD)
+    req_auth = request.headers.get(CONTROL_HEADER, "")
+    if not req_auth or req_auth != expected_pass:
+        logger.warning(f"Unauthorized command execution attempt on '{sys_id}' from {request.remote_addr}")
+        return jsonify({"error": "Unauthorized", "message": "Invalid or missing auth header"}), 401
 
     if not sys_id or not command:
         return jsonify({"error": "Bad Request", "message": "Missing 'system_id' or 'command' parameters"}), 400

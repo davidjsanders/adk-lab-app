@@ -71,15 +71,17 @@ Create a local `.env` file (or set variables directly in your environment):
 # Port for the MCP server when running in streamable-http mode
 PORT=8002
 
-# Shared auth settings with the emulators
-CONTROL_PASSWORD=TestPass123!
-CONTROL_HEADER=X-Control-Password
-
 # JSON mapping of system ID to backend emulator URLs
 SYSTEM_EMULATORS='{"linux-server-01":"http://127.0.0.1:8085","jira-app-01":"http://127.0.0.1:8086","confluence-app-01":"http://127.0.0.1:8087"}'
 ```
 
-### 3. Run the Server
+### 3. Google Cloud Secret Manager Dynamic Authentication
+On startup, each emulator node generates a random UUID control password and registers a JSON payload version containing this password to GCP Secret Manager under the secret name: `sysman-emulator-<system_id>`.
+
+Whenever the MCP Server needs to communicate with a target system's emulator, it queries Secret Manager's `latest` version for `sysman-emulator-<system_id>` dynamically. This allows the configuration to survive emulator restarts or scaling events without requiring manual environment adjustments.
+
+
+### 4. Run the Server
 The MCP server supports two transport modes:
 
 *   **Standard I/O Mode (recommended for integration with desktop clients like Claude Desktop):**
