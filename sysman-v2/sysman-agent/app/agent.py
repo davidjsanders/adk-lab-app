@@ -3,8 +3,10 @@ import os
 from google.adk.apps import App
 from app.classes.orchestrator import Orchestrator
 from app.classes.specialist_agent import SpecialistAgent
-from app.config import settings
+from app.helpers.config import settings, agent_config
 from app.plugins.a2ui_plugin import A2UIPlugin
+
+from .models.agent_roles import AgentRoles
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("sysman-agent.agent")
@@ -13,15 +15,16 @@ logger = logging.getLogger("sysman-agent.agent")
 a2ui_plugin = A2UIPlugin()
 
 # Resolve Agent Role
-agent_role = settings.agent_role.strip().capitalize()  # 'Orchestrator', 'Jira', 'Confluence', 'Linux'
-logger.info(f"Starting SysMan Agent in role: {agent_role}")
 
-if agent_role == "Orchestrator":
-    root_agent = Orchestrator()
+logger.info(f"Starting SysMan Agent in role: {agent_config.role}")
 
-else:
-    agent_categories = [c.strip() for c in settings.agent_categories.split(",") if c.strip()]
-    root_agent = SpecialistAgent(role=agent_role, categories=agent_categories)
+match agent_config.role:
+    case AgentRoles.ORCHESTRATOR:
+        root_agent = Orchestrator()
+    case AgentRoles.SPECIALIST:
+        root_agent = SpecialistAgent(config=agent_config)
+    case _:
+        raise ValueError("Unsupported agent type")
 
 app = App(
     root_agent=root_agent,

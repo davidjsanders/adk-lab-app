@@ -14,6 +14,7 @@
 
 """Specialist agent class loading configuration and instructions from JSON resources."""
 
+from functools import partial
 import json
 import logging
 import os
@@ -22,11 +23,13 @@ import pathlib
 from google.adk.agents import Agent
 from google.adk.tools.skill_toolset import SkillToolset
 
+from app.callbacks.specialist_state_loader import specialist_state_loader
 from app.classes.global_gemini import GlobalGemini
 from app.config import settings
 from app.classes.skills_cache import SkillCache
 from app.tools.mcp_tools import mcp_toolset
-
+from ..models.agent_categories import AgentCategories
+from ..models.specialist_agent_config import SpecialistAgentConfig
 
 
 # Configure module logger
@@ -34,53 +37,32 @@ logger = logging.getLogger(__name__)
 logger.setLevel(level=logging.DEBUG)
 
 
-
 class SpecialistAgent(Agent):
     """Generic Specialist Agent that loads its target system and instructions dynamically from config."""
 
-    def __init__(self, role: str, categories: list[str]):
+    def __init__(self, config: SpecialistAgentConfig):
         """Initialize a SpecialistAgent by loading its metadata and instructions from config.
 
         Args:
-            role: The agent role string (e.g. 'Jira', 'Confluence', 'Linux').
-            categories: List of system categories matching this agent.
+            config: SpecialistAgentConfig instance containing agent configuration.
         """
-        # 1. Load instructions and system config from JSON
-        config_path = os.path.join(
-            os.path.dirname(__file__), "..", "resources", "agents_config.json"
-        )
-        with open(config_path, "r", encoding="utf-8") as f:
-            config = json.load(f)
-
-        if role not in config:
-            raise ValueError(
-                f"Agent role '{role}' is not defined in agent configuration."
-            )
-
-        agent_cfg = config[role]
-        target_system_id = agent_cfg["target_system_id"]
-        description = agent_cfg["description"]
-        instruction_template = agent_cfg["instruction"]
-
-        # Populate instruction templates
-        instruction = instruction_template.replace(
-            "{target_system_id}", target_system_id
-        )
+        agent_name = config.name.lower().replace(' ', '_')
 
         # 2. Discover and fetch matching skills via the cache manager.
-        cache = SkillCache(role=role, cache_setting=settings.skills_cache_dir)
-        skills = cache.get_skills()
-        system_skills = SkillToolset(skills=skills)
+        # cache = SkillCache(role=agent_name, cache_setting=settings.skills_cache_dir)
+        # skills = cache.get_skills()
+        # system_skills = SkillToolset(skills=skills)
 
         # 3. Initialize the ADK Agent
         super().__init__(
-            name=f"sysman_{role.lower()}_agent",
+            name=f"sysman_{agent_name}_agent",
             model=GlobalGemini(model=settings.fast_model),
-            description=description,
-            instruction=instruction,
+            description=config.description,
+            instruction=config.instruction,
             tools=[
                 mcp_toolset,
-                system_skills,
+                # system_skills,
             ],
+            before_agent_callback=partial(specialist_state_loader, target_systems=config.target_systems),
         )
 
