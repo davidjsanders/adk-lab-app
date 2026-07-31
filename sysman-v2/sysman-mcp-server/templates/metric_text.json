@@ -1,0 +1,14 @@
+{
+  "id": "{{fallback_txt_id}}",
+  "component": {
+    "Text": {
+      "text": {
+        "literalString": "{{label}}: {{val_text}}"
+      },
+      "usageHint": "body",
+      "style": {
+        "color": "#E2E8F0"
+      }
+    }
+  }
+}

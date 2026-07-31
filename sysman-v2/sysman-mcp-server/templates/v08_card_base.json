@@ -1,0 +1,288 @@
+[
+  {
+    "id": "card-root",
+    "component": {
+      "Card": {
+        "child": "main-column",
+        "style": {
+          "backgroundColor": "#0B131E",
+          "borderRadius": "12px",
+          "padding": "12px"
+        }
+      }
+    }
+  },
+  {
+    "id": "main-column",
+    "component": {
+      "Column": {
+        "children": {
+          "explicitList": [
+            "header-row",
+            "divider-1",
+            "description-text",
+            "details-row",
+            "divider-2",
+            "metrics-title-text",
+            "metrics-column",
+            "divider-3",
+            "actions-row"
+          ]
+        },
+        "align": "stretch"
+      }
+    },
+    "style": {
+      "margin": "0px",
+      "padding": "0px",
+      "gap": "6px"
+    }
+  },
+  {
+    "id": "header-row",
+    "component": {
+      "Row": {
+        "children": {
+          "explicitList": [
+            "header-icon",
+            "header-text",
+            "header-status-group"
+          ]
+        },
+        "justify": "spaceBetween",
+        "align": "center"
+      }
+    }
+  },
+  {
+    "id": "header-icon",
+    "component": {
+      "Image": {
+        "url": {
+          "literalString": "{{header_icon_uri}}"
+        },
+        "fit": "contain"
+      }
+    },
+    "style": {
+      "width": "28px",
+      "height": "28px"
+    }
+  },
+  {
+    "id": "header-text",
+    "component": {
+      "Column": {
+        "children": {
+          "explicitList": [
+            "header-name",
+            "header-id"
+          ]
+        }
+      }
+    },
+    "style": {
+      "fillWidth": true,
+      "paddingLeft": "8px"
+    }
+  },
+  {
+    "id": "header-name",
+    "component": {
+      "Text": {
+        "text": {
+          "literalString": "{{name}}"
+        },
+        "usageHint": "h3",
+        "style": {
+          "color": "#FFFFFF",
+          "fontWeight": "700"
+        }
+      }
+    }
+  },
+  {
+    "id": "header-id",
+    "component": {
+      "Text": {
+        "text": {
+          "literalString": "ID: {{system_id}} | Type: {{sys_type_label}}"
+        },
+        "usageHint": "caption",
+        "style": {
+          "color": "#38BDF8"
+        }
+      }
+    }
+  },
+  {
+    "id": "header-status-group",
+    "component": {
+      "Row": {
+        "children": {
+          "explicitList": [
+            "header-status-light",
+            "header-status-text"
+          ]
+        },
+        "align": "center"
+      }
+    },
+    "style": {
+      "gap": "6px",
+      "width": "110px",
+      "flexShrink": 0
+    }
+  },
+  {
+    "id": "header-status-light",
+    "component": {
+      "Image": {
+        "url": {
+          "literalString": "{{traffic_light_uri}}"
+        },
+        "fit": "contain"
+      }
+    },
+    "style": {
+      "width": "14px",
+      "height": "36px"
+    }
+  },
+  {
+    "id": "header-status-text",
+    "component": {
+      "Text": {
+        "text": {
+          "literalString": "{{status}}"
+        },
+        "usageHint": "body1"
+      }
+    },
+    "style": {
+      "color": "{{status_color}}",
+      "fontWeight": "bold"
+    }
+  },
+  {
+    "id": "divider-1",
+    "component": {
+      "Divider": {
+        "axis": "horizontal"
+      }
+    }
+  },
+  {
+    "id": "description-text",
+    "component": {
+      "Text": {
+        "text": {
+          "literalString": "{{description}}"
+        },
+        "usageHint": "body",
+        "style": {
+          "color": "#94A3B8",
+          "fontStyle": "italic"
+        }
+      }
+    }
+  },
+  {
+    "id": "details-row",
+    "component": {
+      "Row": {
+        "children": {
+          "explicitList": [
+            "details-uptime-lbl",
+            "details-uptime-val"
+          ]
+        },
+        "justify": "spaceBetween"
+      }
+    }
+  },
+  {
+    "id": "details-uptime-lbl",
+    "component": {
+      "Text": {
+        "text": {
+          "literalString": "System Uptime: "
+        },
+        "usageHint": "body",
+        "style": {
+          "color": "#94A3B8"
+        }
+      }
+    }
+  },
+  {
+    "id": "details-uptime-val",
+    "component": {
+      "Text": {
+        "text": {
+          "literalString": "{{uptime_str}}"
+        },
+        "usageHint": "body",
+        "style": {
+          "color": "#32CD32"
+        }
+      }
+    }
+  },
+  {
+    "id": "divider-2",
+    "component": {
+      "Divider": {
+        "axis": "horizontal"
+      }
+    }
+  },
+  {
+    "id": "metrics-title-text",
+    "component": {
+      "Text": {
+        "text": {
+          "literalString": "System Telemetry Metrics"
+        },
+        "usageHint": "body",
+        "style": {
+          "color": "#FFFFFF",
+          "fontWeight": "bold"
+        }
+      }
+    }
+  },
+  {
+    "id": "metrics-column",
+    "component": {
+      "Column": {
+        "children": {
+          "explicitList": []
+        },
+        "align": "stretch"
+      }
+    },
+    "style": {
+      "gap": "6px"
+    }
+  },
+  {
+    "id": "divider-3",
+    "component": {
+      "Divider": {
+        "axis": "horizontal"
+      }
+    }
+  },
+  {
+    "id": "actions-row",
+    "component": {
+      "Row": {
+        "children": {
+          "explicitList": []
+        },
+        "justify": "spaceAround"
+      }
+    }
+  }
+]

@@ -1,0 +1,185 @@
+[
+  {
+    "id": "logs-card-root",
+    "component": {
+      "Card": {
+        "child": "logs-main-column",
+        "style": {
+          "backgroundColor": "#0B131E",
+          "borderRadius": "12px",
+          "padding": "12px"
+        }
+      }
+    }
+  },
+  {
+    "id": "logs-main-column",
+    "component": {
+      "Column": {
+        "children": {
+          "explicitList": [
+            "logs-header-row",
+            "logs-divider-1",
+            "logs-title-text",
+            "logs-console"
+          ]
+        },
+        "align": "stretch"
+      }
+    },
+    "style": {
+      "margin": "0px",
+      "padding": "0px",
+      "gap": "6px"
+    }
+  },
+  {
+    "id": "logs-header-row",
+    "component": {
+      "Row": {
+        "children": {
+          "explicitList": [
+            "logs-header-icon",
+            "logs-header-text",
+            "logs-header-status-group"
+          ]
+        },
+        "justify": "spaceBetween",
+        "align": "center"
+      }
+    }
+  },
+  {
+    "id": "logs-header-icon",
+    "component": {
+      "Image": {
+        "url": {
+          "literalString": "{{header_icon_uri}}"
+        },
+        "fit": "contain"
+      }
+    },
+    "style": {
+      "width": "28px",
+      "height": "28px"
+    }
+  },
+  {
+    "id": "logs-header-text",
+    "component": {
+      "Column": {
+        "children": {
+          "explicitList": [
+            "logs-header-name",
+            "logs-header-id"
+          ]
+        }
+      }
+    },
+    "style": {
+      "fillWidth": true,
+      "paddingLeft": "8px"
+    }
+  },
+  {
+    "id": "logs-header-name",
+    "component": {
+      "Text": {
+        "text": {
+          "literalString": "{{name}} Diagnostics"
+        },
+        "usageHint": "h3",
+        "style": {
+          "color": "#FFFFFF",
+          "fontWeight": "700"
+        }
+      }
+    }
+  },
+  {
+    "id": "logs-header-id",
+    "component": {
+      "Text": {
+        "text": {
+          "literalString": "ID: {{system_id}} | Logs limit: 15"
+        },
+        "usageHint": "caption",
+        "style": {
+          "color": "#38BDF8"
+        }
+      }
+    }
+  },
+  {
+    "id": "logs-header-status-group",
+    "component": {
+      "Row": {
+        "children": {
+          "explicitList": [
+            "logs-header-status-light",
+            "logs-header-status-text"
+          ]
+        },
+        "align": "center"
+      }
+    },
+    "style": {
+      "gap": "6px",
+      "width": "110px",
+      "flexShrink": 0
+    }
+  },
+  {
+    "id": "logs-header-status-light",
+    "component": {
+      "Image": {
+        "url": {
+          "literalString": "{{traffic_light_uri}}"
+        },
+        "fit": "contain"
+      }
+    },
+    "style": {
+      "width": "14px",
+      "height": "36px"
+    }
+  },
+  {
+    "id": "logs-header-status-text",
+    "component": {
+      "Text": {
+        "text": {
+          "literalString": "{{status}}"
+        },
+        "usageHint": "body1"
+      }
+    },
+    "style": {
+      "color": "{{status_color}}",
+      "fontWeight": "bold"
+    }
+  },
+  {
+    "id": "logs-divider-1",
+    "component": {
+      "Divider": {
+        "axis": "horizontal"
+      }
+    }
+  },
+  {
+    "id": "logs-title-text",
+    "component": {
+      "Text": {
+        "text": {
+          "literalString": "System Diagnostics Log Stream"
+        },
+        "usageHint": "body",
+        "style": {
+          "color": "#FFFFFF",
+          "fontWeight": "bold"
+        }
+      }
+    }
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "id": "{{log_id}}",
+  "component": {
+    "Text": {
+      "text": {
+        "literalString": "{{log_text}}"
+      },
+      "usageHint": "body",
+      "style": {
+        "color": "{{color}}",
+        "fontFamily": "monospace",
+        "fontSize": "11px"
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+[
+  {
+    "id": "{{a_id}}-txt",
+    "component": {
+      "Text": {
+        "text": {
+          "literalString": "{{label}}"
+        },
+        "usageHint": "caption",
+        "style": {
+          "color": "{{color}}"
+        }
+      }
+    }
+  },
+  {
+    "id": "{{a_id}}",
+    "component": {
+      "Button": {
+        "child": "{{a_id}}-txt",
+        "action": {
+          "name": "execute_system_command",
+          "parameters": {
+            "system_id": "{{system_id}}",
+            "command": "{{command}}"
+          }
+        }
+      }
+    }
+  }
+]

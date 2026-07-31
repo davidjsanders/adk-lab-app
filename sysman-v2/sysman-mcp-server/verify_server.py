@@ -22,7 +22,7 @@ def send_json_rpc(proc, method, params=None, msg_id=1):
         return None
     return json.loads(resp_line)
 
-def test_mcp_server():
+def verify_server():
     # 1. Start sysman-emulator in background on port 8085
     print("Starting sysman-emulator on port 8085...")
     emulator_dir = os.path.abspath("../sysman-emulator")
@@ -156,4 +156,4 @@ def test_mcp_server():
         emulator_proc.wait()
 
 if __name__ == "__main__":
-    test_mcp_server()
+    verify_server()

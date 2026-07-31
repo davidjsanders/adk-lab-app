@@ -51,204 +51,20 @@ class CardBuilderV08(BaseCardBuilder):
         header_icon_uri = generate_material_icon_svg(icon_name, "#38BDF8")
         traffic_light_uri = generate_traffic_light_svg(status)
 
-        components = [
-            # 1. Main Card Root
+        components = self._load_template(
+            "v08_card_base.json",
             {
-                "id": "card-root",
-                "component": {
-                    "Card": {
-                        "child": "main-column",
-                        "style": {
-                            "backgroundColor": "#0B131E",
-                            "borderRadius": "12px",
-                            "padding": "12px",
-                        },
-                    }
-                },
+                "header_icon_uri": header_icon_uri,
+                "traffic_light_uri": traffic_light_uri,
+                "name": name,
+                "system_id": system_id,
+                "sys_type_label": self.TYPE_LABELS.get(sys_type, "SYSTEM"),
+                "status": status,
+                "status_color": status_color,
+                "description": description,
+                "uptime_str": uptime_str,
             },
-            # 2. Main Column Wrapper
-            {
-                "id": "main-column",
-                "component": {
-                    "Column": {
-                        "children": {
-                            "explicitList": [
-                                "header-row",
-                                "divider-1",
-                                "description-text",
-                                "details-row",
-                                "divider-2",
-                                "metrics-title-text",
-                                "metrics-column",
-                                "divider-3",
-                                "actions-row",
-                            ]
-                        },
-                        "align": "stretch",
-                    }
-                },
-                "style": {"margin": "0px", "padding": "0px", "gap": "6px"},
-            },
-            # 3. Header row
-            {
-                "id": "header-row",
-                "component": {
-                    "Row": {
-                        "children": {
-                            "explicitList": [
-                                "header-icon",
-                                "header-text",
-                                "header-status-group",
-                            ]
-                        },
-                        "justify": "spaceBetween",
-                        "align": "center",
-                    }
-                },
-            },
-            {
-                "id": "header-icon",
-                "component": {
-                    "Image": {"url": {"literalString": header_icon_uri}, "fit": "contain"}
-                },
-                "style": {"width": "28px", "height": "28px"},
-            },
-            {
-                "id": "header-text",
-                "component": {
-                    "Column": {
-                        "children": {
-                            "explicitList": ["header-name", "header-id"]
-                        }
-                    }
-                },
-                "style": {"fillWidth": True, "paddingLeft": "8px"},
-            },
-            {
-                "id": "header-name",
-                "component": {
-                    "Text": {
-                        "text": {"literalString": name},
-                        "usageHint": "h3",
-                        "style": {"color": "#FFFFFF", "fontWeight": "700"},
-                    }
-                },
-            },
-            {
-                "id": "header-id",
-                "component": {
-                    "Text": {
-                        "text": {
-                            "literalString": f"ID: {system_id} | Type: {self.TYPE_LABELS.get(sys_type, 'SYSTEM')}"
-                        },
-                        "usageHint": "caption",
-                        "style": {"color": "#38BDF8"},
-                    }
-                },
-            },
-            {
-                "id": "header-status-group",
-                "component": {
-                    "Row": {
-                        "children": {
-                            "explicitList": [
-                                "header-status-light",
-                                "header-status-text",
-                            ]
-                        },
-                        "align": "center",
-                    }
-                },
-                "style": {"gap": "6px", "width": "110px", "flexShrink": 0},
-            },
-            {
-                "id": "header-status-light",
-                "component": {
-                    "Image": {"url": {"literalString": traffic_light_uri}, "fit": "contain"}
-                },
-                "style": {"width": "14px", "height": "36px"},
-            },
-            {
-                "id": "header-status-text",
-                "component": {"Text": {"text": {"literalString": status}, "usageHint": "body1"}},
-                "style": {"color": status_color, "fontWeight": "bold"},
-            },
-            {"id": "divider-1", "component": {"Divider": {"axis": "horizontal"}}},
-            
-            # 4. Service Description
-            {
-                "id": "description-text",
-                "component": {
-                    "Text": {
-                        "text": {"literalString": description},
-                        "usageHint": "body",
-                        "style": {
-                            "color": "#94A3B8",  # slate-400
-                            "fontStyle": "italic",
-                        },
-                    }
-                },
-            },
-            
-            # 5. Uptime Details row (placed in description section without divider separator)
-            {
-                "id": "details-row",
-                "component": {
-                    "Row": {
-                        "children": {"explicitList": ["details-uptime-lbl", "details-uptime-val"]},
-                        "justify": "spaceBetween",
-                    }
-                },
-            },
-            {
-                "id": "details-uptime-lbl",
-                "component": {
-                    "Text": {
-                        "text": {"literalString": "System Uptime: "},
-                        "usageHint": "body",
-                        "style": {"color": "#94A3B8"},
-                    }
-                },
-            },
-            {
-                "id": "details-uptime-val",
-                "component": {
-                    "Text": {
-                        "text": {"literalString": uptime_str},
-                        "usageHint": "body",
-                        "style": {"color": "#32CD32"},
-                    }
-                },
-            },
-            {"id": "divider-2", "component": {"Divider": {"axis": "horizontal"}}},
-            
-            # 6. Metrics Header & Grid
-            {
-                "id": "metrics-title-text",
-                "component": {
-                    "Text": {
-                        "text": {"literalString": "System Telemetry Metrics"},
-                        "usageHint": "body",
-                        "style": {"color": "#FFFFFF", "fontWeight": "bold"},
-                    }
-                },
-            },
-            # Metrics container column
-            {
-                "id": "metrics-column",
-                "component": {"Column": {"children": {"explicitList": []}, "align": "stretch"}},
-                "style": {"gap": "6px"},
-            },
-            {"id": "divider-3", "component": {"Divider": {"axis": "horizontal"}}},
-            
-            # 7. Actions row container (moved to bottom of card layout)
-            {
-                "id": "actions-row",
-                "component": {
-                    "Row": {"children": {"explicitList": []}, "justify": "spaceAround"}
-                },
-            },
-        ]
+        )
 
         # Dynamic metrics content generation
         metrics_children_ids = []
@@ -259,32 +75,11 @@ class CardBuilderV08(BaseCardBuilder):
             value = m_spec.value or 0.0
             val_text = m_spec.val_text or str(value)
 
+            svg_data_uri = None
             if m_type == "donut_chart":
                 svg_data_uri = generate_donut_chart(value, label)
-                components.append(
-                    {
-                        "id": m_id,
-                        "component": {
-                            "Image": {"url": {"literalString": svg_data_uri}, "fit": "contain"}
-                        },
-                        "style": {"width": "80px", "height": "80px"},
-                    }
-                )
-                metrics_children_ids.append(m_id)
-
             elif m_type == "progress_bar":
                 svg_data_uri = generate_horizontal_bar(value, label, val_text)
-                components.append(
-                    {
-                        "id": m_id,
-                        "component": {
-                            "Image": {"url": {"literalString": svg_data_uri}, "fit": "contain"}
-                        },
-                        "style": {"width": "80px", "height": "80px"},
-                    }
-                )
-                metrics_children_ids.append(m_id)
-
             elif m_type == "range_gauge":
                 max_value = m_spec.max_value or 100.0
                 yellow_threshold = m_spec.yellow_threshold or 50.0
@@ -292,57 +87,24 @@ class CardBuilderV08(BaseCardBuilder):
                 svg_data_uri = generate_range_gauge(
                     value, max_value, label, val_text, yellow_threshold, red_threshold
                 )
-                components.append(
-                    {
-                        "id": m_id,
-                        "component": {
-                            "Image": {"url": {"literalString": svg_data_uri}, "fit": "contain"}
-                        },
-                        "style": {"width": "80px", "height": "80px"},
-                    }
-                )
-                metrics_children_ids.append(m_id)
-
             elif m_type == "status_pill":
                 pill_status = m_spec.status or "healthy"
                 svg_data_uri = generate_status_pill(label, val_text, pill_status)
-                components.append(
-                    {
-                        "id": m_id,
-                        "component": {
-                            "Image": {"url": {"literalString": svg_data_uri}, "fit": "contain"}
-                        },
-                        "style": {"width": "80px", "height": "80px"},
-                    }
-                )
-                metrics_children_ids.append(m_id)
-
             elif m_type == "number":
                 svg_data_uri = generate_number_widget(label, val_text)
+
+            if svg_data_uri:
                 components.append(
-                    {
-                        "id": m_id,
-                        "component": {
-                            "Image": {"url": {"literalString": svg_data_uri}, "fit": "contain"}
-                        },
-                        "style": {"width": "80px", "height": "80px"},
-                    }
+                    self._load_template("metric_image.json", {"m_id": m_id, "svg_data_uri": svg_data_uri})
                 )
                 metrics_children_ids.append(m_id)
-
             else:
                 fallback_txt_id = f"{m_id}-fallback-txt"
                 components.append(
-                    {
-                        "id": fallback_txt_id,
-                        "component": {
-                            "Text": {
-                                "text": {"literalString": f"{label}: {val_text}"},
-                                "usageHint": "body",
-                                "style": {"color": "#E2E8F0"},
-                            }
-                        },
-                    }
+                    self._load_template(
+                        "metric_text.json",
+                        {"fallback_txt_id": fallback_txt_id, "label": label, "val_text": val_text},
+                    )
                 )
                 metrics_children_ids.append(fallback_txt_id)
 
@@ -379,30 +141,16 @@ class CardBuilderV08(BaseCardBuilder):
             command = a_spec.command
             color = a_spec.color or "#00FF00"
             components.extend(
-                [
+                self._load_template(
+                    "action_button.json",
                     {
-                        "id": f"{a_id}-txt",
-                        "component": {
-                            "Text": {
-                                "text": {"literalString": label},
-                                "usageHint": "caption",
-                                "style": {"color": color},
-                            }
-                        },
+                        "a_id": a_id,
+                        "label": label,
+                        "color": color,
+                        "system_id": system_id,
+                        "command": command,
                     },
-                    {
-                        "id": a_id,
-                        "component": {
-                            "Button": {
-                                "child": f"{a_id}-txt",
-                                "action": {
-                                    "name": "execute_system_command",
-                                    "parameters": {"system_id": system_id, "command": command},
-                                },
-                            }
-                        },
-                    },
-                ]
+                )
             )
             actions_children_ids.append(a_id)
 
@@ -430,137 +178,17 @@ class CardBuilderV08(BaseCardBuilder):
         header_icon_uri = generate_material_icon_svg(icon_name, "#38BDF8")
         traffic_light_uri = generate_traffic_light_svg(status)
 
-        components = [
-            # 1. Logs Card Root
+        components = self._load_template(
+            "v08_logs_card_base.json",
             {
-                "id": "logs-card-root",
-                "component": {
-                    "Card": {
-                        "child": "logs-main-column",
-                        "style": {
-                            "backgroundColor": "#0B131E",
-                            "borderRadius": "12px",
-                            "padding": "12px",
-                        },
-                    }
-                },
+                "header_icon_uri": header_icon_uri,
+                "traffic_light_uri": traffic_light_uri,
+                "name": name,
+                "system_id": system_id,
+                "status": status,
+                "status_color": status_color,
             },
-            # 2. Main Column Wrapper
-            {
-                "id": "logs-main-column",
-                "component": {
-                    "Column": {
-                        "children": {
-                            "explicitList": [
-                                "logs-header-row",
-                                "logs-divider-1",
-                                "logs-title-text",
-                                "logs-console",
-                            ]
-                        },
-                        "align": "stretch",
-                    }
-                },
-                "style": {"margin": "0px", "padding": "0px", "gap": "6px"},
-            },
-            # 3. Header row
-            {
-                "id": "logs-header-row",
-                "component": {
-                    "Row": {
-                        "children": {
-                            "explicitList": [
-                                "logs-header-icon",
-                                "logs-header-text",
-                                "logs-header-status-group",
-                            ]
-                        },
-                        "justify": "spaceBetween",
-                        "align": "center",
-                    }
-                },
-            },
-            {
-                "id": "logs-header-icon",
-                "component": {
-                    "Image": {"url": {"literalString": header_icon_uri}, "fit": "contain"}
-                },
-                "style": {"width": "28px", "height": "28px"},
-            },
-            {
-                "id": "logs-header-text",
-                "component": {
-                    "Column": {
-                        "children": {
-                            "explicitList": ["logs-header-name", "logs-header-id"]
-                        }
-                    }
-                },
-                "style": {"fillWidth": True, "paddingLeft": "8px"},
-            },
-            {
-                "id": "logs-header-name",
-                "component": {
-                    "Text": {
-                        "text": {"literalString": f"{name} Diagnostics"},
-                        "usageHint": "h3",
-                        "style": {"color": "#FFFFFF", "fontWeight": "700"},
-                    }
-                },
-            },
-            {
-                "id": "logs-header-id",
-                "component": {
-                    "Text": {
-                        "text": {
-                            "literalString": f"ID: {system_id} | Logs limit: 15"
-                        },
-                        "usageHint": "caption",
-                        "style": {"color": "#38BDF8"},
-                    }
-                },
-            },
-            {
-                "id": "logs-header-status-group",
-                "component": {
-                    "Row": {
-                        "children": {
-                            "explicitList": [
-                                "logs-header-status-light",
-                                "logs-header-status-text",
-                            ]
-                        },
-                        "align": "center",
-                    }
-                },
-                "style": {"gap": "6px", "width": "110px", "flexShrink": 0},
-            },
-            {
-                "id": "logs-header-status-light",
-                "component": {
-                    "Image": {"url": {"literalString": traffic_light_uri}, "fit": "contain"}
-                },
-                "style": {"width": "14px", "height": "36px"},
-            },
-            {
-                "id": "logs-header-status-text",
-                "component": {"Text": {"text": {"literalString": status}, "usageHint": "body1"}},
-                "style": {"color": status_color, "fontWeight": "bold"},
-            },
-            {"id": "logs-divider-1", "component": {"Divider": {"axis": "horizontal"}}},
-            
-            # 4. Logs Title & Console
-            {
-                "id": "logs-title-text",
-                "component": {
-                    "Text": {
-                        "text": {"literalString": "System Diagnostics Log Stream"},
-                        "usageHint": "body",
-                        "style": {"color": "#FFFFFF", "fontWeight": "bold"},
-                    }
-                },
-            },
-        ]
+        )
 
         # Generate recent logs console content dynamically
         logs_children = []
@@ -579,20 +207,14 @@ class CardBuilderV08(BaseCardBuilder):
                 color = "#94A3B8"  # gray
 
             components.append(
-                {
-                    "id": log_id,
-                    "component": {
-                        "Text": {
-                            "text": {"literalString": log_text},
-                            "usageHint": "body",
-                            "style": {
-                                "color": color,
-                                "fontFamily": "monospace",
-                                "fontSize": "11px",
-                            },
-                        }
+                self._load_template(
+                    "log_line.json",
+                    {
+                        "log_id": log_id,
+                        "log_text": log_text,
+                        "color": color,
                     },
-                }
+                )
             )
             logs_children.append(log_id)
 

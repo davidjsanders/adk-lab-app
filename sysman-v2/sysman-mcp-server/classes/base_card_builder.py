@@ -15,8 +15,11 @@
 """Abstract base class for A2UI card builders."""
 
 from abc import ABC, abstractmethod
+import json
+import os
 from typing import Any, Dict, List
 from models import SystemStatus
+
 
 
 class BaseCardBuilder(ABC):
@@ -30,6 +33,8 @@ class BaseCardBuilder(ABC):
         "confluence": "CONFLUENCE APP",
         "linux": "LINUX VM",
     }
+
+    _TEMPLATE_CACHE: Dict[str, str] = {}
 
     def __init__(self, system_status: SystemStatus, surface_id: str) -> None:
         """Initializes the builder with system status and surface context.
@@ -74,3 +79,26 @@ class BaseCardBuilder(ABC):
         elif status in ("UNHEALTHY", "REBOOTING", "UNKNOWN"):
             return "#EF4444"
         return "#22C55E"
+
+    def _load_template(self, filename: str, placeholders: Dict[str, str]) -> Any:
+        """Loads a JSON template file and performs simple string substitution for placeholders.
+
+        Args:
+            filename: The name of the template file to load.
+            placeholders: Dictionary mapping placeholder names (e.g. 'name') to replacement values.
+
+        Returns:
+            Parsed JSON content (can be a list or a dictionary).
+        """
+        if filename not in self._TEMPLATE_CACHE:
+            templates_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "templates"))
+            filepath = os.path.join(templates_dir, filename)
+            with open(filepath, "r", encoding="utf-8") as f:
+                self._TEMPLATE_CACHE[filename] = f.read()
+
+        content = self._TEMPLATE_CACHE[filename]
+        for key, val in placeholders.items():
+            content = content.replace(f"{{{{{key}}}}}", str(val))
+
+        return json.loads(content)
+
