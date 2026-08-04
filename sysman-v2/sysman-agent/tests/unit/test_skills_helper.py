@@ -85,17 +85,17 @@ def test_skills_helper_get_skills_multiple_found_success(mock_registry_helper_cl
     """Verifies that get_skills resolves all skills if multiple match the search string."""
     mock_registry = mock_registry_helper_cls.return_value
     mock_registry.find.return_value = [
-        {"name": "projects/test-project/locations/us-central1/skills/skill-1"},
-        {"name": "projects/test-project/locations/us-central1/skills/skill-2"},
+        {"name": "projects/test-project/locations/us-central1/skills/ambiguous-skill-1"},
+        {"name": "projects/test-project/locations/us-central1/skills/ambiguous-skill-2"},
     ]
 
     mock_skill_1 = MagicMock()
     mock_skill_2 = MagicMock()
 
     async def mock_get_async(registered_name):
-        if registered_name == "projects/test-project/locations/us-central1/skills/skill-1":
+        if registered_name == "projects/test-project/locations/us-central1/skills/ambiguous-skill-1":
             return mock_skill_1
-        if registered_name == "projects/test-project/locations/us-central1/skills/skill-2":
+        if registered_name == "projects/test-project/locations/us-central1/skills/ambiguous-skill-2":
             return mock_skill_2
         return None
 
@@ -110,6 +110,27 @@ def test_skills_helper_get_skills_multiple_found_success(mock_registry_helper_cl
         resource_type=RegistryResourceType.SKILL,
     )
     assert mock_registry.get_skill_async.call_count == 2
+
+
+@patch("app.classes.skills_helper.RegistryHelper")
+def test_skills_helper_get_skills_filters_unrelated(mock_registry_helper_cls, mock_settings) -> None:
+    """Verifies that get_skills filters out skills returned by find whose name segment does not contain the search string."""
+    mock_registry = mock_registry_helper_cls.return_value
+    mock_registry.find.return_value = [
+        {"name": "projects/test-project/locations/us-central1/skills/my-matching-skill"},
+        {"name": "projects/test-project/locations/us-central1/skills/other-unrelated-skill"},
+    ]
+
+    mock_skill = MagicMock()
+    setup_mock_registry(mock_registry, get_skill_async_return=mock_skill)
+
+    helper = SkillsHelper(settings=mock_settings, skills=["my-matching-skill"])
+    resolved = helper.get_skills()
+
+    assert resolved == [mock_skill]
+    mock_registry.get_skill_async.assert_called_once_with(
+        "projects/test-project/locations/us-central1/skills/my-matching-skill"
+    )
 
 
 

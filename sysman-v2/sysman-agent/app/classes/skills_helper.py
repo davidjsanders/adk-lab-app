@@ -79,8 +79,11 @@ class SkillsHelper:
             for resource in resources:
                 urn = resource.get("name", "")
                 if urn and urn not in seen_urns:
-                    urns_to_resolve.append(urn)
-                    seen_urns.add(urn)
+                    # Filter to make sure the search query is actually part of the skill ID segment
+                    short_name = urn.split("/")[-1]
+                    if skill_name in short_name:
+                        urns_to_resolve.append(urn)
+                        seen_urns.add(urn)
 
         if not urns_to_resolve:
             return []
