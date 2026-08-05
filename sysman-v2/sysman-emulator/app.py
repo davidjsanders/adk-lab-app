@@ -7,6 +7,7 @@ from a Secret Manager mounted JSON configuration file.
 
 import json
 import logging
+import logging_config
 import os
 import uuid
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -21,7 +22,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # Configure basic console logging
-logging.basicConfig(level=logging.INFO)
+logging_config.setup_logging()
 logger = logging.getLogger("sysman-emulator")
 
 # Config path for Secret Manager mounted volume

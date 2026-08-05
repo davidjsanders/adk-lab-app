@@ -7,6 +7,7 @@ A2UI cards for simulated Linux hosts, Jira app servers, and Confluence nodes.
 """
 
 import logging
+import logging_config
 import os
 import sys
 from typing import Any, Dict, List
@@ -20,7 +21,7 @@ from models import SystemMetadata, SystemStatus, LogEntry
 load_dotenv()
 
 # Configure structured logging
-logging.basicConfig(level=logging.INFO)
+logging_config.setup_logging()
 logger = logging.getLogger("sysman-mcp-server")
 
 mcp = FastMCP("SysMan Operations MCP Server")

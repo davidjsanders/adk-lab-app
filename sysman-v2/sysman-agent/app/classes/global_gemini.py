@@ -1,15 +1,47 @@
 import logging
 import os
+import re
 from functools import cached_property
+from typing import AsyncGenerator, override
 from google.adk.models import Gemini
+from google.adk.models.llm_request import LlmRequest
+from google.adk.models.llm_response import LlmResponse
 from google.genai import Client
 from google.genai import types as genai_types
 
-logger = logging.getLogger("sysman-ops-agent.classes.global_gemini")
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 class GlobalGemini(Gemini):
     """Gemini model subclass enforcing global location endpoint routing to prevent regional 404s."""
+
+    @override
+    async def generate_content_async(
+        self,
+        llm_request: LlmRequest,
+        stream: bool
+    ) -> AsyncGenerator[LlmResponse, None]:
+        """Intercepts the model request to strip A2UI JSON components from history to save context and latency."""
+        logger.debug("generate_content_async intercepting request")
+        if llm_request.contents:
+            logger.debug("Found content, processing")
+            for content in llm_request.contents:
+                if content.parts:
+                    logger.debug("Found parts, processing")
+                    for part in content.parts:
+                        logger.debug("Found part")
+                        if isinstance(part.text, str) and "<a2ui-json>" in part.text:
+                            logger.info("Part is A2UI, stripping JSON payload from conversation history")
+                            part.text = re.sub(
+                                r"<a2ui-json>.*?</a2ui-json>",
+                                "",
+                                part.text,
+                                flags=re.DOTALL
+                            ).strip()
+
+        async for response in super().generate_content_async(llm_request, stream=stream):
+            yield response
 
     @staticmethod
     def is_vertex(model: str) -> bool:

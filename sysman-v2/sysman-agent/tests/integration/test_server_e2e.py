@@ -14,6 +14,7 @@
 
 import json
 import logging
+import logging_config
 import os
 import subprocess
 import sys
@@ -37,7 +38,7 @@ from a2a.types import (
 from requests.exceptions import RequestException
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging_config.setup_logging()
 logger = logging.getLogger(__name__)
 
 BASE_URL = "http://127.0.0.1:8000"

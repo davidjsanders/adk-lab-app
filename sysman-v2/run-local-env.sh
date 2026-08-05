@@ -7,6 +7,10 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# Standard python path for shared modules
+export PYTHONPATH="$WORKSPACE_DIR/sysman-v2/sysman-common:$PYTHONPATH"
+
+
 # Global ports
 PORT_LINUX_EMULATOR=8081
 PORT_JIRA_EMULATOR=8082
@@ -201,4 +205,4 @@ echo "=============================================="
 
 # Launch playground for the default role (Orchestrator) with service account impersonation
 cd "$WORKSPACE_DIR/sysman-v2/sysman-agent"
-IMPERSONATE_SA="sysman-ops-sa@agentspace-argolis-demo.iam.gserviceaccount.com" AGENT_ROLE="orchestrator" AGENT_CONFIG_FILE="orchestrator-prd.json" uv run agents-cli playground
+IMPERSONATE_SA="sysman-ops-sa@agentspace-argolis-demo.iam.gserviceaccount.com" AGENT_ROLE="orchestrator" AGENT_CONFIG_FILE="orchestrator-prd.json" uv run agents-cli playground 2>&1 | tee "$WORKSPACE_DIR/logs/sysman-v2-playground.log"

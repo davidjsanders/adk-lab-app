@@ -15,12 +15,13 @@
 """Sysman agent entrypoint module for initializing and starting the agent app."""
 
 import logging
+import logging_config
 from google.adk.apps import App
 from .classes.specialist_agent import SpecialistAgent
 from .helpers.config import agent_config
 from .plugins.a2ui_plugin import A2UIPlugin
 
-logging.basicConfig(level=logging.INFO)
+logging_config.setup_logging()
 logger = logging.getLogger("sysman-agent.agent")
 
 # Shared A2UI Plugin instance for handling A2UI Components
