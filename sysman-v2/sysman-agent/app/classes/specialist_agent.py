@@ -25,6 +25,7 @@ from google.adk.tools.skill_toolset import SkillToolset
 
 from app.callbacks.specialist_state_loader import specialist_state_loader
 from app.classes.global_gemini import GlobalGemini
+from app.classes.patched_gcp_skill_registry import PatchedGCPSkillRegistry
 from app.config import settings
 from ..models.agent_categories import AgentCategories
 from ..models.specialist_agent_config import SpecialistAgentConfig
@@ -61,13 +62,27 @@ class SpecialistAgent(Agent):
             mcp_tools = mcp_helper.get_toolset()
 
         agent_tools = [*mcp_tools]
+        # Initialize the skill registry pointing to the 'us' location
+        # to avoid timeouts on regional skill endpoints in this environment.
+        skill_registry = PatchedGCPSkillRegistry(
+            project_id=settings.google_cloud_project,
+            location="us"
+        )
+
+        preloaded_skills = []
         if config.skills:
             skills_helper = SkillsHelper(
                 settings=settings,
                 skills=config.skills
             )
-            system_skills = SkillToolset(skills=skills_helper.get_skills())
-            agent_tools.append(system_skills)
+            preloaded_skills = skills_helper.get_skills()
+
+        # Always register the SkillToolset with the registry to enable dynamic searching
+        system_skills = SkillToolset(
+            skills=preloaded_skills,
+            registry=skill_registry
+        )
+        agent_tools.append(system_skills)
 
         if config.subagents:
             subagent_helper = SubagentHelper(

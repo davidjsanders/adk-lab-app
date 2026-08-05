@@ -148,7 +148,7 @@ uv run python server.py > "$WORKSPACE_DIR/logs/sysman-v2-mcp.log" 2>&1 &
 MCP_PID=$!
 
 # Wait for MCP server to initialize
-sleep 3
+sleep 6
 
 # 3. Start Sub-Agents
 # Ensure the common skills registry directory is configured
