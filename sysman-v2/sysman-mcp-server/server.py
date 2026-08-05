@@ -116,7 +116,12 @@ def render_system_card(system_id: str) -> str:
                 }
             }
         ]
-        return f"<a2ui-json>\n{json.dumps(payload, indent=2)}\n</a2ui-json>"
+        instrument_data = {
+            m.id: (m.value if m.value is not None else m.status if m.status is not None else m.val_text)
+            for m in status.metrics
+        }
+        instrument_data = {k: v for k, v in instrument_data.items() if v is not None}
+        return f"<card-data>{json.dumps(instrument_data)}</card-data>\n<a2ui-json>\n{json.dumps(payload, indent=2)}\n</a2ui-json>"
 
     except Exception as err:
         logger.error(f"Failed rendering system card: {err}")
@@ -157,7 +162,12 @@ def render_system_logs_card(system_id: str) -> str:
                 }
             }
         ]
-        return f"<a2ui-json>\n{json.dumps(payload, indent=2)}\n</a2ui-json>"
+        instrument_data = {
+            m.id: (m.value if m.value is not None else m.status if m.status is not None else m.val_text)
+            for m in status.metrics
+        }
+        instrument_data = {k: v for k, v in instrument_data.items() if v is not None}
+        return f"<card-data>{json.dumps(instrument_data)}</card-data>\n<a2ui-json>\n{json.dumps(payload, indent=2)}\n</a2ui-json>"
 
     except Exception as err:
         logger.error(f"Failed rendering system logs card: {err}")

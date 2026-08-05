@@ -81,16 +81,22 @@ class A2UIPlugin(BasePlugin):
         # Get the text component of result (if any)
         text: str = self._get_result_text(result=result)
 
-        a2ui_blocks = self._extract_a2ui_components(
-            session_id=session_id,
-            text=text
-        )
+        a2ui_blocks = self._extract_a2ui_components(text=text)
 
-        logger.debug("A2UI Block: %s", a2ui_blocks)
-        if a2ui_blocks is not None:
+        if "<a2ui-json>" in text:
             # Tell ADK runner not to summarize the JSON component tree
-            # tool_context.actions.skip_summarization = True
-            return a2ui_blocks
+            tool_context.actions.skip_summarization = True
+            
+            # Find and extract the A2UI blocks to store them in pending queue
+            matches = re.findall(r"(<a2ui-json>.*?</a2ui-json>)", text, re.DOTALL)
+            if matches:
+                if session_id not in self._pending_cards:
+                    self._pending_cards[session_id] = []
+                self._pending_cards[session_id].extend(matches)
+                
+                # Strip the A2UI blocks from the text to return ONLY the plain text summary to the LLM
+                clean_text = re.sub(r"<a2ui-json>.*?</a2ui-json>", "", text, flags=re.DOTALL).strip()
+                return clean_text
 
         return result
 
@@ -103,10 +109,6 @@ class A2UIPlugin(BasePlugin):
         """Consolidates single or multiple A2UI cards into a unified multi-card surface."""
         session_id = getattr(invocation_context, "session_id", "default")
         
-        # Guard: Only process and inject cards on the final response of the turn
-        if not event.is_final_response():
-            return event
-
         if not event.content or not event.content.parts:
             # Even if there is no event content generated yet, if we have pending cards, we must inject them
             if session_id in self._pending_cards and self._pending_cards[session_id]:
@@ -247,11 +249,7 @@ class A2UIPlugin(BasePlugin):
         return event
 
 
-    def _extract_a2ui_components(
-        self,
-        session_id: str,
-        text: str
-    ) -> Optional[str]:
+    def _extract_a2ui_components(self, text: str) -> Optional[str]:
         if "<a2ui-json>" in text:
             # Find and extract the A2UI blocks to store them in pending queue
             matches = re.findall(r"(<a2ui-json>.*?</a2ui-json>)", text, re.DOTALL)
