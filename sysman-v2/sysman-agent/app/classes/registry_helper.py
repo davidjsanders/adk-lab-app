@@ -28,7 +28,7 @@ from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from google.adk.skills.models import Skill
 
 from ..models.registry_resource_type import RegistryResourceType
-from .patched_gcp_skill_registry import PatchedGCPSkillRegistry
+from app.patches.patched_gcp_skill_registry import PatchedGCPSkillRegistry
 
 # Configure module logger
 logger = logging.getLogger(__name__)

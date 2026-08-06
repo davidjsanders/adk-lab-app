@@ -69,6 +69,7 @@ class PatchedGCPSkillRegistry(GCPSkillRegistry):
             params = {
                 "search_string": query,
             }
+            # pylint: disable=protected-access
             response = await self._make_request(client, url, params=params)
             response_data = response.json()
 
@@ -89,4 +90,3 @@ class PatchedGCPSkillRegistry(GCPSkillRegistry):
                         e
                     )
             return results
-

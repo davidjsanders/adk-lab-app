@@ -22,7 +22,8 @@ from google.adk.integrations.agent_identity import GcpAuthProvider
 from .classes.specialist_agent import SpecialistAgent
 from .helpers.config import agent_config
 from .plugins.a2ui_plugin import A2UIPlugin
-from .helpers.auth import patch_credential_manager, patch_finalize_credentials
+from .patches.patch_credential_manager import patch_credential_manager
+from .patches.patch_finalize_credentials import patch_finalize_credentials
 
 logging_config.setup_logging()
 logger = logging.getLogger("sysman-agent.agent")

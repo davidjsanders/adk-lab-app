@@ -25,7 +25,7 @@ from google.adk.tools.skill_toolset import SkillToolset
 
 from app.callbacks.specialist_state_loader import specialist_state_loader
 from app.classes.global_gemini import GlobalGemini
-from app.classes.patched_gcp_skill_registry import PatchedGCPSkillRegistry
+from app.patches.patched_gcp_skill_registry import PatchedGCPSkillRegistry
 from app.config import settings
 from ..models.agent_categories import AgentCategories
 from ..models.specialist_agent_config import SpecialistAgentConfig
