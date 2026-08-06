@@ -7,13 +7,16 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+# Standard python path for shared modules
+export PYTHONPATH="$WORKSPACE_DIR/sysman-v2/sysman-common:$WORKSPACE_DIR/sysman-v2/sysman-agent/app:$PYTHONPATH"
+
 # Global ports
 PORT_JIRA_EMULATOR=8082
 MCP_PORT=8005
 
 # Clean up any stale port bindings from previous runs first
-echo "Cleaning up any stale port bindings (8082, 8005)..."
-fuser -k 8082/tcp 8005/tcp >/dev/null 2>&1 || true
+echo "Cleaning up any stale port bindings (8082, 8005, 8080)..."
+fuser -k 8082/tcp 8005/tcp 8080/tcp >/dev/null 2>&1 || true
 sleep 2
 
 # Active models & credentials
@@ -26,6 +29,7 @@ export IMPERSONATE_SA="sysman-ops-sa@agentspace-argolis-demo.iam.gserviceaccount
 
 # Connections configuration
 export MCP_SERVER_URL="http://127.0.0.1:$MCP_PORT"
+export USE_IN_MEMORY_SESSION="True"
 
 # Bypassing google-auth's gcloud fallback logic by copying ADC to a custom path
 DEFAULT_ADC_PATH="$HOME/.config/gcloud/application_default_credentials.json"
@@ -64,8 +68,8 @@ cleanup() {
     kill "$MCP_PID" 2>/dev/null || true
   fi
 
-  log_tty "Cleaning up local port bindings (8082, 8005)..."
-  fuser -k 8082/tcp 8005/tcp >/dev/null 2>&1 || true
+  log_tty "Cleaning up local port bindings (8082, 8005, 8080)..."
+  fuser -k 8082/tcp 8005/tcp 8080/tcp >/dev/null 2>&1 || true
   rm -f "$WORKSPACE_DIR/logs/adc_temp.json" 2>/dev/null || true
 
   sleep 1
@@ -107,8 +111,8 @@ echo "=============================================="
 echo " Launching Jira Specialist Playground..."
 echo "=============================================="
 
-# Launch playground for the Jira role
+# Launch playground for the Jira role, showing logs on-screen and logging to file
 cd "$WORKSPACE_DIR/sysman-v2/sysman-agent"
 export AGENT_ROLE="specialist"
 export AGENT_CONFIG_FILE="jira-prd.json"
-uv run agents-cli playground
+uv run agents-cli playground 2>&1 | tee "$WORKSPACE_DIR/logs/sysman-v2-playground.log"

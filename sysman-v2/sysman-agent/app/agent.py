@@ -17,12 +17,23 @@
 import logging
 import logging_config
 from google.adk.apps import App
+from google.adk.auth.credential_manager import CredentialManager
+from google.adk.integrations.agent_identity import GcpAuthProvider
 from .classes.specialist_agent import SpecialistAgent
 from .helpers.config import agent_config
 from .plugins.a2ui_plugin import A2UIPlugin
+from .helpers.auth import patch_credential_manager, patch_finalize_credentials
 
 logging_config.setup_logging()
 logger = logging.getLogger("sysman-agent.agent")
+
+# Register the GCP Auth Provider to resolve credentials for MCP toolsets
+CredentialManager.register_auth_provider(GcpAuthProvider())
+
+# Patch CredentialManager to work around ADK pre-auth bugs
+# See the readme in the patches/ folder.
+patch_credential_manager()
+patch_finalize_credentials()
 
 # Shared A2UI Plugin instance for handling A2UI Components
 a2ui_plugin = A2UIPlugin()

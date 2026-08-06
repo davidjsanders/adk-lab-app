@@ -26,6 +26,7 @@ export IMPERSONATE_SA="sysman-ops-sa@agentspace-argolis-demo.iam.gserviceaccount
 
 # Connections configuration
 export MCP_SERVER_URL="http://127.0.0.1:$MCP_PORT"
+export USE_IN_MEMORY_SESSION="True"
 
 # Bypassing google-auth's gcloud fallback logic by copying ADC to a custom path
 DEFAULT_ADC_PATH="$HOME/.config/gcloud/application_default_credentials.json"

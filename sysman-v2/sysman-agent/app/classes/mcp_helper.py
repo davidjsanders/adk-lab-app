@@ -45,6 +45,7 @@ class McpHelper:
             mcp_server = self.registry_helper.get(
                 registered_name=resources[0].get("name", ""),
                 resource_type=RegistryResourceType.MCP,
+                continue_uri=self.settings.continue_uri,
             )
             self.toolsets.append(mcp_server)
 

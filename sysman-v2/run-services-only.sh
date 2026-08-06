@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to stand up all SysMan-v2 local processes and launch agents-cli playground.
+# Script to stand up all SysMan-v2 local processes and keep them running.
 
 set -e
 
@@ -117,7 +117,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 echo "=============================================="
-echo " Starting SysMan-v2 Operations Local Env"
+echo " Starting SysMan-v2 Operations Local Env (Services Only)"
 echo "=============================================="
 
 # Ensure logs directory exists
@@ -170,6 +170,7 @@ echo "Starting Linux Agent on port $LINUX_AGENT_PORT..."
 cd "$WORKSPACE_DIR/sysman-v2/sysman-agent"
 PORT=$LINUX_AGENT_PORT AGENT_ROLE="specialist" AGENT_CONFIG_FILE="linux-prd.json" uv run python -m uvicorn app.fast_api_app:app --host 127.0.0.1 --port $LINUX_AGENT_PORT > "$WORKSPACE_DIR/logs/sysman-v2-agent-linux.log" 2>&1 &
 LINUX_AGENT_PID=$!
+
 # 4. Wait for Specialist Agents to be fully loaded and ready
 echo ""
 echo "--------------------------------------------------------------------------------"
@@ -202,11 +203,9 @@ wait_for_agent "$CONFLUENCE_AGENT_URL" "Confluence Agent"
 wait_for_agent "$LINUX_AGENT_URL" "Linux Agent"
 
 echo "=============================================="
-echo " All services running. Launching Orchestrator Playground..."
-echo " IMPORTANT: Use the following URL in your browser to align user IDs:"
-echo " http://127.0.0.1:8080/dev-ui/?app=app&userId=$PLAYGROUND_USER_ID"
+echo " All background services running."
+echo " Keeping process alive. Press Ctrl+C to terminate services."
 echo "=============================================="
 
-# Launch playground for the default role (Orchestrator) with service account impersonation
-cd "$WORKSPACE_DIR/sysman-v2/sysman-agent"
-IMPERSONATE_SA="sysman-ops-sa@agentspace-argolis-demo.iam.gserviceaccount.com" AGENT_ROLE="orchestrator" AGENT_CONFIG_FILE="orchestrator-prd.json" uv run agents-cli playground 2>&1 | tee "$WORKSPACE_DIR/logs/sysman-v2-playground.log"
+# Keep alive to keep background processes running
+sleep infinity

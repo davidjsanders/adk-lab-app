@@ -83,6 +83,10 @@ class Settings(BaseSettings):
         default=".skills_cache",
         validation_alias="SKILLS_CACHE_DIR"
     )
+    continue_uri: Optional[str] = Field(
+        default=None,
+        validation_alias="CONTINUE_URI"
+    )
 
 
 

@@ -86,7 +86,7 @@ class A2UIPlugin(BasePlugin):
             text=text
         )
 
-        logger.debug("A2UI Block: %s", a2ui_blocks)
+        logger.info("after_tool_callback: session_id=%s, a2ui_blocks_found=%s", session_id, a2ui_blocks is not None)
         if a2ui_blocks is not None:
             # Tell ADK runner not to summarize the JSON component tree
             # tool_context.actions.skip_summarization = True
@@ -131,6 +131,7 @@ class A2UIPlugin(BasePlugin):
                     logger.error("Error parsing A2UI JSON in on_event_callback: %s", err)
 
         # 2. Append any pending cards stored during the tool execution in this session
+        logger.info("on_event_callback: session_id=%s, pending_cards_count=%d", session_id, len(self._pending_cards.get(session_id, [])))
         if session_id in self._pending_cards:
             for card_str in self._pending_cards[session_id]:
                 for match in re.finditer(r"<a2ui-json>(.*?)</a2ui-json>", card_str, re.DOTALL):
@@ -144,6 +145,7 @@ class A2UIPlugin(BasePlugin):
             del self._pending_cards[session_id]
 
         # 3. Deduplicate identical card payloads
+        logger.info("on_event_callback: unique card payloads count before deduplication=%d", len(extracted_card_payloads))
         unique_payloads: list[list[dict[str, Any]]] = []
         seen_surfaces: set[str] = set()
 

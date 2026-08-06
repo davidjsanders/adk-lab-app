@@ -202,12 +202,14 @@ class RegistryHelper:
         self,
         registered_name: str,
         resource_type: RegistryResourceType,
+        continue_uri: Optional[str] = None,
     ) -> Union[RemoteA2aAgent, McpToolset, Dict[str, Any], Skill, None]:
         """Retrieve a specific resource instance by its URN or relative name.
 
         Args:
             registered_name: The resource ID or fully qualified resource name.
             resource_type: The type of resource to fetch.
+            continue_uri: Optional redirection URI for 3-legged OAuth consent flows.
 
         Returns:
             The resolved resource instance (e.g. RemoteA2aAgent, McpToolset, etc.),
@@ -237,6 +239,11 @@ class RegistryHelper:
                     )
                     logger.debug("Looking up MCP: %s", registered_name)
                     # Returns McpToolset containing all registered tools on the server
+                    if continue_uri:
+                        return self.registry.get_mcp_toolset(
+                            registered_name,
+                            continue_uri=continue_uri
+                        )
                     return self.registry.get_mcp_toolset(
                         registered_name
                     )

@@ -23,7 +23,10 @@ registration.
 from __future__ import annotations
 
 import os
+import logging
 from typing import TYPE_CHECKING
+
+logger = logging.getLogger("sysman-agent.agent")
 
 from a2a.server.apps import A2AFastAPIApplication
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -105,7 +108,17 @@ async def attach_a2a_routes(
         agent_version=resolved_agent_version,
     ).build()
 
+    from google.adk.a2a.converters.request_converter import convert_a2a_request_to_agent_run_request
+
+    def _custom_request_converter(request, part_converter):
+        run_req = convert_a2a_request_to_agent_run_request(request, part_converter)
+        # Override the dynamic A2A user ID with the playground's active user ID to align for 3LO consent
+        run_req.user_id = os.getenv("PLAYGROUND_USER_ID", "user")
+        logger.info("A2A Request converted. run_req.user_id: %s (PLAYGROUND_USER_ID env: %s)", run_req.user_id, os.getenv("PLAYGROUND_USER_ID"))
+        return run_req
+
     executor_config = A2aAgentExecutorConfig(
+        request_converter=_custom_request_converter,
         execute_interceptors=[
             a2ui_converter_interceptor,
         ]
